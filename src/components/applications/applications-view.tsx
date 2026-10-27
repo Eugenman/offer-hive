@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import type { ApplicationStatus, ApplicationSummary } from "@/lib/domain";
 import { useRepositoryQuery } from "@/lib/repository/provider";
+import { AddApplicationDialog } from "./add/add-application-dialog";
+import { useAddDialog } from "./add/use-add-dialog";
 import { ApplicationsTable, type TableSort } from "./applications-table";
 import { ApplicationsToolbar } from "./applications-toolbar";
 import { BulkActionsBar } from "./bulk-actions-bar";
@@ -30,6 +32,7 @@ export function TableSkeleton() {
 export function ApplicationsView() {
   const url = useApplicationsUrlState();
   const actions = useApplicationActions();
+  const addDialog = useAddDialog();
   const queryKey = JSON.stringify(url.query);
 
   const { data, error } = useRepositoryQuery(queryKey, (repository) => repository.list(url.query));
@@ -78,7 +81,9 @@ export function ApplicationsView() {
       </>
     );
   } else if (totalAll === 0) {
-    content = <NoApplications />;
+    content = (
+      <NoApplications onAdd={() => addDialog.open("manual")} onImport={() => addDialog.open("import")} />
+    );
   } else if (data.total === 0) {
     content = <NoResults onReset={url.resetFilters} />;
   } else {
@@ -120,9 +125,11 @@ export function ApplicationsView() {
           onResetFilters={url.resetFilters}
           onExport={() => void actions.exportCsv({ query: url.query })}
           exportDisabled={!data || data.total === 0}
+          onAdd={() => addDialog.open("manual")}
         />
       )}
       {content}
+      <AddApplicationDialog />
       {selectedIds.length > 0 ? (
         <>
           {/* Room for the floating bar so it never covers the last row or the pager. */}

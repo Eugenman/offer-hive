@@ -18,6 +18,7 @@ type ApplicationsToolbarProps = {
   onResetFilters: () => void;
   onExport: () => void;
   exportDisabled: boolean;
+  onAdd: () => void;
 };
 
 export function ApplicationsToolbar({
@@ -31,6 +32,7 @@ export function ApplicationsToolbar({
   onResetFilters,
   onExport,
   exportDisabled,
+  onAdd,
 }: ApplicationsToolbarProps) {
   // Local value keeps typing instant; the URL is updated with a short debounce.
   const [value, setValue] = useState(search);
@@ -85,7 +87,7 @@ export function ApplicationsToolbar({
           <Download aria-hidden />
           Экспорт
         </Button>
-        <Button>
+        <Button onClick={onAdd}>
           <Plus aria-hidden />
           Добавить отклик
         </Button>

@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   agentRules: false,
+  // The landing page comes later; until then "/" opens the dashboard.
+  redirects() {
+    return [{ source: "/", destination: "/dashboard", permanent: false }];
+  },
   turbopack: {
     rules: {
       "*.css": {

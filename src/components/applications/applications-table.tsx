@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { Application } from "@/lib/domain";
+import type { ApplicationSummary } from "@/lib/domain";
 import { formatDate, formatSalary } from "@/lib/format";
 import { CompanyAvatar } from "./company-avatar";
 import { RowActions } from "./row-actions";
@@ -22,9 +22,8 @@ function Muted({ children }: { children: React.ReactNode }) {
 
 const EMPTY = <span className="text-muted-foreground/60">—</span>;
 
-function NoteCell({ notes }: { notes: Application["notes"] }) {
-  if (notes.length === 0) return EMPTY;
-  const [latest] = notes;
+function NoteCell({ count, latest }: { count: number; latest: ApplicationSummary["latestNote"] }) {
+  if (!latest) return EMPTY;
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -33,7 +32,7 @@ function NoteCell({ notes }: { notes: Application["notes"] }) {
           className="flex max-w-full items-center gap-1.5 rounded-md text-left text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           <MessageSquareText className="size-3.5 shrink-0" aria-hidden />
-          <span className="text-xs tabular-nums">{notes.length}</span>
+          <span className="text-xs tabular-nums">{count}</span>
           <span className="truncate">{latest.body}</span>
         </button>
       </TooltipTrigger>
@@ -44,7 +43,7 @@ function NoteCell({ notes }: { notes: Application["notes"] }) {
   );
 }
 
-export function ApplicationsTable({ applications }: { applications: Application[] }) {
+export function ApplicationsTable({ applications }: { applications: ApplicationSummary[] }) {
   return (
     <Table className="min-w-[1000px] table-fixed">
       <colgroup>
@@ -104,7 +103,7 @@ export function ApplicationsTable({ applications }: { applications: Application[
               {app.source ? <Muted>{app.source}</Muted> : EMPTY}
             </TableCell>
             <TableCell className="max-w-0">
-              <NoteCell notes={app.notes} />
+              <NoteCell count={app.noteCount} latest={app.latestNote} />
             </TableCell>
             <TableCell className="pr-6 text-right">
               <RowActions id={app.id} company={app.company} status={app.status} />

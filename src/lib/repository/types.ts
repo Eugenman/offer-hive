@@ -1,0 +1,74 @@
+import type {
+  Application,
+  ApplicationDetails,
+  ApplicationStatus,
+  ApplicationSummary,
+  Note,
+  Stage,
+} from "@/lib/domain";
+import type {
+  ApplicationInput,
+  ApplicationPatch,
+  NoteInput,
+  NotePatch,
+  StageInput,
+  StagePatch,
+  StatusChangeInput,
+} from "@/lib/schemas";
+
+export const SORT_FIELDS = ["company", "status", "appliedAt", "salary", "source", "updatedAt"] as const;
+export type SortField = (typeof SORT_FIELDS)[number];
+export type SortDirection = "asc" | "desc";
+
+export type ApplicationsQuery = {
+  search?: string;
+  statuses?: ApplicationStatus[];
+  sources?: string[];
+  sort?: { field: SortField; direction: SortDirection };
+  page?: number;
+  pageSize?: number;
+};
+
+export type ApplicationsPage = {
+  items: ApplicationSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+/**
+ * The only way UI code reaches application data.
+ * Stage 1: in memory. Stage 2: IndexedDB. Stage 5: server actions.
+ * All methods are async so implementations can be swapped without touching callers.
+ */
+export interface ApplicationsRepository {
+  list(query?: ApplicationsQuery): Promise<ApplicationsPage>;
+  get(id: string): Promise<ApplicationDetails | null>;
+  listSources(): Promise<string[]>;
+
+  create(input: ApplicationInput): Promise<Application>;
+  update(id: string, patch: ApplicationPatch): Promise<Application>;
+  /** Same status again is a no-op; every real change is written to the status log. */
+  changeStatus(ids: string[], input: StatusChangeInput): Promise<void>;
+  /** Soft delete; `restore` brings the records back (used by the "Undo" toast). */
+  remove(ids: string[]): Promise<void>;
+  restore(ids: string[]): Promise<void>;
+
+  addStage(applicationId: string, input: StageInput): Promise<Stage>;
+  updateStage(stageId: string, patch: StagePatch): Promise<Stage>;
+  removeStage(stageId: string): Promise<void>;
+
+  addNote(applicationId: string, input: NoteInput): Promise<Note>;
+  updateNote(noteId: string, patch: NotePatch): Promise<Note>;
+  removeNote(noteId: string): Promise<void>;
+
+  /** Called after every change, so views can refetch. Returns an unsubscribe function. */
+  subscribe(listener: () => void): () => void;
+}
+
+export class NotFoundError extends Error {
+  constructor(what: string, id: string) {
+    super(`${what} not found: ${id}`);
+    this.name = "NotFoundError";
+  }
+}

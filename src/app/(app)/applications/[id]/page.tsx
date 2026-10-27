@@ -1,24 +1,15 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
-import { PageHeader } from "@/components/app-shell/page-header";
-import { MOCK_APPLICATIONS } from "@/lib/mock-data";
+import { ApplicationPage } from "@/components/applications/application-page";
 
-async function ApplicationContent({ params }: Pick<PageProps<"/applications/[id]">, "params">) {
+async function ApplicationRoute({ params }: Pick<PageProps<"/applications/[id]">, "params">) {
   const { id } = await params;
-  const app = MOCK_APPLICATIONS.find((item) => item.id === id);
-  if (!app) notFound();
-  return (
-    <>
-      <PageHeader title={`${app.company} · ${app.position}`} />
-      <p className="px-6 py-8 text-sm text-muted-foreground">Вёрстка страницы отклика — следующий шаг.</p>
-    </>
-  );
+  return <ApplicationPage id={id} />;
 }
 
-export default function ApplicationPage(props: PageProps<"/applications/[id]">) {
+export default function Page(props: PageProps<"/applications/[id]">) {
   return (
-    <Suspense fallback={<div className="h-16 border-b" />}>
-      <ApplicationContent params={props.params} />
+    <Suspense fallback={<div aria-hidden className="h-16 border-b" />}>
+      <ApplicationRoute params={props.params} />
     </Suspense>
   );
 }

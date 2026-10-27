@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { MessageSquareText } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, MessageSquareText } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
@@ -10,15 +12,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { ApplicationSummary } from "@/lib/domain";
+import { cn } from "@/lib/utils";
+import type { ApplicationStatus, ApplicationSummary } from "@/lib/domain";
 import { formatDate, formatSalary } from "@/lib/format";
+import type { SortDirection, SortField } from "@/lib/repository/types";
 import { CompanyAvatar } from "./company-avatar";
 import { RowActions } from "./row-actions";
 import { StatusBadge } from "./status-badge";
-
-function Muted({ children }: { children: React.ReactNode }) {
-  return <span className="text-muted-foreground">{children}</span>;
-}
 
 const EMPTY = <span className="text-muted-foreground/60">—</span>;
 
@@ -36,21 +36,97 @@ function NoteCell({ count, latest }: { count: number; latest: ApplicationSummary
           <span className="truncate">{latest.body}</span>
         </button>
       </TooltipTrigger>
-      <TooltipContent side="bottom" align="start" className="max-w-80">
+      <TooltipContent side="bottom" align="start" className="max-w-80 whitespace-pre-line">
         {latest.body}
       </TooltipContent>
     </Tooltip>
   );
 }
 
-export function ApplicationsTable({ applications }: { applications: ApplicationSummary[] }) {
+export type TableSort = { field: SortField; direction: SortDirection } | null;
+
+// Click cycles: ascending → descending → back to default order.
+function nextSort(current: TableSort, field: SortField): TableSort {
+  if (current?.field !== field) return { field, direction: "asc" };
+  if (current.direction === "asc") return { field, direction: "desc" };
+  return null;
+}
+
+function SortableHead({
+  field,
+  sort,
+  onSort,
+  children,
+}: {
+  field: SortField;
+  sort: TableSort;
+  onSort: (sort: TableSort) => void;
+  children: React.ReactNode;
+}) {
+  const active = sort?.field === field ? sort.direction : null;
+  const Icon = active === "asc" ? ArrowUp : active === "desc" ? ArrowDown : ArrowUpDown;
+  return (
+    <TableHead aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : "none"}>
+      <button
+        type="button"
+        onClick={() => onSort(nextSort(sort, field))}
+        className={cn(
+          "-ml-2 inline-flex h-8 items-center gap-1.5 rounded-md px-2 hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+          active && "text-foreground",
+        )}
+      >
+        {children}
+        <Icon className={cn("size-3.5", !active && "opacity-40")} aria-hidden />
+      </button>
+    </TableHead>
+  );
+}
+
+type ApplicationsTableProps = {
+  applications: ApplicationSummary[];
+  sort: TableSort;
+  onSort: (sort: TableSort) => void;
+  selected: ReadonlySet<string>;
+  onSelectionChange: (selected: Set<string>) => void;
+  onChangeStatus: (id: string, status: ApplicationStatus) => void;
+  onDelete: (application: ApplicationSummary) => void;
+};
+
+export function ApplicationsTable({
+  applications,
+  sort,
+  onSort,
+  selected,
+  onSelectionChange,
+  onChangeStatus,
+  onDelete,
+}: ApplicationsTableProps) {
+  const pageIds = applications.map((app) => app.id);
+  const selectedOnPage = pageIds.filter((id) => selected.has(id)).length;
+  const allChecked =
+    selectedOnPage === 0 ? false : selectedOnPage === pageIds.length ? true : ("indeterminate" as const);
+
+  function toggleAll() {
+    const next = new Set(selected);
+    if (allChecked === true) pageIds.forEach((id) => next.delete(id));
+    else pageIds.forEach((id) => next.add(id));
+    onSelectionChange(next);
+  }
+
+  function toggleOne(id: string) {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onSelectionChange(next);
+  }
+
   return (
     <Table className="min-w-[1000px] table-fixed">
       <colgroup>
         <col className="w-14" />
         <col className="w-72" />
         <col className="w-32" />
-        <col className="w-32" />
+        <col className="w-36" />
         <col className="w-48" />
         <col className="w-36" />
         <col />
@@ -59,13 +135,27 @@ export function ApplicationsTable({ applications }: { applications: ApplicationS
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           <TableHead className="pl-6">
-            <Checkbox aria-label="Выбрать все отклики на странице" />
+            <Checkbox
+              checked={allChecked}
+              onCheckedChange={toggleAll}
+              aria-label="Выбрать все отклики на странице"
+            />
           </TableHead>
-          <TableHead>Компания и должность</TableHead>
-          <TableHead>Статус</TableHead>
-          <TableHead>Дата отклика</TableHead>
-          <TableHead>Зарплата</TableHead>
-          <TableHead>Источник</TableHead>
+          <SortableHead field="company" sort={sort} onSort={onSort}>
+            Компания и должность
+          </SortableHead>
+          <SortableHead field="status" sort={sort} onSort={onSort}>
+            Статус
+          </SortableHead>
+          <SortableHead field="appliedAt" sort={sort} onSort={onSort}>
+            Дата отклика
+          </SortableHead>
+          <SortableHead field="salary" sort={sort} onSort={onSort}>
+            Зарплата
+          </SortableHead>
+          <SortableHead field="source" sort={sort} onSort={onSort}>
+            Источник
+          </SortableHead>
           <TableHead>Заметки</TableHead>
           <TableHead className="pr-6">
             <span className="sr-only">Действия</span>
@@ -74,9 +164,13 @@ export function ApplicationsTable({ applications }: { applications: ApplicationS
       </TableHeader>
       <TableBody>
         {applications.map((app) => (
-          <TableRow key={app.id} data-id={app.id}>
+          <TableRow key={app.id} data-id={app.id} data-state={selected.has(app.id) ? "selected" : undefined}>
             <TableCell className="pl-6">
-              <Checkbox aria-label={`Выбрать: ${app.company}`} />
+              <Checkbox
+                checked={selected.has(app.id)}
+                onCheckedChange={() => toggleOne(app.id)}
+                aria-label={`Выбрать: ${app.company}`}
+              />
             </TableCell>
             <TableCell>
               <Link
@@ -85,9 +179,7 @@ export function ApplicationsTable({ applications }: { applications: ApplicationS
               >
                 <CompanyAvatar name={app.company} />
                 <span className="min-w-0">
-                  <span className="block truncate font-medium group-hover:underline">
-                    {app.company}
-                  </span>
+                  <span className="block truncate font-medium group-hover:underline">{app.company}</span>
                   <span className="block truncate text-muted-foreground">{app.position}</span>
                 </span>
               </Link>
@@ -100,13 +192,19 @@ export function ApplicationsTable({ applications }: { applications: ApplicationS
               {formatSalary(app.salaryMin, app.salaryMax, app.currency) ?? EMPTY}
             </TableCell>
             <TableCell className="truncate">
-              {app.source ? <Muted>{app.source}</Muted> : EMPTY}
+              {app.source ? <span className="text-muted-foreground">{app.source}</span> : EMPTY}
             </TableCell>
             <TableCell className="max-w-0">
               <NoteCell count={app.noteCount} latest={app.latestNote} />
             </TableCell>
             <TableCell className="pr-6 text-right">
-              <RowActions id={app.id} company={app.company} status={app.status} />
+              <RowActions
+                id={app.id}
+                company={app.company}
+                status={app.status}
+                onChangeStatus={(status) => onChangeStatus(app.id, status)}
+                onDelete={() => onDelete(app)}
+              />
             </TableCell>
           </TableRow>
         ))}

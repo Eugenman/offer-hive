@@ -17,15 +17,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { APPLICATION_STATUSES, type ApplicationStatus, STATUS_LABELS } from "@/lib/domain";
 
-export function RowActions({
-  id,
-  company,
-  status,
-}: {
+type RowActionsProps = {
   id: string;
   company: string;
   status: ApplicationStatus;
-}) {
+  onChangeStatus: (status: ApplicationStatus) => void;
+  onDelete: () => void;
+};
+
+export function RowActions({ id, company, status, onChangeStatus, onDelete }: RowActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -40,7 +40,10 @@ export function RowActions({
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>Сменить статус</DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
-            <DropdownMenuRadioGroup value={status}>
+            <DropdownMenuRadioGroup
+              value={status}
+              onValueChange={(value) => onChangeStatus(value as ApplicationStatus)}
+            >
               {APPLICATION_STATUSES.map((value) => (
                 <DropdownMenuRadioItem key={value} value={value}>
                   {STATUS_LABELS[value]}
@@ -50,7 +53,9 @@ export function RowActions({
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive">Удалить</DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+          Удалить
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

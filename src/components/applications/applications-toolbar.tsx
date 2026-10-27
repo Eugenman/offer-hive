@@ -1,8 +1,51 @@
-import { Download, ListFilter, Plus, Search } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Download, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { ApplicationStatus } from "@/lib/domain";
+import { FilterMenu } from "./filter-menu";
 
-export function ApplicationsToolbar() {
+type ApplicationsToolbarProps = {
+  search: string;
+  statuses: ApplicationStatus[];
+  sources: string[];
+  availableSources: string[];
+  onSearchChange: (value: string) => void;
+  onStatusesChange: (statuses: ApplicationStatus[]) => void;
+  onSourcesChange: (sources: string[]) => void;
+  onResetFilters: () => void;
+  onExport: () => void;
+  exportDisabled: boolean;
+};
+
+export function ApplicationsToolbar({
+  search,
+  statuses,
+  sources,
+  availableSources,
+  onSearchChange,
+  onStatusesChange,
+  onSourcesChange,
+  onResetFilters,
+  onExport,
+  exportDisabled,
+}: ApplicationsToolbarProps) {
+  // Local value keeps typing instant; the URL is updated with a short debounce.
+  const [value, setValue] = useState(search);
+  const [synced, setSynced] = useState(search);
+  if (search !== synced) {
+    setSynced(search);
+    setValue(search);
+  }
+
+  function change(next: string) {
+    setValue(next);
+    setSynced(next);
+    onSearchChange(next);
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2 px-6 py-4">
       <div className="relative w-full max-w-72">
@@ -12,17 +55,33 @@ export function ApplicationsToolbar() {
         />
         <Input
           type="search"
+          value={value}
+          onChange={(event) => change(event.target.value)}
           placeholder="Компания или должность"
           aria-label="Поиск по откликам"
-          className="pl-8"
+          className="pr-8 pl-8 [&::-webkit-search-cancel-button]:hidden"
         />
+        {value ? (
+          <button
+            type="button"
+            onClick={() => change("")}
+            aria-label="Очистить поиск"
+            className="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          >
+            <X className="size-3.5" aria-hidden />
+          </button>
+        ) : null}
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <Button variant="outline">
-          <ListFilter aria-hidden />
-          Фильтр
-        </Button>
-        <Button variant="outline">
+        <FilterMenu
+          statuses={statuses}
+          sources={sources}
+          availableSources={availableSources}
+          onStatusesChange={onStatusesChange}
+          onSourcesChange={onSourcesChange}
+          onReset={onResetFilters}
+        />
+        <Button variant="outline" onClick={onExport} disabled={exportDisabled}>
           <Download aria-hidden />
           Экспорт
         </Button>

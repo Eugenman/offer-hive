@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { InlineScript } from "@/components/inline-script";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { UI_PREFS_SCRIPT } from "@/lib/ui-prefs";
 import "./globals.css";
@@ -32,7 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: UI_PREFS_SCRIPT }} />
+        <InlineScript html={UI_PREFS_SCRIPT} />
       </head>
       <body className="min-h-full bg-canvas">
         <TooltipProvider delayDuration={300}>{children}</TooltipProvider>

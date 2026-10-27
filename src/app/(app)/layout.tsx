@@ -15,7 +15,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             </div>
           </main>
         </div>
-        <Toaster position="bottom-right" />
+        <Toaster position="bottom-right" containerAriaLabel="Уведомления" />
       </RepositoryProvider>
     </NuqsAdapter>
   );

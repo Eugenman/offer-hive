@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ApplicationStatus, ApplicationSummary } from "@/lib/domain";
+import type { ApplicationDetails, ApplicationStatus, ApplicationSummary } from "@/lib/domain";
 import { useRepositoryQuery } from "@/lib/repository/provider";
+import type { ApplicationsPage, ApplicationsRepository } from "@/lib/repository/types";
 import { AddApplicationDialog } from "./add/add-application-dialog";
 import { useAddDialog } from "./add/use-add-dialog";
 import { ApplicationsTable, type TableSort } from "./applications-table";
@@ -11,7 +12,11 @@ import { BulkActionsBar } from "./bulk-actions-bar";
 import { NoApplications, NoResults } from "./empty-states";
 import { TableFooter } from "./table-footer";
 import { useApplicationActions } from "./use-application-actions";
-import { useApplicationsUrlState } from "./use-applications-url-state";
+import { type ViewMode, useApplicationsUrlState } from "./use-applications-url-state";
+import { rememberView, useViewMode } from "./use-view-mode";
+import { ApplicationsList } from "./views/applications-list";
+import { ApplicationsTimeline } from "./views/applications-timeline";
+import { KanbanBoard } from "./views/kanban-board";
 
 const ROW_PLACEHOLDERS = 6;
 
@@ -29,20 +34,37 @@ export function TableSkeleton() {
   );
 }
 
+type ViewData =
+  | { kind: "page"; page: ApplicationsPage }
+  | { kind: "summaries"; items: ApplicationSummary[] }
+  | { kind: "details"; items: ApplicationDetails[]; now: number };
+
+const ALL = Number.MAX_SAFE_INTEGER;
+
 export function ApplicationsView() {
   const url = useApplicationsUrlState();
+  const view = useViewMode(url.state.view, url.restoreView);
   const actions = useApplicationActions();
   const addDialog = useAddDialog();
-  const queryKey = JSON.stringify(url.query);
 
-  const { data, error } = useRepositoryQuery(queryKey, (repository) => repository.list(url.query));
+  // Table pages and sorts; the other views show every matching application.
+  const filters = { search: url.query.search, statuses: url.query.statuses, sources: url.query.sources };
+  const queryKey = JSON.stringify({ view, query: view === "table" ? url.query : filters });
+
+  const { data, error } = useRepositoryQuery<ViewData>(queryKey, async (repository: ApplicationsRepository) => {
+    if (view === "table") return { kind: "page", page: await repository.list(url.query) };
+    if (view === "timeline") {
+      return { kind: "details", items: await repository.listDetailed(filters), now: Date.now() };
+    }
+    return { kind: "summaries", items: (await repository.list({ ...filters, pageSize: ALL })).items };
+  });
   const { data: totalAll } = useRepositoryQuery(
     "total",
     async (repository) => (await repository.list({ pageSize: 1 })).total,
   );
   const { data: sources = [] } = useRepositoryQuery("sources", (repository) => repository.listSources());
 
-  // Selection belongs to the current view: changing search, filter, sort or page clears it.
+  // Selection belongs to the current table view: changing view, search, filter, sort or page clears it.
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectionKey, setSelectionKey] = useState(queryKey);
   if (selectionKey !== queryKey) {
@@ -53,16 +75,24 @@ export function ApplicationsView() {
   // The repository clamps the page (e.g. after deleting the last row on the last page).
   const { setPage } = url;
   const requestedPage = url.state.page;
+  const clampedPage = data?.kind === "page" ? data.page.page : null;
   useEffect(() => {
-    if (data && data.page !== requestedPage) setPage(data.page);
-  }, [data, requestedPage, setPage]);
+    if (clampedPage !== null && clampedPage !== requestedPage) setPage(clampedPage);
+  }, [clampedPage, requestedPage, setPage]);
 
-  const sort: TableSort = url.query.sort ?? null;
+  function changeView(next: ViewMode) {
+    rememberView(next);
+    url.setView(next);
+  }
 
   function deleteIds(ids: string[], name?: string) {
     setSelected((current) => new Set([...current].filter((id) => !ids.includes(id))));
     void actions.remove(ids, name);
   }
+
+  const changeStatus = (id: string, status: ApplicationStatus) => void actions.changeStatus([id], status);
+  const deleteOne = (app: ApplicationSummary) => deleteIds([app.id], app.company);
+  const shownCount = !data ? 0 : data.kind === "page" ? data.page.total : data.items.length;
 
   let content: React.ReactNode;
   if (error) {
@@ -84,29 +114,36 @@ export function ApplicationsView() {
     content = (
       <NoApplications onAdd={() => addDialog.open("manual")} onImport={() => addDialog.open("import")} />
     );
-  } else if (data.total === 0) {
+  } else if (shownCount === 0) {
     content = <NoResults onReset={url.resetFilters} />;
-  } else {
+  } else if (data.kind === "page") {
+    const sort: TableSort = url.query.sort ?? null;
     content = (
       <>
         <ApplicationsTable
-          applications={data.items}
+          applications={data.page.items}
           sort={sort}
           onSort={(next) => url.setSort(next?.field ?? null, next?.direction ?? "asc")}
           selected={selected}
           onSelectionChange={setSelected}
-          onChangeStatus={(id, status) => void actions.changeStatus([id], status)}
-          onDelete={(app: ApplicationSummary) => deleteIds([app.id], app.company)}
+          onChangeStatus={changeStatus}
+          onDelete={deleteOne}
         />
         <TableFooter
-          page={data.page}
+          page={data.page.page}
           pageSize={url.state.size}
-          total={data.total}
+          total={data.page.total}
           onPageChange={url.setPage}
           onPageSizeChange={url.setPageSize}
         />
       </>
     );
+  } else if (data.kind === "details") {
+    content = <ApplicationsTimeline applications={data.items} now={data.now} />;
+  } else if (view === "kanban") {
+    content = <KanbanBoard applications={data.items} onChangeStatus={changeStatus} onDelete={deleteOne} />;
+  } else {
+    content = <ApplicationsList applications={data.items} onChangeStatus={changeStatus} onDelete={deleteOne} />;
   }
 
   const selectedIds = [...selected];
@@ -115,6 +152,8 @@ export function ApplicationsView() {
     <>
       {totalAll === 0 ? null : (
         <ApplicationsToolbar
+          view={view}
+          onViewChange={changeView}
           search={url.state.q}
           statuses={url.state.status}
           sources={url.state.source}
@@ -123,14 +162,14 @@ export function ApplicationsView() {
           onStatusesChange={url.setStatuses}
           onSourcesChange={url.setSources}
           onResetFilters={url.resetFilters}
-          onExport={() => void actions.exportCsv({ query: url.query })}
-          exportDisabled={!data || data.total === 0}
+          onExport={() => void actions.exportCsv({ query: filters })}
+          exportDisabled={shownCount === 0}
           onAdd={() => addDialog.open("manual")}
         />
       )}
       {content}
       <AddApplicationDialog />
-      {selectedIds.length > 0 ? (
+      {view === "table" && selectedIds.length > 0 ? (
         <>
           {/* Room for the floating bar so it never covers the last row or the pager. */}
           <div aria-hidden className="h-20" />

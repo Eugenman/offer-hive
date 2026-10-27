@@ -155,6 +155,12 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
     return { items, total, page, pageSize };
   }
 
+  async listDetailed(query: ApplicationsQuery = {}): Promise<ApplicationDetails[]> {
+    const { items } = await this.list({ ...query, page: 1, pageSize: Number.MAX_SAFE_INTEGER });
+    const details = await Promise.all(items.map((item) => this.get(item.id)));
+    return details.filter((app): app is ApplicationDetails => app !== null);
+  }
+
   async get(id: string): Promise<ApplicationDetails | null> {
     const app = this.applications.get(id);
     if (!app || app.deletedAt) return null;

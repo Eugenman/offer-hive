@@ -8,7 +8,6 @@ import { useRepository } from "@/lib/repository/provider";
 import type { ApplicationsQuery } from "@/lib/repository/types";
 
 const UNDO_DURATION_MS = 10_000;
-const EXPORT_PAGE_SIZE = 10_000;
 
 function countLabel(count: number) {
   return `${count} ${pluralRu(count, APPLICATION_WORDS)}`;
@@ -55,15 +54,10 @@ export function useApplicationActions() {
 
   async function exportCsv(target: { ids: string[] } | { query: ApplicationsQuery }) {
     try {
-      const ids =
+      const details =
         "ids" in target
-          ? target.ids
-          : (await repository.list({ ...target.query, page: 1, pageSize: EXPORT_PAGE_SIZE })).items.map(
-              (item) => item.id,
-            );
-      const details = (await Promise.all(ids.map((id) => repository.get(id)))).filter(
-        (app) => app !== null,
-      );
+          ? (await Promise.all(target.ids.map((id) => repository.get(id)))).filter((app) => app !== null)
+          : await repository.listDetailed(target.query);
       if (details.length === 0) {
         toast("Нечего выгружать");
         return;

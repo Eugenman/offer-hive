@@ -12,10 +12,14 @@ import {
 import { APPLICATION_STATUSES } from "@/lib/domain";
 import { SORT_FIELDS, type ApplicationsQuery } from "@/lib/repository/types";
 
+export const VIEWS = ["table", "kanban", "list", "timeline"] as const;
+export type ViewMode = (typeof VIEWS)[number];
+
 export const PAGE_SIZES = [10, 25, 50] as const;
 export type PageSize = (typeof PAGE_SIZES)[number];
 
 const parsers = {
+  view: parseAsStringLiteral(VIEWS),
   q: parseAsString.withDefault(""),
   status: parseAsArrayOf(parseAsStringLiteral(APPLICATION_STATUSES)).withDefault([]),
   source: parseAsArrayOf(parseAsString).withDefault([]),
@@ -26,7 +30,7 @@ const parsers = {
 };
 
 /**
- * Table state lives in the URL (?q=&status=&source=&sort=&dir=&page=&size=),
+ * View state lives in the URL (?view=&q=&status=&source=&sort=&dir=&page=&size=),
  * so a link or a page reload opens the same view. Updates are shallow: data is client-side.
  */
 export function useApplicationsUrlState() {
@@ -54,6 +58,8 @@ export function useApplicationsUrlState() {
     resetFilters: () => setState({ q: null, status: null, source: null, ...resetPage }),
     setSort: (sort: (typeof SORT_FIELDS)[number] | null, dir: "asc" | "desc") =>
       setState({ sort, dir: sort ? dir : null, ...resetPage }),
+    setView: (view: ViewMode) => setState({ view }),
+    restoreView: (view: ViewMode) => setState({ view }, { history: "replace" }),
     setPage: (page: number) => setState({ page }),
     setPageSize: (size: PageSize) => setState({ size, ...resetPage }),
   };

@@ -43,6 +43,8 @@ export type ApplicationsPage = {
  */
 export interface ApplicationsRepository {
   list(query?: ApplicationsQuery): Promise<ApplicationsPage>;
+  /** All matching applications with stages and notes, no paging (kanban, timeline, export). */
+  listDetailed(query?: Omit<ApplicationsQuery, "page" | "pageSize">): Promise<ApplicationDetails[]>;
   get(id: string): Promise<ApplicationDetails | null>;
   listSources(): Promise<string[]>;
 

@@ -14,7 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  APPLICATION_STATUSES,
   type ApplicationDetails,
   type ApplicationStatus,
   INTERVIEW_KINDS,
@@ -27,6 +26,7 @@ import {
   STATUS_LABELS,
   type StageState,
   type StageType,
+  nextStatuses,
 } from "@/lib/domain";
 import { useRepository } from "@/lib/repository/provider";
 import { Field } from "../add/form-field";
@@ -40,7 +40,7 @@ const selectClass =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
 const TITLES = {
-  stage: (type: StageType) => `Новый этап: ${STAGE_TYPE_LABELS[type].toLowerCase()}`,
+  stage: (type: StageType) => `Прогресс: ${STAGE_TYPE_LABELS[type].toLowerCase()}`,
   note: "Новая заметка",
   status: "Сменить статус",
 };
@@ -77,7 +77,7 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
         state,
       });
       if (note.trim()) await repository.addNote(app.id, { body: note, stageId: stage.id });
-      toast.success(`Этап «${stageTitle(stage)}» добавлен`);
+      toast.success(`«${stageTitle(stage)}» добавлено в прогресс`);
       onDone();
     } catch (cause) {
       setError(saveErrorMessage(cause));
@@ -125,7 +125,7 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
           </select>
         </Field>
       </div>
-      <Field label="Заметка к этапу">
+      <Field label="Заметка">
         <Textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -138,7 +138,7 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
           {error}
         </p>
       ) : null}
-      <Actions saving={saving} label="Добавить этап" />
+      <Actions saving={saving} label="Добавить в прогресс" />
     </form>
   );
 }
@@ -197,7 +197,8 @@ function NoteForm({ app, onDone }: { app: ApplicationDetails; onDone: () => void
 
 function StatusForm({ app, onDone }: { app: ApplicationDetails; onDone: () => void }) {
   const actions = useApplicationActions();
-  const [status, setStatus] = useState<ApplicationStatus>(app.status);
+  const choices = nextStatuses(app.status);
+  const [status, setStatus] = useState<ApplicationStatus>(choices[0] ?? app.status);
   const [reason, setReason] = useState("");
   const withReason = STATUSES_WITH_REASON.includes(status);
 
@@ -207,18 +208,47 @@ function StatusForm({ app, onDone }: { app: ApplicationDetails; onDone: () => vo
     onDone();
   }
 
+  if (choices.length === 0) {
+    return (
+      <div className="grid gap-4">
+        <p className="text-sm">
+          «{STATUS_LABELS[app.status]}» — итоговый статус, дальше его сменить нельзя.
+          {app.previousStatus
+            ? ` Если он поставлен по ошибке, верните «${STATUS_LABELS[app.previousStatus]}».`
+            : ""}
+        </p>
+        <DialogFooter>
+          {app.previousStatus ? (
+            <Button
+              type="button"
+              onClick={async () => {
+                await actions.revertStatus(app.id, app.previousStatus!);
+                onDone();
+              }}
+            >
+              Вернуть «{STATUS_LABELS[app.previousStatus]}»
+            </Button>
+          ) : (
+            <Button type="button" onClick={onDone}>
+              Понятно
+            </Button>
+          )}
+        </DialogFooter>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={submit} className="grid gap-4" noValidate>
-      <Field label="Статус">
+      <Field label="Новый статус" hint={`Сейчас: ${STATUS_LABELS[app.status]}`}>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as ApplicationStatus)}
           className={selectClass}
         >
-          {APPLICATION_STATUSES.map((value) => (
+          {choices.map((value) => (
             <option key={value} value={value}>
               {STATUS_LABELS[value]}
-              {value === app.status ? " — сейчас" : ""}
             </option>
           ))}
         </select>

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ArrowUpDown, MessageSquareText } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowDown, ArrowUp, ArrowUpDown, Eye, MessageSquareText } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -10,8 +11,8 @@ import type { ApplicationStatus, ApplicationSummary } from "@/lib/domain";
 import { formatDate, formatSalary } from "@/lib/format";
 import type { SortDirection, SortField } from "@/lib/repository/types";
 import { CompanyAvatar } from "./company-avatar";
-import { RowActions } from "./row-actions";
-import { StatusBadge } from "./status-badge";
+import { rememberListPosition } from "./detail/return-to-list";
+import { StatusMenu } from "./status-menu";
 
 const EMPTY = <span className="text-muted-foreground/60">—</span>;
 
@@ -82,8 +83,11 @@ type ApplicationsTableProps = {
   selected: ReadonlySet<string>;
   onSelectionChange: (selected: Set<string>) => void;
   onChangeStatus: (id: string, status: ApplicationStatus) => void;
-  onDelete: (application: ApplicationSummary) => void;
+  onRevertStatus: (application: ApplicationSummary) => void;
 };
+
+// Controls inside a row handle their own clicks; a double click on them must not open the application.
+const INTERACTIVE = "a, button, input, [role=checkbox], [role=menuitem]";
 
 export function ApplicationsTable({
   applications,
@@ -92,8 +96,9 @@ export function ApplicationsTable({
   selected,
   onSelectionChange,
   onChangeStatus,
-  onDelete,
+  onRevertStatus,
 }: ApplicationsTableProps) {
+  const router = useRouter();
   const pageIds = applications.map((app) => app.id);
   const selectedOnPage = pageIds.filter((id) => selected.has(id)).length;
   const allChecked =
@@ -104,6 +109,11 @@ export function ApplicationsTable({
     if (allChecked === true) pageIds.forEach((id) => next.delete(id));
     else pageIds.forEach((id) => next.add(id));
     onSelectionChange(next);
+  }
+
+  function open(id: string) {
+    rememberListPosition(id);
+    router.push(`/applications/${id}`);
   }
 
   function toggleOne(id: string) {
@@ -117,8 +127,8 @@ export function ApplicationsTable({
     <Table className="min-w-[1000px] table-fixed">
       <colgroup>
         <col className="w-14" />
-        <col className="w-72" />
-        <col className="w-32" />
+        <col className="w-64" />
+        <col className="w-52" />
         <col className="w-36" />
         <col className="w-48" />
         <col className="w-36" />
@@ -157,7 +167,17 @@ export function ApplicationsTable({
       </TableHeader>
       <TableBody>
         {applications.map((app) => (
-          <TableRow key={app.id} data-id={app.id} data-state={selected.has(app.id) ? "selected" : undefined}>
+          <TableRow
+            key={app.id}
+            data-id={app.id}
+            data-state={selected.has(app.id) ? "selected" : undefined}
+            onDoubleClick={(event) => {
+              if ((event.target as Element).closest(INTERACTIVE)) return;
+              window.getSelection()?.removeAllRanges();
+              open(app.id);
+            }}
+            className="cursor-default"
+          >
             <TableCell className="pl-6">
               <Checkbox
                 checked={selected.has(app.id)}
@@ -178,7 +198,13 @@ export function ApplicationsTable({
               </Link>
             </TableCell>
             <TableCell>
-              <StatusBadge status={app.status} />
+              <StatusMenu
+                company={app.company}
+                status={app.status}
+                previousStatus={app.previousStatus}
+                onChangeStatus={(status) => onChangeStatus(app.id, status)}
+                onRevertStatus={() => onRevertStatus(app)}
+              />
             </TableCell>
             <TableCell>{formatDate(app.appliedAt) ?? EMPTY}</TableCell>
             <TableCell className="truncate tabular-nums">
@@ -191,13 +217,14 @@ export function ApplicationsTable({
               <NoteCell count={app.noteCount} latest={app.latestNote} />
             </TableCell>
             <TableCell className="pr-6 text-right">
-              <RowActions
-                id={app.id}
-                company={app.company}
-                status={app.status}
-                onChangeStatus={(status) => onChangeStatus(app.id, status)}
-                onDelete={() => onDelete(app)}
-              />
+              <Link
+                href={`/applications/${app.id}`}
+                aria-label={`Открыть: ${app.company}`}
+                title="Открыть"
+                className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              >
+                <Eye className="size-4" aria-hidden />
+              </Link>
             </TableCell>
           </TableRow>
         ))}

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { APPLICATION_STATUSES, STATUS_LABELS, WORK_FORMATS, WORK_FORMAT_LABELS } from "@/lib/domain";
+import { WORK_FORMATS, WORK_FORMAT_LABELS } from "@/lib/domain";
 import { useRepository } from "@/lib/repository/provider";
 import { applicationInputSchema } from "@/lib/schemas";
 import { Field } from "./form-field";
@@ -16,7 +16,6 @@ import { Field } from "./form-field";
 type FormField =
   | "company"
   | "position"
-  | "status"
   | "appliedAt"
   | "url"
   | "salaryMin"
@@ -36,7 +35,6 @@ const today = () => new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD in the
 const initialValues = (): Values => ({
   company: "",
   position: "",
-  status: "sent",
   appliedAt: today(),
   url: "",
   salaryMin: "",
@@ -101,7 +99,8 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
     const parsed = applicationInputSchema.safeParse({
       company: values.company,
       position: values.position,
-      status: values.status,
+      // Every new application starts at "Отправлен"; it moves on from there.
+      status: "sent",
       appliedAt: values.appliedAt || null,
       url: values.url,
       salaryMin: salaryMin === "invalid" ? null : salaryMin,
@@ -122,7 +121,7 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
     if (Object.keys(next).length > 0 || !parsed.success) {
       setErrors(next);
       // Optional fields with errors live in the collapsed section — open it.
-      if (Object.keys(next).some((field) => !["company", "position", "status"].includes(field)))
+      if (Object.keys(next).some((field) => !["company", "position", "appliedAt"].includes(field)))
         setMore(true);
       focusFirstError();
       return;
@@ -153,15 +152,6 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
         <Input {...bind("position")} autoComplete="organization-title" placeholder="Frontend-разработчик" />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Статус">
-          <select {...bind("status")} className={selectClass}>
-            {APPLICATION_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {STATUS_LABELS[status]}
-              </option>
-            ))}
-          </select>
-        </Field>
         <Field label="Дата отклика" error={errors.appliedAt}>
           <Input {...bind("appliedAt")} type="date" />
         </Field>

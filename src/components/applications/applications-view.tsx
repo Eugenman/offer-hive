@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { ApplicationDetails, ApplicationStatus, ApplicationSummary } from "@/lib/domain";
+import {
+  type ApplicationDetails,
+  type ApplicationStatus,
+  type ApplicationSummary,
+  commonNextStatuses,
+} from "@/lib/domain";
 import { useRepositoryQuery } from "@/lib/repository/provider";
 import type { ApplicationsPage, ApplicationsRepository } from "@/lib/repository/types";
 import { AddApplicationDialog } from "./add/add-application-dialog";
@@ -121,6 +126,9 @@ export function ApplicationsView() {
   }
 
   const changeStatus = (id: string, status: ApplicationStatus) => void actions.changeStatus([id], status);
+  const revertStatus = (app: ApplicationSummary) => {
+    if (app.previousStatus) void actions.revertStatus(app.id, app.previousStatus);
+  };
   const deleteOne = (app: ApplicationSummary) => deleteIds([app.id], app.company);
   const shownCount = !data ? 0 : data.kind === "page" ? data.page.total : data.items.length;
 
@@ -157,7 +165,7 @@ export function ApplicationsView() {
           selected={selected}
           onSelectionChange={setSelected}
           onChangeStatus={changeStatus}
-          onDelete={deleteOne}
+          onRevertStatus={revertStatus}
         />
         <TableFooter
           page={data.page.page}
@@ -171,10 +179,22 @@ export function ApplicationsView() {
   } else if (data.kind === "details") {
     content = <ApplicationsTimeline applications={data.items} now={data.now} />;
   } else {
-    content = <KanbanBoard applications={data.items} onChangeStatus={changeStatus} onDelete={deleteOne} />;
+    content = (
+      <KanbanBoard
+        applications={data.items}
+        onChangeStatus={changeStatus}
+        onRevertStatus={revertStatus}
+        onDelete={deleteOne}
+      />
+    );
   }
 
   const selectedIds = [...selected];
+  // Selection lives on the current table page, so the statuses are known from its rows.
+  const selectedStatuses =
+    data?.kind === "page"
+      ? data.page.items.filter((app) => selected.has(app.id)).map((app) => app.status)
+      : [];
 
   return (
     <div ref={containerRef} onClickCapture={rememberOpenedApplication}>
@@ -193,6 +213,18 @@ export function ApplicationsView() {
           onExport={() => void actions.exportCsv({ query: filters })}
           exportDisabled={shownCount === 0}
           onAdd={() => addDialog.open("manual")}
+          selectedCount={selectedIds.length}
+          onDeleteSelected={
+            view === "table"
+              ? () => {
+                  const only =
+                    selectedIds.length === 1 && data?.kind === "page"
+                      ? data.page.items.find((app) => app.id === selectedIds[0])
+                      : undefined;
+                  deleteIds(selectedIds, only?.company);
+                }
+              : undefined
+          }
         />
       )}
       {content}
@@ -203,9 +235,9 @@ export function ApplicationsView() {
           <div aria-hidden className="h-20" />
           <BulkActionsBar
             count={selectedIds.length}
+            statuses={commonNextStatuses(selectedStatuses)}
             onChangeStatus={(status: ApplicationStatus) => void actions.changeStatus(selectedIds, status)}
             onExport={() => void actions.exportCsv({ ids: selectedIds })}
-            onDelete={() => deleteIds(selectedIds)}
             onClear={() => setSelected(new Set())}
           />
         </>

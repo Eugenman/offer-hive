@@ -1,23 +1,27 @@
-import type { ApplicationDetails, ApplicationStatus } from "./domain";
+import { type ApplicationDetails, type ApplicationStatus, PIPELINE_STATUSES, STATUS_LABELS } from "./domain";
 
 // Funnel counts what applications ever reached (from the status log), not only where they are now:
 // an application rejected after an interview still counts as "reached an interview".
+// One step per status, never merged: a step nobody went through stays empty.
 
-// A rejection is a reply from the company too; "withdrawn" is the candidate's own decision.
-const RESPONSE_STATUSES: readonly ApplicationStatus[] = ["interview", "test_task", "offer", "rejected"];
-
-function reached(app: ApplicationDetails, statuses: readonly ApplicationStatus[]) {
-  return (
-    app.statusChanges.some((change) => statuses.includes(change.toStatus)) || statuses.includes(app.status)
-  );
+function reached(app: ApplicationDetails, status: ApplicationStatus) {
+  return app.status === status || app.statusChanges.some((change) => change.toStatus === status);
 }
+
+const IN_PROGRESS: readonly ApplicationStatus[] = [
+  "sent",
+  "screening",
+  "interview",
+  "technical",
+  "test_task",
+];
 
 export type FunnelStep = { key: string; label: string; count: number; share: number };
 
 export type SourceRow = {
   source: string;
   total: number;
-  responses: number;
+  screenings: number;
   interviews: number;
   offers: number;
 };
@@ -49,25 +53,20 @@ export function computeStatistics(
   weeksBack = 8,
 ): Statistics {
   const total = applications.length;
-  const responded = applications.filter((app) => reached(app, RESPONSE_STATUSES)).length;
-  const interviewed = applications.filter((app) => reached(app, ["interview"])).length;
-  const offered = applications.filter((app) => reached(app, ["offer"])).length;
-
-  const funnel: FunnelStep[] = [
-    { key: "sent", label: "Откликов", count: total, share: 1 },
-    { key: "response", label: "Получили ответ", count: responded, share: share(responded, total) },
-    { key: "interview", label: "Дошли до интервью", count: interviewed, share: share(interviewed, total) },
-    { key: "offer", label: "Получили оффер", count: offered, share: share(offered, total) },
-  ];
+  const funnel: FunnelStep[] = PIPELINE_STATUSES.map((status) => {
+    const count = applications.filter((app) => reached(app, status)).length;
+    const label = status === "sent" ? "Отправлено" : STATUS_LABELS[status];
+    return { key: status, label, count, share: share(count, total) };
+  });
 
   const bySource = new Map<string, SourceRow>();
   for (const app of applications) {
     const source = app.source ?? "Не указан";
-    const row = bySource.get(source) ?? { source, total: 0, responses: 0, interviews: 0, offers: 0 };
+    const row = bySource.get(source) ?? { source, total: 0, screenings: 0, interviews: 0, offers: 0 };
     row.total += 1;
-    if (reached(app, RESPONSE_STATUSES)) row.responses += 1;
-    if (reached(app, ["interview"])) row.interviews += 1;
-    if (reached(app, ["offer"])) row.offers += 1;
+    if (reached(app, "screening")) row.screenings += 1;
+    if (reached(app, "interview")) row.interviews += 1;
+    if (reached(app, "offer")) row.offers += 1;
     bySource.set(source, row);
   }
   const sources = [...bySource.values()].sort(
@@ -91,7 +90,7 @@ export function computeStatistics(
 
   return {
     total,
-    inProgress: applications.filter((app) => ["sent", "interview", "test_task"].includes(app.status)).length,
+    inProgress: applications.filter((app) => IN_PROGRESS.includes(app.status)).length,
     funnel,
     outcomes: {
       rejected: applications.filter((app) => app.status === "rejected").length,

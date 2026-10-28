@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { type ApplicationStatus, STATUS_LABELS } from "@/lib/domain";
+import { StatusTransitionError } from "@/lib/repository/types";
 import { buildApplicationsCsv, downloadFile, exportFileName } from "@/lib/export/applications-csv";
 import { APPLICATION_WORDS, pluralRu } from "@/lib/plural";
 import { useRepository } from "@/lib/repository/provider";
@@ -22,15 +23,44 @@ export function useApplicationActions() {
   const repository = useRepository();
 
   async function changeStatus(ids: string[], status: ApplicationStatus, reason?: string) {
+    // Only records that really change can be undone; the rest already had this status.
+    let changedIds: string[] = [];
     try {
+      const before = await Promise.all(ids.map((id) => repository.get(id)));
+      changedIds = before.filter((app) => app && app.status !== status).map((app) => app!.id);
       await repository.changeStatus(ids, { status, reason });
-      toast.success(
-        ids.length === 1
-          ? `Статус: ${STATUS_LABELS[status]}`
-          : `Статус «${STATUS_LABELS[status]}» — ${countLabel(ids.length)}`,
-      );
+    } catch (cause) {
+      reportError(
+        cause instanceof StatusTransitionError
+          ? `Нельзя перевести в «${STATUS_LABELS[status]}»`
+          : "Не удалось сменить статус",
+      )();
+      return;
+    }
+    if (changedIds.length === 0) return;
+    toast.success(
+      ids.length === 1
+        ? `Статус: ${STATUS_LABELS[status]}`
+        : `Статус «${STATUS_LABELS[status]}» — ${countLabel(changedIds.length)}`,
+      {
+        duration: UNDO_DURATION_MS,
+        action: {
+          label: "Отменить",
+          onClick: () => {
+            repository.revertStatus(changedIds).catch(reportError("Не удалось отменить смену статуса"));
+          },
+        },
+      },
+    );
+  }
+
+  /** Undo of the last status change, e.g. one made by mistake. */
+  async function revertStatus(id: string, to: ApplicationStatus) {
+    try {
+      await repository.revertStatus([id]);
+      toast.success(`Статус возвращён: ${STATUS_LABELS[to]}`);
     } catch {
-      reportError("Не удалось сменить статус")();
+      reportError("Не удалось вернуть статус")();
     }
   }
 
@@ -69,5 +99,5 @@ export function useApplicationActions() {
     }
   }
 
-  return { changeStatus, remove, exportCsv };
+  return { changeStatus, revertStatus, remove, exportCsv };
 }

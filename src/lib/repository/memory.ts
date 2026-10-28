@@ -1,4 +1,4 @@
-import { APPLICATION_STATUSES } from "@/lib/domain";
+import { APPLICATION_STATUSES, canChangeStatus } from "@/lib/domain";
 import type {
   Application,
   ApplicationDetails,
@@ -21,6 +21,7 @@ import {
   type ApplicationsQuery,
   type ApplicationsRepository,
   NotFoundError,
+  StatusTransitionError,
 } from "./types";
 
 type StoredApplication = Application & { deletedAt: string | null };
@@ -94,6 +95,15 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
     );
   }
 
+  /** Newest change that can be undone (the "created with" entry cannot). */
+  private lastChange(applicationId: string) {
+    for (let i = this.statusChanges.length - 1; i >= 0; i -= 1) {
+      const change = this.statusChanges[i];
+      if (change.applicationId === applicationId) return change.fromStatus === null ? null : change;
+    }
+    return null;
+  }
+
   private toPublic(app: StoredApplication): Application {
     const rest: Partial<StoredApplication> = copy(app);
     delete rest.deletedAt;
@@ -102,7 +112,12 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
 
   private summary(app: StoredApplication): ApplicationSummary {
     const notes = this.notesOf(app.id);
-    return { ...this.toPublic(app), noteCount: notes.length, latestNote: notes[0] ? copy(notes[0]) : null };
+    return {
+      ...this.toPublic(app),
+      previousStatus: this.lastChange(app.id)?.fromStatus ?? null,
+      noteCount: notes.length,
+      latestNote: notes[0] ? copy(notes[0]) : null,
+    };
   }
 
   async list(query: ApplicationsQuery = {}): Promise<ApplicationsPage> {
@@ -174,6 +189,7 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
     );
     return {
       ...this.toPublic(app),
+      previousStatus: this.lastChange(id)?.fromStatus ?? null,
       stages: copy(stages),
       notes: copy(this.notesOf(id)),
       statusChanges: copy(statusChanges),
@@ -234,8 +250,19 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
     return this.toPublic(next);
   }
 
-  async changeStatus(ids: string[], input: Parameters<ApplicationsRepository["changeStatus"]>[1]) {
+  async changeStatus(
+    ids: string[],
+    input: Parameters<ApplicationsRepository["changeStatus"]>[1],
+    options: Parameters<ApplicationsRepository["changeStatus"]>[2] = {},
+  ) {
     const { status, reason } = statusChangeInputSchema.parse(input);
+    // Check every record first, so a bulk change is all or nothing.
+    for (const id of ids) {
+      const app = this.live(id);
+      if (app.status !== status && !options.ignoreRules && !canChangeStatus(app.status, status)) {
+        throw new StatusTransitionError(app.status, status);
+      }
+    }
     const timestamp = now();
     let changed = false;
     for (const id of ids) {
@@ -253,6 +280,29 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
       changed = true;
     }
     if (changed) this.emit();
+  }
+
+  async revertStatus(ids: string[]) {
+    const reverts = ids.map((id) => {
+      this.live(id);
+      const change = this.lastChange(id);
+      if (!change) throw new NotFoundError("Status change to undo", id);
+      return change;
+    });
+    const timestamp = now();
+    for (const change of reverts) {
+      this.statusChanges = this.statusChanges.filter((entry) => entry.id !== change.id);
+      const app = this.live(change.applicationId);
+      // The status is now as old as the log entry that set it.
+      const previous = this.statusChanges.findLast((entry) => entry.applicationId === app.id);
+      this.applications.set(app.id, {
+        ...app,
+        status: change.fromStatus!,
+        statusChangedAt: previous?.changedAt ?? app.createdAt,
+        updatedAt: timestamp,
+      });
+    }
+    this.emit();
   }
 
   async remove(ids: string[]) {

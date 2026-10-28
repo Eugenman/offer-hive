@@ -102,7 +102,7 @@ export function SettingsView() {
         </Setting>
         <Setting
           title="Удалить все данные"
-          description={`Отклики, этапы, заметки и журнал статусов: сейчас ${total} ${pluralRu(total, APPLICATION_WORDS)}.`}
+          description={`Отклики, прогресс, заметки и журнал статусов: сейчас ${total} ${pluralRu(total, APPLICATION_WORDS)}.`}
         >
           <Button variant="destructive" disabled={total === 0} onClick={() => setConfirmClear(true)}>
             <Trash2 aria-hidden />

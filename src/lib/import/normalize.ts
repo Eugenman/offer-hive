@@ -29,9 +29,12 @@ export type RowResult =
 
 const STATUS_SYNONYMS: Record<ApplicationStatus, string[]> = {
   sent: ["отправлен", "отправлено", "отклик", "откликнулся", "ждем ответа", "ждём ответа", "sent", "applied"],
-  interview: ["интервью", "собеседование", "собес", "техсобес", "interview"],
+  screening: ["скрининг", "hr-скрининг", "звонок рекрутера", "screening", "phone screen", "recruiter screen"],
+  interview: ["интервью", "собеседование", "собес", "interview"],
+  technical: ["техническое", "техническое интервью", "техсобес", "technical", "technical interview"],
   test_task: ["тестовое", "тестовое задание", "тз", "test", "test task", "assignment"],
   offer: ["оффер", "предложение", "offer"],
+  offer_discussion: ["обсуждение оффера", "переговоры", "negotiation", "negotiations"],
   rejected: ["отказ", "отказали", "rejected", "rejection", "declined by company"],
   withdrawn: ["отказался", "отозван", "withdrawn", "withdrew"],
 };

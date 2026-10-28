@@ -34,12 +34,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-// "sent" and "offer" use the badge backgrounds (var(--status-*-bg)); the rest are muted status hues.
+// "sent" and the offer steps use the badge backgrounds (var(--status-*-bg)); the rest are muted status hues.
 const FUNNEL_COLORS: Record<string, string> = {
   sent: "bg-status-sent-bg",
-  response: "bg-status-test/55",
+  screening: "bg-status-screening/55",
   interview: "bg-status-interview/55",
+  technical: "bg-status-technical/55",
+  test_task: "bg-status-test/55",
   offer: "bg-status-offer-bg",
+  offer_discussion: "bg-status-discussion-bg",
 };
 
 type BarRow = { key: string; label: string; count: number; share: number; color: string };
@@ -50,7 +53,7 @@ function BarRows({ rows }: { rows: BarRow[] }) {
       {rows.map((row) => (
         <li
           key={row.key}
-          className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm"
+          className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm"
         >
           <span className="text-muted-foreground">{row.label}</span>
           <span aria-hidden className="h-6 overflow-hidden rounded-md bg-muted">
@@ -137,10 +140,10 @@ function Sources({ stats }: { stats: Statistics }) {
           <tr className="border-b">
             <th className="py-2 pr-3 font-medium">Источник</th>
             <th className="py-2 pr-3 text-right font-medium">Откликов</th>
-            <th className="py-2 pr-3 text-right font-medium">Ответили</th>
+            <th className="py-2 pr-3 text-right font-medium">Скрининг</th>
             <th className="py-2 pr-3 text-right font-medium">Интервью</th>
             <th className="py-2 pr-3 text-right font-medium">Офферы</th>
-            <th className="py-2 text-right font-medium">Доля ответов</th>
+            <th className="py-2 text-right font-medium">Дошли до скрининга</th>
           </tr>
         </thead>
         <tbody>
@@ -148,10 +151,10 @@ function Sources({ stats }: { stats: Statistics }) {
             <tr key={row.source} className="border-b last:border-0">
               <td className="py-2 pr-3">{row.source}</td>
               <td className="py-2 pr-3 text-right tabular-nums">{row.total}</td>
-              <td className="py-2 pr-3 text-right tabular-nums">{row.responses}</td>
+              <td className="py-2 pr-3 text-right tabular-nums">{row.screenings}</td>
               <td className="py-2 pr-3 text-right tabular-nums">{row.interviews}</td>
               <td className="py-2 pr-3 text-right tabular-nums">{row.offers}</td>
-              <td className="py-2 text-right tabular-nums">{pct(row.responses, row.total)}</td>
+              <td className="py-2 text-right tabular-nums">{pct(row.screenings, row.total)}</td>
             </tr>
           ))}
         </tbody>
@@ -188,16 +191,18 @@ export function StatisticsView() {
     );
   }
 
-  const [, responded, , offered] = stats.funnel;
+  const step = (key: string) => stats.funnel.find((item) => item.key === key)!;
+  const screened = step("screening");
+  const offered = step("offer");
   return (
     <div className="grid gap-6 px-6 py-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metric label="Всего откликов" value={stats.total} />
-        <Metric label="В работе" value={stats.inProgress} note="Отправлен, тестовое, интервью" />
+        <Metric label="В работе" value={stats.inProgress} note="До оффера" />
         <Metric
-          label="Получили ответ"
-          value={percent.format(responded.share)}
-          note={`${responded.count} из ${stats.total}`}
+          label="Дошли до скрининга"
+          value={percent.format(screened.share)}
+          note={`${screened.count} из ${stats.total}`}
         />
         <Metric label="Офферы" value={offered.count} />
       </div>

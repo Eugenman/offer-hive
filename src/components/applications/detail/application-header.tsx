@@ -101,7 +101,7 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel>Этап</DropdownMenuLabel>
+              <DropdownMenuLabel>Прогресс</DropdownMenuLabel>
               {STAGE_TYPES.map((type) => (
                 <DropdownMenuItem key={type} onSelect={() => setEvent({ kind: "stage", type })}>
                   {STAGE_TYPE_LABELS[type]}

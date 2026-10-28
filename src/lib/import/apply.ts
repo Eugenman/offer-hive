@@ -31,7 +31,8 @@ export async function applyImport(
     }
     const { status, ...patch } = resolveConflict(conflict, choice);
     if (Object.keys(patch).length > 0) await repository.update(conflict.existing.id, patch);
-    if (status) await repository.changeStatus([conflict.existing.id], { status });
+    // The table is the source of truth here, so the status is taken as is, without transition rules.
+    if (status) await repository.changeStatus([conflict.existing.id], { status }, { ignoreRules: true });
     // Notes from both sides are kept in every merge or take-new choice.
     if (conflict.incoming.notes)
       await repository.addNote(conflict.existing.id, { body: conflict.incoming.notes });

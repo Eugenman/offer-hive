@@ -24,12 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import {
-  APPLICATION_STATUSES,
-  type ApplicationStatus,
-  type ApplicationSummary,
-  STATUS_LABELS,
-} from "@/lib/domain";
+import { type ApplicationStatus, type ApplicationSummary, STATUS_LABELS, nextStatuses } from "@/lib/domain";
 import { rememberListPosition } from "../detail/return-to-list";
 import { StatusBadge } from "../status-badge";
 import { ApplicationCard } from "./application-card";
@@ -37,8 +32,14 @@ import { ApplicationCard } from "./application-card";
 type KanbanBoardProps = {
   applications: ApplicationSummary[];
   onChangeStatus: (id: string, status: ApplicationStatus) => void;
+  onRevertStatus: (app: ApplicationSummary) => void;
   onDelete: (app: ApplicationSummary) => void;
 };
+
+/** Columns a card may be dropped on: allowed next statuses, plus the previous one (undo). */
+function dropTargets(app: ApplicationSummary): ApplicationStatus[] {
+  return app.previousStatus ? [...nextStatuses(app.status), app.previousStatus] : nextStatuses(app.status);
+}
 
 // Browsers report the Windows/Linux Delete key and Fn+⌫ on a Mac as "Delete",
 // and Backspace / ⌫ / ⌘⌫ as "Backspace", so no OS detection is needed.
@@ -105,32 +106,100 @@ function DraggableCard({
   );
 }
 
-function Column({
+// Six columns; three of them hold two related statuses, one zone each.
+const COLUMNS: { title: string; zones: ApplicationStatus[] }[] = [
+  { title: "Отправлен", zones: ["sent"] },
+  { title: "Скрининг", zones: ["screening"] },
+  { title: "Интервью", zones: ["interview", "technical"] },
+  { title: "Тестовое", zones: ["test_task"] },
+  { title: "Оффер", zones: ["offer", "offer_discussion"] },
+  { title: "Отказ", zones: ["rejected", "withdrawn"] },
+];
+
+// Inside the "Отказ" column the company's refusal reads better next to "Отказался".
+const ZONE_LABELS: Partial<Record<ApplicationStatus, string>> = { rejected: "Отказали" };
+
+/** While dragging: the card's own zone, a zone that accepts it, or one that does not. */
+type ZoneState = "idle" | "own" | "accepts" | "refuses";
+
+function Zone({
   status,
   items,
   cardProps,
+  state,
+  paired,
+  divider,
 }: {
   status: ApplicationStatus;
   items: ApplicationSummary[];
   cardProps: (app: ApplicationSummary) => CardHandlers;
+  state: ZoneState;
+  /** Shares the column with another zone: it gets a label and grows with its cards. */
+  paired: boolean;
+  /** Thin line above the second zone of a pair. */
+  divider: boolean;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: status });
-  // The whole column, top to bottom, is a drop target.
+  const { setNodeRef, isOver } = useDroppable({ id: status, disabled: state === "refuses" });
+  const label = ZONE_LABELS[status] ?? STATUS_LABELS[status];
   return (
-    <section
+    <div
       ref={setNodeRef}
-      aria-label={`${STATUS_LABELS[status]}: ${items.length}`}
+      role="group"
+      aria-label={paired ? `${label}: ${items.length}` : undefined}
       className={cn(
-        "flex w-64 shrink-0 flex-col gap-2 rounded-xl bg-muted/60 p-2 transition-colors",
-        isOver && "bg-primary/5 ring-2 ring-primary/40",
+        "flex flex-col gap-2 rounded-lg border border-dashed border-transparent p-1 transition-[opacity,border-color,background-color]",
+        // A lone zone takes the whole column; paired zones fit their cards (one card's height when empty).
+        paired ? "min-h-24" : "flex-1",
+        divider && state !== "accepts" && "border-t-border",
+        state === "accepts" && (isOver ? "border-primary/60 bg-primary/5" : "border-foreground/30"),
+        state === "refuses" && "opacity-40",
       )}
     >
-      <header className="flex items-center gap-2 px-1 pt-1 pb-1">
-        <StatusBadge status={status} />
-        <span className="text-sm text-muted-foreground tabular-nums">{items.length}</span>
-      </header>
+      {paired ? (
+        <p aria-hidden className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
+          {label}
+          <span className="tabular-nums">{items.length}</span>
+        </p>
+      ) : null}
       {items.map((app) => (
         <DraggableCard key={app.id} app={app} {...cardProps(app)} />
+      ))}
+    </div>
+  );
+}
+
+function Column({
+  title,
+  zones,
+  applications,
+  cardProps,
+  zoneState,
+}: {
+  title: string;
+  zones: ApplicationStatus[];
+  applications: ApplicationSummary[];
+  cardProps: (app: ApplicationSummary) => CardHandlers;
+  zoneState: (status: ApplicationStatus) => ZoneState;
+}) {
+  const total = applications.filter((app) => zones.includes(app.status)).length;
+  return (
+    <section
+      aria-label={`${title}: ${total}`}
+      className="flex w-64 shrink-0 flex-col gap-2 rounded-xl bg-muted/60 p-2"
+    >
+      <header className="flex items-center gap-2 px-1 pt-1 pb-1">
+        <StatusBadge status={zones[0]} label={title} count={total} />
+      </header>
+      {zones.map((status, index) => (
+        <Zone
+          key={status}
+          status={status}
+          items={applications.filter((app) => app.status === status)}
+          cardProps={cardProps}
+          state={zoneState(status)}
+          paired={zones.length > 1}
+          divider={index > 0}
+        />
       ))}
     </section>
   );
@@ -138,7 +207,7 @@ function Column({
 
 const quoted = (summary: ApplicationSummary | undefined) => (summary ? `«${summary.company}»` : "отклик");
 
-export function KanbanBoard({ applications, onChangeStatus, onDelete }: KanbanBoardProps) {
+export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDelete }: KanbanBoardProps) {
   const router = useRouter();
   const hintId = useId();
   const boardRef = useRef<HTMLDivElement>(null);
@@ -182,7 +251,11 @@ export function KanbanBoard({ applications, onChangeStatus, onDelete }: KanbanBo
     setActiveId(null);
     if (!over) return;
     const status = over.id as ApplicationStatus;
-    if (item.data.current?.status !== status) onChangeStatus(String(item.id), status);
+    const app = byId.get(String(item.id));
+    if (!app || app.status === status) return;
+    // Dropping back on the previous column undoes the last change instead of logging a new one.
+    if (status === app.previousStatus) onRevertStatus(app);
+    else onChangeStatus(app.id, status);
   }
 
   // Remembers which card to refocus when the dialog closes without deleting.
@@ -200,6 +273,12 @@ export function KanbanBoard({ applications, onChangeStatus, onDelete }: KanbanBo
     setPendingDelete(null);
     setSelectedId(null);
   }
+
+  const zoneState = (status: ApplicationStatus): ZoneState => {
+    if (!active) return "idle";
+    if (status === active.status) return "own";
+    return dropTargets(active).includes(status) ? "accepts" : "refuses";
+  };
 
   const cardProps = (app: ApplicationSummary): CardHandlers => ({
     hintId,
@@ -229,12 +308,14 @@ export function KanbanBoard({ applications, onChangeStatus, onDelete }: KanbanBo
         tabIndex={-1}
         className="flex min-h-[calc(100vh-11rem)] items-stretch gap-3 overflow-x-auto px-6 pt-1 pb-6 outline-none"
       >
-        {APPLICATION_STATUSES.map((status) => (
+        {COLUMNS.map((column) => (
           <Column
-            key={status}
-            status={status}
-            items={applications.filter((app) => app.status === status)}
+            key={column.title}
+            title={column.title}
+            zones={column.zones}
+            applications={applications}
             cardProps={cardProps}
+            zoneState={zoneState}
           />
         ))}
       </div>

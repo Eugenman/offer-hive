@@ -14,13 +14,16 @@ import { formatDate } from "@/lib/format";
 import { CompanyAvatar } from "../company-avatar";
 
 const DAY = 86_400_000;
-const FINAL: readonly ApplicationStatus[] = ["offer", "rejected", "withdrawn"];
+const FINAL: readonly ApplicationStatus[] = ["offer", "offer_discussion", "rejected", "withdrawn"];
 
 const BAR_CLASSES: Record<ApplicationStatus, string> = {
   sent: "bg-status-sent-bg ring-status-sent/30",
+  screening: "bg-status-screening-bg ring-status-screening/30",
   interview: "bg-status-interview-bg ring-status-interview/30",
+  technical: "bg-status-technical-bg ring-status-technical/30",
   test_task: "bg-status-test-bg ring-status-test/30",
   offer: "bg-status-offer-bg ring-status-offer/30",
+  offer_discussion: "bg-status-discussion-bg ring-status-discussion/30",
   rejected: "bg-status-rejected-bg ring-status-rejected/30",
   withdrawn: "bg-status-withdrawn-bg ring-status-withdrawn/30",
 };
@@ -159,10 +162,10 @@ export function ApplicationsTimeline({
             от отклика до последней смены статуса или до сегодня
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden className="size-2.5 rounded-full bg-foreground" /> этап пройден
+            <span aria-hidden className="size-2.5 rounded-full bg-foreground" /> пройдено
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden className="size-2.5 rounded-full border-2 border-foreground" /> запланирован
+            <span aria-hidden className="size-2.5 rounded-full border-2 border-foreground" /> запланировано
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span aria-hidden className="h-3 w-px bg-primary/50" /> сегодня

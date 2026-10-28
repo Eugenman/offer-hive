@@ -192,7 +192,7 @@ function StageDate({ stage }: { stage: Stage }) {
       <input
         type="datetime-local"
         autoFocus
-        aria-label={`Дата этапа ${stageTitle(stage)}`}
+        aria-label={`Дата: ${stageTitle(stage)}`}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={() => void save()}
@@ -211,7 +211,7 @@ function StageDate({ stage }: { stage: Stage }) {
         setDraft(toDateTimeLocal(stage.scheduledAt));
         setEditing(true);
       }}
-      aria-label={`Дата этапа: ${label ?? "не указана"}. Изменить`}
+      aria-label={`Дата: ${label ?? "не указана"}. Изменить`}
       className={cn(
         "-ml-1 rounded-md px-1 text-xs hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
         label ? "text-muted-foreground" : "text-muted-foreground/70",
@@ -242,7 +242,7 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
         </span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={`Действия с этапом: ${title}`}>
+            <Button variant="ghost" size="icon-sm" aria-label={`Действия: ${title}`}>
               <Ellipsis aria-hidden />
             </Button>
           </DropdownMenuTrigger>
@@ -262,12 +262,12 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
               variant="destructive"
               onSelect={async () => {
                 await repository.removeStage(stage.id);
-                toast(`Этап «${title}» удалён`, {
+                toast(`«${title}» удалено из прогресса`, {
                   description: notes.length ? "Его заметки остались в заметках к отклику" : undefined,
                 });
               }}
             >
-              Удалить этап
+              Удалить из прогресса
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -280,7 +280,7 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
         </ul>
       ) : null}
       <div className="mt-2">
-        <AddNoteInline applicationId={stage.applicationId} stageId={stage.id} label="Заметка к этапу" />
+        <AddNoteInline applicationId={stage.applicationId} stageId={stage.id} label="Добавить заметку" />
       </div>
     </article>
   );
@@ -291,7 +291,7 @@ export function StagesSection({ app }: { app: ApplicationDetails }) {
   return (
     <div className="grid content-start gap-4">
       {app.stages.length > 0 ? (
-        <DetailCard title="Этапы найма">
+        <DetailCard title="Прогресс">
           <div className="grid gap-3">
             {app.stages.map((stage) => (
               <StageCard

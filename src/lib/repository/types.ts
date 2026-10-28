@@ -50,8 +50,13 @@ export interface ApplicationsRepository {
 
   create(input: ApplicationInput): Promise<Application>;
   update(id: string, patch: ApplicationPatch): Promise<Application>;
-  /** Same status again is a no-op; every real change is written to the status log. */
-  changeStatus(ids: string[], input: StatusChangeInput): Promise<void>;
+  /**
+   * Same status again is a no-op; every real change is written to the status log.
+   * Only moves allowed by `canChangeStatus`; `ignoreRules` is for imports, which take statuses as they are.
+   */
+  changeStatus(ids: string[], input: StatusChangeInput, options?: { ignoreRules?: boolean }): Promise<void>;
+  /** Undoes the last status change: the previous status comes back and the log entry is removed. */
+  revertStatus(ids: string[]): Promise<void>;
   /** Soft delete; `restore` brings the records back (used by the "Undo" toast). */
   remove(ids: string[]): Promise<void>;
   restore(ids: string[]): Promise<void>;
@@ -69,6 +74,13 @@ export interface ApplicationsRepository {
 
   /** Called after every change, so views can refetch. Returns an unsubscribe function. */
   subscribe(listener: () => void): () => void;
+}
+
+export class StatusTransitionError extends Error {
+  constructor(from: string, to: string) {
+    super(`Status change not allowed: ${from} → ${to}`);
+    this.name = "StatusTransitionError";
+  }
 }
 
 export class NotFoundError extends Error {

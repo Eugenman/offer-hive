@@ -30,6 +30,7 @@ const APPLICATIONS: SeedApplication[] = [
     createdOn: "2026-10-12",
     history: [
       { to: "sent", on: "2026-10-12" },
+      { to: "screening", on: "2026-10-16" },
       { to: "interview", on: "2026-10-22" },
     ],
   },
@@ -69,6 +70,7 @@ const APPLICATIONS: SeedApplication[] = [
     createdOn: "2026-10-18",
     history: [
       { to: "sent", on: "2026-10-18" },
+      { to: "screening", on: "2026-10-19" },
       { to: "test_task", on: "2026-10-20" },
     ],
   },
@@ -90,7 +92,9 @@ const APPLICATIONS: SeedApplication[] = [
     createdOn: "2026-10-01",
     history: [
       { to: "sent", on: "2026-10-01" },
+      { to: "screening", on: "2026-10-04" },
       { to: "interview", on: "2026-10-08" },
+      { to: "technical", on: "2026-10-15" },
       { to: "offer", on: "2026-10-25" },
     ],
   },

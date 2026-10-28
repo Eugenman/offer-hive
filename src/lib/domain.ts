@@ -1,8 +1,11 @@
 export const APPLICATION_STATUSES = [
   "sent",
+  "screening",
   "interview",
+  "technical",
   "test_task",
   "offer",
+  "offer_discussion",
   "rejected",
   "withdrawn",
 ] as const;
@@ -10,12 +13,59 @@ export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 
 export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   sent: "Отправлен",
+  screening: "Скрининг",
   interview: "Интервью",
+  technical: "Техническое",
   test_task: "Тестовое",
   offer: "Оффер",
+  offer_discussion: "Обсуждение оффера",
   rejected: "Отказ",
   withdrawn: "Отказался",
 };
+
+/** Hiring steps in order. Every new application starts at "sent". */
+export const PIPELINE_STATUSES = [
+  "sent",
+  "screening",
+  "interview",
+  "technical",
+  "test_task",
+  "offer",
+  "offer_discussion",
+] as const satisfies readonly ApplicationStatus[];
+
+/** Final outcomes, reachable from any step. Leaving them is only possible by undoing the change. */
+export const OUTCOME_STATUSES = ["rejected", "withdrawn"] as const satisfies readonly ApplicationStatus[];
+
+const isOutcome = (status: ApplicationStatus) => (OUTCOME_STATUSES as readonly string[]).includes(status);
+
+/**
+ * Where an application may move from `from`: forward to any later step (optional steps may be skipped)
+ * or to an outcome. "Обсуждение оффера" only follows "Оффер", which cannot be skipped.
+ * Going back is not a transition: it is undoing the last change (see `revertStatus`).
+ */
+export function nextStatuses(from: ApplicationStatus): ApplicationStatus[] {
+  if (isOutcome(from)) return [];
+  const later = PIPELINE_STATUSES.slice(
+    PIPELINE_STATUSES.indexOf(from as (typeof PIPELINE_STATUSES)[number]) + 1,
+  );
+  return [
+    ...later.filter((status) => status !== "offer_discussion" || from === "offer"),
+    ...OUTCOME_STATUSES,
+  ];
+}
+
+export function canChangeStatus(from: ApplicationStatus, to: ApplicationStatus) {
+  return nextStatuses(from).includes(to);
+}
+
+/** Statuses every one of `current` may move to (bulk change). */
+export function commonNextStatuses(current: ApplicationStatus[]): ApplicationStatus[] {
+  if (current.length === 0) return [];
+  return APPLICATION_STATUSES.filter((to) =>
+    current.every((from) => from === to || canChangeStatus(from, to)),
+  );
+}
 
 // Statuses that may carry an optional reason.
 export const STATUSES_WITH_REASON: readonly ApplicationStatus[] = ["rejected", "withdrawn"];
@@ -52,9 +102,9 @@ export const STAGE_STATES = ["planned", "done", "cancelled"] as const;
 export type StageState = (typeof STAGE_STATES)[number];
 
 export const STAGE_STATE_LABELS: Record<StageState, string> = {
-  planned: "Запланирован",
-  done: "Пройден",
-  cancelled: "Отменён",
+  planned: "Запланировано",
+  done: "Пройдено",
+  cancelled: "Отменено",
 };
 
 /** ISO date without time, e.g. "2026-10-12". */
@@ -117,12 +167,15 @@ export type StatusChange = {
 
 /** A row in table / kanban / list views. */
 export type ApplicationSummary = Application & {
+  /** Status before the last change: the one "undo" returns to. null when nothing to undo. */
+  previousStatus: ApplicationStatus | null;
   noteCount: number;
   latestNote: Note | null;
 };
 
 /** Everything shown on the application page. */
 export type ApplicationDetails = Application & {
+  previousStatus: ApplicationStatus | null;
   stages: Stage[];
   notes: Note[];
   statusChanges: StatusChange[];

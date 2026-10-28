@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Download, Trash2, X } from "lucide-react";
+import { ChevronDown, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,20 +8,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { APPLICATION_STATUSES, type ApplicationStatus } from "@/lib/domain";
+import type { ApplicationStatus } from "@/lib/domain";
 import { APPLICATION_WORDS, pluralRu } from "@/lib/plural";
 import { StatusBadge } from "./status-badge";
 
 type BulkActionsBarProps = {
   count: number;
+  /** Statuses every selected application may move to. */
+  statuses: ApplicationStatus[];
   onChangeStatus: (status: ApplicationStatus) => void;
   onExport: () => void;
-  onDelete: () => void;
   onClear: () => void;
 };
 
 // Floats above the content, so showing it never shifts the layout.
-export function BulkActionsBar({ count, onChangeStatus, onExport, onDelete, onClear }: BulkActionsBarProps) {
+export function BulkActionsBar({ count, statuses, onChangeStatus, onExport, onClear }: BulkActionsBarProps) {
   return (
     <div
       role="toolbar"
@@ -33,13 +34,13 @@ export function BulkActionsBar({ count, onChangeStatus, onExport, onDelete, onCl
       </span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" disabled={statuses.length === 0}>
             Сменить статус
             <ChevronDown aria-hidden />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="center" className="w-44">
-          {APPLICATION_STATUSES.map((status) => (
+        <DropdownMenuContent side="top" align="center" className="w-48">
+          {statuses.map((status) => (
             <DropdownMenuItem key={status} onSelect={() => onChangeStatus(status)}>
               <StatusBadge status={status} />
             </DropdownMenuItem>
@@ -49,15 +50,6 @@ export function BulkActionsBar({ count, onChangeStatus, onExport, onDelete, onCl
       <Button variant="ghost" size="sm" onClick={onExport}>
         <Download aria-hidden />
         Экспорт
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onDelete}
-        className="text-destructive hover:text-destructive"
-      >
-        <Trash2 aria-hidden />
-        Удалить
       </Button>
       <Button variant="ghost" size="icon-sm" onClick={onClear} aria-label="Снять выделение">
         <X aria-hidden />

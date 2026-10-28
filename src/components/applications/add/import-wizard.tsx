@@ -37,10 +37,13 @@ const count = (n: number) => `${n} ${pluralRu(n, APPLICATION_WORDS)}`;
 export function ImportWizard({
   onDone,
   onProgressChange,
+  onOpenList,
 }: {
   onDone: () => void;
   /** True while there is something to lose on close (after a file is chosen, before writing). */
   onProgressChange: (inProgress: boolean) => void;
+  /** Shown as "Открыть отклики" in the report when the wizard runs outside the applications page. */
+  onOpenList?: () => void;
 }) {
   const repository = useRepository();
   const [step, setStepState] = useState<Step>({ name: "file" });
@@ -256,6 +259,11 @@ export function ImportWizard({
         </div>
       ) : null}
       <div className="-mx-4 -mb-4 flex justify-end gap-2 rounded-b-xl border-t bg-muted/50 p-4">
+        {onOpenList ? (
+          <Button variant="outline" onClick={onOpenList}>
+            Открыть отклики
+          </Button>
+        ) : null}
         <Button onClick={onDone}>Готово</Button>
       </div>
     </div>

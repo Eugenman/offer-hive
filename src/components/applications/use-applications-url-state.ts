@@ -12,7 +12,7 @@ import {
 import { APPLICATION_STATUSES } from "@/lib/domain";
 import { SORT_FIELDS, type ApplicationsQuery } from "@/lib/repository/types";
 
-export const VIEWS = ["table", "kanban", "list", "timeline"] as const;
+export const VIEWS = ["table", "kanban", "timeline"] as const;
 export type ViewMode = (typeof VIEWS)[number];
 
 export const PAGE_SIZES = [10, 25, 50] as const;

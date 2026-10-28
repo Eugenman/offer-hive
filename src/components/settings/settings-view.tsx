@@ -1,7 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
-import Link from "next/link";
+import { useId, useLayoutEffect, useState } from "react";
 import { Download, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -15,9 +14,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { ImportDialog } from "@/components/applications/add/import-dialog";
 import { useApplicationActions } from "@/components/applications/use-application-actions";
-import { THEME_OPTIONS, useTheme } from "@/hooks/use-theme";
 import { APPLICATION_WORDS, pluralRu } from "@/lib/plural";
 import { useRepository, useRepositoryQuery } from "@/lib/repository/provider";
 
@@ -45,37 +43,19 @@ function Setting({ title, description, children }: { title: string; description:
   );
 }
 
-function ThemePicker() {
-  const [theme, setTheme] = useTheme();
-  return (
-    <div role="radiogroup" aria-label="Тема оформления" className="grid grid-cols-3 gap-3 sm:max-w-md">
-      {THEME_OPTIONS.map(({ value, label, icon: Icon }) => {
-        const active = theme === value;
-        return (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => setTheme(value)}
-            className={cn(
-              "flex flex-col items-center gap-2 rounded-xl p-4 text-sm ring-1 ring-border transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-              active && "bg-muted font-medium ring-2 ring-primary/70",
-            )}
-          >
-            <Icon className="size-5" aria-hidden />
-            {label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 export function SettingsView() {
   const repository = useRepository();
   const actions = useApplicationActions();
   const [confirmClear, setConfirmClear] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  // Next.js keeps hidden pages alive (<Activity>): close transient dialogs when leaving.
+  useLayoutEffect(
+    () => () => {
+      setConfirmClear(false);
+      setImportOpen(false);
+    },
+    [],
+  );
   const { data: total = 0 } = useRepositoryQuery("total", async (repo) => (await repo.list({ pageSize: 1 })).total);
 
   async function clearAll() {
@@ -89,10 +69,6 @@ export function SettingsView() {
 
   return (
     <div className="grid max-w-3xl gap-8 px-6 py-6">
-      <Section title="Внешний вид">
-        <ThemePicker />
-      </Section>
-
       <Section title="Данные">
         <Setting title="Экспорт" description="Все отклики одной таблицей — откроется в Excel, Numbers и LibreOffice.">
           <Button variant="outline" disabled={total === 0} onClick={() => void actions.exportCsv({ query: {} })}>
@@ -101,11 +77,9 @@ export function SettingsView() {
           </Button>
         </Setting>
         <Setting title="Импорт" description="Загрузите таблицу с откликами, которую вели раньше.">
-          <Button variant="outline" asChild>
-            <Link href="/dashboard?add=import">
-              <Upload aria-hidden />
-              Импорт таблицы
-            </Link>
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload aria-hidden />
+            Импорт таблицы
           </Button>
         </Setting>
         <Setting
@@ -119,13 +93,15 @@ export function SettingsView() {
         </Setting>
       </Section>
 
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+
       <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Удалить все данные?</AlertDialogTitle>
             <AlertDialogDescription>
-              Будут удалены {total} {pluralRu(total, APPLICATION_WORDS)} со всеми этапами и заметками. Это нельзя
-              отменить — сначала скачайте таблицу, если данные могут понадобиться.
+              Будут удалены все данные по откликам. Это нельзя
+              отменить. Скачайте таблицу, если данные могут понадобиться.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

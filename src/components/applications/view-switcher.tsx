@@ -1,13 +1,12 @@
 "use client";
 
-import { ChartGantt, Columns3, List, Table2, type LucideIcon } from "lucide-react";
+import { ChartGantt, Columns3, Table2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ViewMode } from "./use-applications-url-state";
 
 const OPTIONS: { value: ViewMode; label: string; icon: LucideIcon }[] = [
   { value: "table", label: "Таблица", icon: Table2 },
   { value: "kanban", label: "Канбан", icon: Columns3 },
-  { value: "list", label: "Список", icon: List },
   { value: "timeline", label: "Таймлайн", icon: ChartGantt },
 ];
 

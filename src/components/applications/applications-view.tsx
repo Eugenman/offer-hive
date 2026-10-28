@@ -15,7 +15,6 @@ import { TableFooter } from "./table-footer";
 import { useApplicationActions } from "./use-application-actions";
 import { type ViewMode, useApplicationsUrlState } from "./use-applications-url-state";
 import { rememberView, useViewMode } from "./use-view-mode";
-import { ApplicationsList } from "./views/applications-list";
 import { ApplicationsTimeline } from "./views/applications-timeline";
 import { KanbanBoard } from "./views/kanban-board";
 
@@ -168,10 +167,8 @@ export function ApplicationsView() {
     );
   } else if (data.kind === "details") {
     content = <ApplicationsTimeline applications={data.items} now={data.now} />;
-  } else if (view === "kanban") {
-    content = <KanbanBoard applications={data.items} onChangeStatus={changeStatus} onDelete={deleteOne} />;
   } else {
-    content = <ApplicationsList applications={data.items} onChangeStatus={changeStatus} onDelete={deleteOne} />;
+    content = <KanbanBoard applications={data.items} onChangeStatus={changeStatus} onDelete={deleteOne} />;
   }
 
   const selectedIds = [...selected];

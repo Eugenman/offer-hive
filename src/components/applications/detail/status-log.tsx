@@ -1,19 +1,15 @@
 "use client";
 
-import { useId } from "react";
 import { ArrowRight } from "lucide-react";
 import type { ApplicationDetails } from "@/lib/domain";
 import { formatDateTime } from "@/lib/format";
 import { StatusBadge } from "../status-badge";
+import { DetailCard } from "./detail-card";
 
 /** Every status change with its system time and, for "Отказ / Отказался", the reason. */
 export function StatusLog({ app }: { app: ApplicationDetails }) {
-  const titleId = useId();
   return (
-    <section aria-labelledby={titleId}>
-      <h2 id={titleId} className="mb-2 text-sm font-semibold">
-        Журнал статусов
-      </h2>
+    <DetailCard title="Журнал статусов">
       <ol className="grid gap-2">
         {app.statusChanges.map((change) => (
           <li key={change.id} className="text-sm">
@@ -35,6 +31,6 @@ export function StatusLog({ app }: { app: ApplicationDetails }) {
           </li>
         ))}
       </ol>
-    </section>
+    </DetailCard>
   );
 }

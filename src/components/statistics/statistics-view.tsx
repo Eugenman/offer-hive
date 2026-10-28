@@ -34,24 +34,64 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Funnel({ stats }: { stats: Statistics }) {
+// "sent" and "offer" use the badge backgrounds (var(--status-*-bg)); the rest are muted status hues.
+const FUNNEL_COLORS: Record<string, string> = {
+  sent: "bg-status-sent-bg",
+  response: "bg-status-test/55",
+  interview: "bg-status-interview/55",
+  offer: "bg-status-offer-bg",
+};
+
+type BarRow = { key: string; label: string; count: number; share: number; color: string };
+
+function BarRows({ rows }: { rows: BarRow[] }) {
   return (
     <ol className="grid gap-3">
-      {stats.funnel.map((step) => (
-        <li key={step.key} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm">
-          <span className="text-muted-foreground">{step.label}</span>
+      {rows.map((row) => (
+        <li key={row.key} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm">
+          <span className="text-muted-foreground">{row.label}</span>
           <span aria-hidden className="h-6 overflow-hidden rounded-md bg-muted">
             <span
-              className="block h-full rounded-md bg-primary/80"
-              style={{ width: `${Math.max(step.share * 100, step.count ? 2 : 0)}%` }}
+              className={`block h-full rounded-md ${row.color}`}
+              style={{ width: `${Math.max(row.share * 100, row.count ? 2 : 0)}%` }}
             />
           </span>
           <span className="text-right tabular-nums">
-            {step.count} <span className="text-muted-foreground">· {percent.format(step.share)}</span>
+            {row.count} <span className="text-muted-foreground">· {percent.format(row.share)}</span>
           </span>
         </li>
       ))}
     </ol>
+  );
+}
+
+/** Progress through hiring, then how many ended in a refusal (badge-background colors). */
+function Funnel({ stats }: { stats: Statistics }) {
+  const share = (count: number) => (stats.total === 0 ? 0 : count / stats.total);
+  return (
+    <div className="grid gap-4">
+      <BarRows rows={stats.funnel.map((step) => ({ ...step, color: FUNNEL_COLORS[step.key] }))} />
+      <div className="border-t pt-4">
+        <BarRows
+          rows={[
+            {
+              key: "rejected",
+              label: "Отказала компания",
+              count: stats.outcomes.rejected,
+              share: share(stats.outcomes.rejected),
+              color: "bg-status-rejected-bg",
+            },
+            {
+              key: "withdrawn",
+              label: "Отказался сам",
+              count: stats.outcomes.withdrawn,
+              share: share(stats.outcomes.withdrawn),
+              color: "bg-status-withdrawn-bg",
+            },
+          ]}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -73,7 +113,7 @@ function Weeks({ stats }: { stats: Statistics }) {
             </span>
             <span
               aria-hidden
-              className="w-full max-w-10 rounded-t-md bg-primary/80"
+              className="w-full max-w-10 rounded-t-md bg-status-sent/55"
               style={{ height: `${(week.count / max) * 100}%`, minHeight: week.count ? 4 : 1 }}
             />
             <span aria-hidden className="text-xs text-muted-foreground tabular-nums">
@@ -152,7 +192,7 @@ export function StatisticsView() {
         <Metric label="Всего откликов" value={stats.total} />
         <Metric label="В работе" value={stats.inProgress} note="Отправлен, тестовое, интервью" />
         <Metric label="Получили ответ" value={percent.format(responded.share)} note={`${responded.count} из ${stats.total}`} />
-        <Metric label="Офферы" value={offered.count} note={`Отказов: ${stats.outcomes.rejected} · отказался сам: ${stats.outcomes.withdrawn}`} />
+        <Metric label="Офферы" value={offered.count} />
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <Section title="Воронка">

@@ -1,10 +1,10 @@
 "use client";
 
-import { useId } from "react";
 import { type ApplicationDetails, WORK_FORMATS, WORK_FORMAT_LABELS } from "@/lib/domain";
 import { formatDate, formatSalary } from "@/lib/format";
 import { useRepository } from "@/lib/repository/provider";
 import type { ApplicationPatch } from "@/lib/schemas";
+import { DetailCard } from "./detail-card";
 import { InlineField, InlineGroupField } from "./inline-field";
 import { trySave } from "./save-error";
 
@@ -33,17 +33,13 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export function ApplicationFields({ app }: { app: ApplicationDetails }) {
   const repository = useRepository();
-  const titleId = useId();
   const update = (patch: ApplicationPatch) => trySave(() => repository.update(app.id, patch));
 
   const salary = formatSalary(app.salaryMin, app.salaryMax, app.currency);
   const contact = [app.contactName, app.contactInfo].filter(Boolean).join(" · ") || null;
 
   return (
-    <section aria-labelledby={titleId}>
-      <h2 id={titleId} className="mb-2 text-sm font-semibold">
-        Данные отклика
-      </h2>
+    <DetailCard title="Данные отклика">
       <dl>
         <Row label="Дата отклика">
           <InlineField
@@ -143,6 +139,6 @@ export function ApplicationFields({ app }: { app: ApplicationDetails }) {
           />
         </Row>
       </dl>
-    </section>
+    </DetailCard>
   );
 }

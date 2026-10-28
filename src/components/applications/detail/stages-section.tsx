@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { Ellipsis, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
 import { formatDateTime, toDateTimeLocal } from "@/lib/format";
 import { useRepository } from "@/lib/repository/provider";
 import { stageTitle } from "@/lib/stage-title";
+import { DetailCard } from "./detail-card";
 import { saveErrorMessage } from "./save-error";
 
 const STATE_CLASSES: Record<StageState, string> = {
@@ -217,7 +218,7 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
   const repository = useRepository();
   const title = stageTitle(stage);
   return (
-    <article className="rounded-lg p-3 ring-1 ring-border" aria-label={title}>
+    <article className="border-t pt-3 first:border-0 first:pt-0" aria-label={title}>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <h3 className="font-medium">{title}</h3>
@@ -274,28 +275,27 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
 
 export function StagesSection({ app }: { app: ApplicationDetails }) {
   const looseNotes = app.notes.filter((note) => note.stageId === null);
-  const titleId = useId();
   return (
-    <section aria-labelledby={titleId} className="grid gap-3">
-      <h2 id={titleId} className="text-sm font-semibold">
-        Этапы и заметки
-      </h2>
-      {app.stages.map((stage) => (
-        <StageCard key={stage.id} stage={stage} notes={app.notes.filter((note) => note.stageId === stage.id)} />
-      ))}
-      <div className="rounded-lg p-3 ring-1 ring-border">
-        <h3 className="font-medium">Заметки к отклику</h3>
+    <div className="grid content-start gap-4">
+      {app.stages.length > 0 ? (
+        <DetailCard title="Этапы найма">
+          <div className="grid gap-3">
+            {app.stages.map((stage) => (
+              <StageCard key={stage.id} stage={stage} notes={app.notes.filter((note) => note.stageId === stage.id)} />
+            ))}
+          </div>
+        </DetailCard>
+      ) : null}
+      <DetailCard title="Заметки к отклику">
         {looseNotes.length ? (
-          <ul className="mt-2 divide-y border-t">
+          <ul className="mb-2 divide-y border-y">
             {looseNotes.map((note) => (
               <NoteItem key={note.id} note={note} />
             ))}
           </ul>
         ) : null}
-        <div className="mt-2">
-          <AddNoteInline applicationId={app.id} stageId={null} label="Добавить заметку" />
-        </div>
-      </div>
-    </section>
+        <AddNoteInline applicationId={app.id} stageId={null} label="Добавить заметку" />
+      </DetailCard>
+    </div>
   );
 }

@@ -33,7 +33,8 @@ export async function applyImport(
     if (Object.keys(patch).length > 0) await repository.update(conflict.existing.id, patch);
     if (status) await repository.changeStatus([conflict.existing.id], { status });
     // Notes from both sides are kept in every merge or take-new choice.
-    if (conflict.incoming.notes) await repository.addNote(conflict.existing.id, { body: conflict.incoming.notes });
+    if (conflict.incoming.notes)
+      await repository.addNote(conflict.existing.id, { body: conflict.incoming.notes });
     result.updated += 1;
   }
   return result;

@@ -20,7 +20,11 @@ const COLUMNS: { header: string; value: (app: ApplicationDetails) => string | nu
   {
     header: "Заметки",
     // Oldest first, so the cell reads like a diary.
-    value: (app) => [...app.notes].reverse().map((note) => note.body).join("\n") || null,
+    value: (app) =>
+      [...app.notes]
+        .reverse()
+        .map((note) => note.body)
+        .join("\n") || null,
   },
 ];
 

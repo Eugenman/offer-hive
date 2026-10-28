@@ -29,7 +29,13 @@ const dayOf = (iso: string) => Date.parse(iso.length === 10 ? `${iso}T00:00:00Z`
 const isoDay = (time: number) => new Date(time).toISOString().slice(0, 10);
 
 /** Applications on a shared date axis: bar = applied → last status change (or today), dots = stages. */
-export function ApplicationsTimeline({ applications, now }: { applications: ApplicationDetails[]; now: number }) {
+export function ApplicationsTimeline({
+  applications,
+  now,
+}: {
+  applications: ApplicationDetails[];
+  now: number;
+}) {
   const today = dayOf(isoDay(now));
   const rows = applications
     .map((app) => {
@@ -60,7 +66,11 @@ export function ApplicationsTimeline({ applications, now }: { applications: Appl
           <span>Отклик</span>
           <div className="relative h-4">
             {ticks.map((tick) => (
-              <span key={tick} className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: left(tick) }}>
+              <span
+                key={tick}
+                className="absolute -translate-x-1/2 whitespace-nowrap"
+                style={{ left: left(tick) }}
+              >
                 {formatDate(isoDay(tick))?.replace(/ \d{4}$/, "")}
               </span>
             ))}
@@ -68,7 +78,11 @@ export function ApplicationsTimeline({ applications, now }: { applications: Appl
         </div>
         <ul>
           {rows.map(({ app, start, end }) => (
-            <li key={app.id} data-id={app.id} className="grid grid-cols-[14rem_1fr] items-center border-b py-2">
+            <li
+              key={app.id}
+              data-id={app.id}
+              className="grid grid-cols-[14rem_1fr] items-center border-b py-2"
+            >
               <Link
                 href={`/applications/${app.id}`}
                 className="group flex min-w-0 items-center gap-2 pr-3 text-sm focus-visible:rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
@@ -81,9 +95,18 @@ export function ApplicationsTimeline({ applications, now }: { applications: Appl
               </Link>
               <div className="relative h-8">
                 {ticks.map((tick) => (
-                  <span key={tick} aria-hidden className="absolute inset-y-0 w-px bg-border/60" style={{ left: left(tick) }} />
+                  <span
+                    key={tick}
+                    aria-hidden
+                    className="absolute inset-y-0 w-px bg-border/60"
+                    style={{ left: left(tick) }}
+                  />
                 ))}
-                <span aria-hidden className="absolute inset-y-0 w-px bg-primary/50" style={{ left: left(today) }} />
+                <span
+                  aria-hidden
+                  className="absolute inset-y-0 w-px bg-primary/50"
+                  style={{ left: left(today) }}
+                />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -129,7 +152,10 @@ export function ApplicationsTimeline({ applications, now }: { applications: Appl
         </ul>
         <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden className="h-2.5 w-6 rounded-full bg-status-sent-bg ring-1 ring-status-sent/30" />
+            <span
+              aria-hidden
+              className="h-2.5 w-6 rounded-full bg-status-sent-bg ring-1 ring-status-sent/30"
+            />
             от отклика до последней смены статуса или до сегодня
           </span>
           <span className="inline-flex items-center gap-1.5">

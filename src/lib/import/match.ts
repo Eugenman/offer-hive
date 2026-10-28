@@ -24,7 +24,8 @@ export type ComparableField = (typeof COMPARABLE_FIELDS)[number];
 function touchedFields(mapped: Set<ImportField>): Set<ComparableField> {
   const fields = new Set<ComparableField>();
   for (const field of mapped) {
-    if (field === "salary") ["salaryMin", "salaryMax", "currency"].forEach((f) => fields.add(f as ComparableField));
+    if (field === "salary")
+      ["salaryMin", "salaryMax", "currency"].forEach((f) => fields.add(f as ComparableField));
     else if ((COMPARABLE_FIELDS as readonly string[]).includes(field)) fields.add(field as ComparableField);
   }
   return fields;
@@ -32,14 +33,16 @@ function touchedFields(mapped: Set<ImportField>): Set<ComparableField> {
 
 /** Soft key: case, spaces, quotes, ё/е and legal forms do not matter. */
 export function matchKey(value: string) {
-  return value
-    .toLocaleLowerCase("ru")
-    .replaceAll("ё", "е")
-    .replace(/["«»'„“”]/g, "")
-    // \b is ASCII-only in JS, so word edges are spelled out for Cyrillic.
-    .replace(/(^|\s)(ооо|оао|зао|пао|ао|ип|llc|inc|ltd|gmbh)\.?(?=\s|$)/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return (
+    value
+      .toLocaleLowerCase("ru")
+      .replaceAll("ё", "е")
+      .replace(/["«»'„“”]/g, "")
+      // \b is ASCII-only in JS, so word edges are spelled out for Cyrillic.
+      .replace(/(^|\s)(ооо|оао|зао|пао|ао|ип|llc|inc|ltd|gmbh)\.?(?=\s|$)/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 }
 
 export type Conflict = {

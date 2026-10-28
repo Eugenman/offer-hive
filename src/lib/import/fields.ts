@@ -56,7 +56,17 @@ const SYNONYMS: Record<ImportField, string[]> = {
   contactName: ["контакт", "рекрутер", "contact", "recruiter"],
   contactInfo: ["контакт: email или telegram", "email", "почта", "телеграм", "telegram", "contact info"],
   source: ["источник", "где нашёл", "где нашел", "откуда", "source", "found on"],
-  notes: ["заметки", "заметка", "комментарий", "комментарии", "примечание", "notes", "note", "comment", "comments"],
+  notes: [
+    "заметки",
+    "заметка",
+    "комментарий",
+    "комментарии",
+    "примечание",
+    "notes",
+    "note",
+    "comment",
+    "comments",
+  ],
   id: ["id"],
 };
 

@@ -7,12 +7,20 @@ import type { ApplicationDetails, ApplicationStatus } from "./domain";
 const RESPONSE_STATUSES: readonly ApplicationStatus[] = ["interview", "test_task", "offer", "rejected"];
 
 function reached(app: ApplicationDetails, statuses: readonly ApplicationStatus[]) {
-  return app.statusChanges.some((change) => statuses.includes(change.toStatus)) || statuses.includes(app.status);
+  return (
+    app.statusChanges.some((change) => statuses.includes(change.toStatus)) || statuses.includes(app.status)
+  );
 }
 
 export type FunnelStep = { key: string; label: string; count: number; share: number };
 
-export type SourceRow = { source: string; total: number; responses: number; interviews: number; offers: number };
+export type SourceRow = {
+  source: string;
+  total: number;
+  responses: number;
+  interviews: number;
+  offers: number;
+};
 
 export type WeekBucket = { weekStart: string; count: number };
 
@@ -35,7 +43,11 @@ export function weekStart(isoDate: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-export function computeStatistics(applications: ApplicationDetails[], today: string, weeksBack = 8): Statistics {
+export function computeStatistics(
+  applications: ApplicationDetails[],
+  today: string,
+  weeksBack = 8,
+): Statistics {
   const total = applications.length;
   const responded = applications.filter((app) => reached(app, RESPONSE_STATUSES)).length;
   const interviewed = applications.filter((app) => reached(app, ["interview"])).length;
@@ -58,7 +70,9 @@ export function computeStatistics(applications: ApplicationDetails[], today: str
     if (reached(app, ["offer"])) row.offers += 1;
     bySource.set(source, row);
   }
-  const sources = [...bySource.values()].sort((a, b) => b.total - a.total || a.source.localeCompare(b.source, "ru"));
+  const sources = [...bySource.values()].sort(
+    (a, b) => b.total - a.total || a.source.localeCompare(b.source, "ru"),
+  );
 
   // Applications per week by the date the user applied (not when the record was created).
   const lastWeek = weekStart(today);

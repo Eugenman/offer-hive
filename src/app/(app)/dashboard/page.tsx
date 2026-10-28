@@ -10,7 +10,13 @@ export default function DashboardPage() {
     <>
       <PageHeader title="Отклики" />
       {/* The view reads its state from the URL, which is known only in the browser. */}
-      <Suspense fallback={<div className="pt-[68px]"><TableSkeleton /></div>}>
+      <Suspense
+        fallback={
+          <div className="pt-[68px]">
+            <TableSkeleton />
+          </div>
+        }
+      >
         <ApplicationsView />
       </Suspense>
     </>

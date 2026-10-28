@@ -48,7 +48,10 @@ function BarRows({ rows }: { rows: BarRow[] }) {
   return (
     <ol className="grid gap-3">
       {rows.map((row) => (
-        <li key={row.key} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm">
+        <li
+          key={row.key}
+          className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm"
+        >
           <span className="text-muted-foreground">{row.label}</span>
           <span aria-hidden className="h-6 overflow-hidden rounded-md bg-muted">
             <span
@@ -191,7 +194,11 @@ export function StatisticsView() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metric label="Всего откликов" value={stats.total} />
         <Metric label="В работе" value={stats.inProgress} note="Отправлен, тестовое, интервью" />
-        <Metric label="Получили ответ" value={percent.format(responded.share)} note={`${responded.count} из ${stats.total}`} />
+        <Metric
+          label="Получили ответ"
+          value={percent.format(responded.share)}
+          note={`${responded.count} из ${stats.total}`}
+        />
         <Metric label="Офферы" value={offered.count} />
       </div>
       <div className="grid gap-6 lg:grid-cols-2">

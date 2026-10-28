@@ -10,8 +10,8 @@ export function NoApplications({ onAdd, onImport }: { onAdd: () => void; onImpor
       </span>
       <h2 className="mt-4 text-base font-semibold">Начните отслеживать отклики</h2>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        Добавьте первый отклик вручную или загрузите таблицу, которую вели раньше в Excel, Google Sheets
-        или Numbers.
+        Добавьте первый отклик вручную или загрузите таблицу, которую вели раньше в Excel, Google Sheets или
+        Numbers.
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         <Button onClick={onAdd}>

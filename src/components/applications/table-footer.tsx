@@ -3,13 +3,7 @@
 import { useId } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PAGE_SIZES, type PageSize } from "./use-applications-url-state";
 
 type TableFooterProps = {
@@ -24,7 +18,9 @@ type TableFooterProps = {
 function pageList(current: number, last: number): (number | "gap")[] {
   const pages = new Set([1, last, current - 1, current, current + 1].filter((p) => p >= 1 && p <= last));
   const sorted = [...pages].sort((a, b) => a - b);
-  return sorted.flatMap((page, index) => (index > 0 && page - sorted[index - 1] > 1 ? ["gap", page] : [page]));
+  return sorted.flatMap((page, index) =>
+    index > 0 && page - sorted[index - 1] > 1 ? ["gap", page] : [page],
+  );
 }
 
 export function TableFooter({ page, pageSize, total, onPageChange, onPageSizeChange }: TableFooterProps) {
@@ -37,7 +33,10 @@ export function TableFooter({ page, pageSize, total, onPageChange, onPageSizeCha
     <div className="flex flex-wrap items-center gap-4 border-t px-6 py-3 text-sm text-muted-foreground">
       <div className="flex items-center gap-2">
         <span id={labelId}>Показывать</span>
-        <Select value={String(pageSize)} onValueChange={(value) => onPageSizeChange(Number(value) as PageSize)}>
+        <Select
+          value={String(pageSize)}
+          onValueChange={(value) => onPageSizeChange(Number(value) as PageSize)}
+        >
           <SelectTrigger size="sm" aria-labelledby={labelId} className="w-18">
             <SelectValue />
           </SelectTrigger>

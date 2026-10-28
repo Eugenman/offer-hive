@@ -8,12 +8,7 @@ import { cn } from "@/lib/utils";
 import { STATUS_LABELS, WORK_FORMAT_LABELS } from "@/lib/domain";
 import { formatDate } from "@/lib/format";
 import { IMPORT_FIELD_LABELS } from "@/lib/import/fields";
-import {
-  type ComparableField,
-  type Conflict,
-  type ConflictChoice,
-  mergeConflicts,
-} from "@/lib/import/match";
+import { type ComparableField, type Conflict, type ConflictChoice, mergeConflicts } from "@/lib/import/match";
 
 const FIELD_LABELS: Record<ComparableField, string> = {
   company: IMPORT_FIELD_LABELS.company,
@@ -36,7 +31,8 @@ function display(field: ComparableField, value: unknown): string {
   if (field === "status") return STATUS_LABELS[value as keyof typeof STATUS_LABELS];
   if (field === "workFormat") return WORK_FORMAT_LABELS[value as keyof typeof WORK_FORMAT_LABELS];
   if (field === "appliedAt") return formatDate(value as string) ?? String(value);
-  if (field === "salaryMin" || field === "salaryMax") return new Intl.NumberFormat("ru-RU").format(value as number);
+  if (field === "salaryMin" || field === "salaryMax")
+    return new Intl.NumberFormat("ru-RU").format(value as number);
   return String(value);
 }
 
@@ -85,7 +81,10 @@ function Card({
               role="radio"
               aria-checked={selected}
               onClick={() => onPick(field)}
-              className={cn(className, "hover:ring-1 hover:ring-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none")}
+              className={cn(
+                className,
+                "hover:ring-1 hover:ring-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+              )}
             >
               {content}
             </button>
@@ -97,9 +96,7 @@ function Card({
         })}
         <div className={cn("border-t px-3 py-1.5", note && "bg-amber-50 dark:bg-amber-950/40")}>
           <span className="block text-xs text-muted-foreground">Заметки</span>
-          <span className="block break-words">
-            {side === "existing" ? "Сохраняются" : (note ?? "—")}
-          </span>
+          <span className="block break-words">{side === "existing" ? "Сохраняются" : (note ?? "—")}</span>
         </div>
       </div>
     </div>
@@ -141,7 +138,10 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
         const upcoming = conflicts[nextIndex];
         // A merge that needs field picks stops at that record.
         if (choice.kind === "merge" && mergeConflicts(upcoming).length > 0) break;
-        next = [...next, { conflict: upcoming, choice: choice.kind === "merge" ? { kind: "merge", picks: {} } : choice }];
+        next = [
+          ...next,
+          { conflict: upcoming, choice: choice.kind === "merge" ? { kind: "merge", picks: {} } : choice },
+        ];
         nextIndex += 1;
       }
     }
@@ -164,8 +164,8 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
       </div>
       {merging ? (
         <p className="-mt-2 text-sm text-muted-foreground">
-          В этих полях разные значения — выберите, какое оставить. Остальное объединится, заметки сохранятся из
-          обоих вариантов.
+          В этих полях разные значения — выберите, какое оставить. Остальное объединится, заметки сохранятся
+          из обоих вариантов.
         </p>
       ) : null}
 
@@ -196,7 +196,12 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
               Назад
             </Button>
             <Button
-              onClick={() => decide({ kind: "merge", picks: Object.fromEntries(merging.map((f) => [f, picks[f] ?? "existing"])) })}
+              onClick={() =>
+                decide({
+                  kind: "merge",
+                  picks: Object.fromEntries(merging.map((f) => [f, picks[f] ?? "existing"])),
+                })
+              }
             >
               Сохранить
             </Button>
@@ -204,7 +209,11 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
         ) : (
           <>
             <div className={cn("flex flex-1 items-center gap-2", rest === 0 && "invisible")}>
-              <Checkbox id={applyToRestId} checked={applyToRest} onCheckedChange={(v) => setApplyToRest(v === true)} />
+              <Checkbox
+                id={applyToRestId}
+                checked={applyToRest}
+                onCheckedChange={(v) => setApplyToRest(v === true)}
+              />
               <Label htmlFor={applyToRestId} className="font-normal">
                 Сделать так же для остальных ({rest})
               </Label>

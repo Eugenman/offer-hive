@@ -3,14 +3,7 @@
 import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpDown, MessageSquareText } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { ApplicationStatus, ApplicationSummary } from "@/lib/domain";

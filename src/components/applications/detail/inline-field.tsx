@@ -1,6 +1,15 @@
 "use client";
 
-import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Check, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,7 +126,9 @@ function Display({ label, display, ariaValue, emptyText, saved, onStart, trigger
       aria-label={editLabel}
       className="group flex min-h-8 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
-      <span className={cn("min-w-0 flex-1 truncate", empty && "text-muted-foreground")}>{empty ? emptyText : display}</span>
+      <span className={cn("min-w-0 flex-1 truncate", empty && "text-muted-foreground")}>
+        {empty ? emptyText : display}
+      </span>
       {savedMark}
       <Pencil
         className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
@@ -263,7 +274,14 @@ export function InlineField({
   );
 }
 
-type GroupPart = { key: string; label: string; placeholder?: string; inputMode?: "numeric" | "text"; maxLength?: number; className?: string };
+type GroupPart = {
+  key: string;
+  label: string;
+  placeholder?: string;
+  inputMode?: "numeric" | "text";
+  maxLength?: number;
+  className?: string;
+};
 
 type InlineGroupFieldProps = {
   fieldKey: string;

@@ -11,13 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ImportWizard } from "./import-wizard";
@@ -47,7 +41,10 @@ export function AddApplicationDialog() {
     <>
       <Dialog open={dialog.tab !== null} onOpenChange={(open) => !open && requestClose()}>
         <DialogContent
-          className={cn("max-h-[calc(100vh-2rem)] overflow-y-auto", dialog.tab === "import" ? "sm:max-w-3xl" : "sm:max-w-lg")}
+          className={cn(
+            "max-h-[calc(100vh-2rem)] overflow-y-auto",
+            dialog.tab === "import" ? "sm:max-w-3xl" : "sm:max-w-lg",
+          )}
         >
           <DialogHeader>
             <DialogTitle>Новый отклик</DialogTitle>

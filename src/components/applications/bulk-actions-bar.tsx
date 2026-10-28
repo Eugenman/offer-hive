@@ -50,7 +50,12 @@ export function BulkActionsBar({ count, onChangeStatus, onExport, onDelete, onCl
         <Download aria-hidden />
         Экспорт
       </Button>
-      <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onDelete}
+        className="text-destructive hover:text-destructive"
+      >
         <Trash2 aria-hidden />
         Удалить
       </Button>

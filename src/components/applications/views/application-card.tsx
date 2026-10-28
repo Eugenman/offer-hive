@@ -17,7 +17,9 @@ export function ApplicationCard({ app, className }: ApplicationCardProps) {
   const salary = formatSalary(app.salaryMin, app.salaryMax, app.currency);
   const applied = formatDate(app.appliedAt);
   return (
-    <article className={cn("relative rounded-lg bg-card p-3 text-sm shadow-xs ring-1 ring-border", className)}>
+    <article
+      className={cn("relative rounded-lg bg-card p-3 text-sm shadow-xs ring-1 ring-border", className)}
+    >
       <div className="flex items-start gap-2.5 pr-8">
         <CompanyAvatar name={app.company} className="size-7 text-xs" />
         <div className="min-w-0 flex-1">

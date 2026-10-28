@@ -90,7 +90,11 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
     <form onSubmit={submit} className="grid gap-4" noValidate>
       {type === "interview" ? (
         <Field label="Вид интервью">
-          <select value={interviewKind} onChange={(e) => setInterviewKind(e.target.value)} className={selectClass}>
+          <select
+            value={interviewKind}
+            onChange={(e) => setInterviewKind(e.target.value)}
+            className={selectClass}
+          >
             <option value="">Не указан</option>
             {INTERVIEW_KINDS.map((kind) => (
               <option key={kind} value={kind}>
@@ -108,7 +112,11 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
           <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
         </Field>
         <Field label="Состояние">
-          <select value={state} onChange={(e) => setState(e.target.value as StageState)} className={selectClass}>
+          <select
+            value={state}
+            onChange={(e) => setState(e.target.value as StageState)}
+            className={selectClass}
+          >
             {STAGE_STATES.map((value) => (
               <option key={value} value={value}>
                 {STAGE_STATE_LABELS[value]}
@@ -118,7 +126,12 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
         </Field>
       </div>
       <Field label="Заметка к этапу">
-        <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Что важно запомнить" />
+        <Textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={3}
+          placeholder="Что важно запомнить"
+        />
       </Field>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
@@ -197,7 +210,11 @@ function StatusForm({ app, onDone }: { app: ApplicationDetails; onDone: () => vo
   return (
     <form onSubmit={submit} className="grid gap-4" noValidate>
       <Field label="Статус">
-        <select value={status} onChange={(e) => setStatus(e.target.value as ApplicationStatus)} className={selectClass}>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as ApplicationStatus)}
+          className={selectClass}
+        >
           {APPLICATION_STATUSES.map((value) => (
             <option key={value} value={value}>
               {STATUS_LABELS[value]}
@@ -231,7 +248,9 @@ export function AddEventDialog({
         {event ? (
           <>
             <DialogHeader>
-              <DialogTitle>{event.kind === "stage" ? TITLES.stage(event.type) : TITLES[event.kind]}</DialogTitle>
+              <DialogTitle>
+                {event.kind === "stage" ? TITLES.stage(event.type) : TITLES[event.kind]}
+              </DialogTitle>
               <DialogDescription className="sr-only">
                 {app.company} · {app.position}
               </DialogDescription>

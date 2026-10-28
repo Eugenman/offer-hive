@@ -1,0 +1,13 @@
+# Build output and dependencies (also in .gitignore, listed here for clarity)
+.next
+out
+build
+coverage
+node_modules
+.vercel
+
+# Generated or binary-like files
+bun.lock
+next-env.d.ts
+*.tsbuildinfo
+public

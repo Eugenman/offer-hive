@@ -31,7 +31,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Setting({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function Setting({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="max-w-md">
@@ -56,7 +64,10 @@ export function SettingsView() {
     },
     [],
   );
-  const { data: total = 0 } = useRepositoryQuery("total", async (repo) => (await repo.list({ pageSize: 1 })).total);
+  const { data: total = 0 } = useRepositoryQuery(
+    "total",
+    async (repo) => (await repo.list({ pageSize: 1 })).total,
+  );
 
   async function clearAll() {
     try {
@@ -70,8 +81,15 @@ export function SettingsView() {
   return (
     <div className="grid max-w-3xl gap-8 px-6 py-6">
       <Section title="Данные">
-        <Setting title="Экспорт" description="Все отклики одной таблицей — откроется в Excel, Numbers и LibreOffice.">
-          <Button variant="outline" disabled={total === 0} onClick={() => void actions.exportCsv({ query: {} })}>
+        <Setting
+          title="Экспорт"
+          description="Все отклики одной таблицей — откроется в Excel, Numbers и LibreOffice."
+        >
+          <Button
+            variant="outline"
+            disabled={total === 0}
+            onClick={() => void actions.exportCsv({ query: {} })}
+          >
             <Download aria-hidden />
             Скачать таблицу
           </Button>
@@ -100,8 +118,8 @@ export function SettingsView() {
           <AlertDialogHeader>
             <AlertDialogTitle>Удалить все данные?</AlertDialogTitle>
             <AlertDialogDescription>
-              Будут удалены все данные по откликам. Это нельзя
-              отменить. Скачайте таблицу, если данные могут понадобиться.
+              Будут удалены все данные по откликам. Это нельзя отменить. Скачайте таблицу, если данные могут
+              понадобиться.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

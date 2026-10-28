@@ -53,7 +53,15 @@ type CardHandlers = {
   onDeselect: () => void;
 };
 
-function DraggableCard({ app, hintId, selected, onSelect, onOpen, onRequestDelete, onDeselect }: { app: ApplicationSummary } & CardHandlers) {
+function DraggableCard({
+  app,
+  hintId,
+  selected,
+  onSelect,
+  onOpen,
+  onRequestDelete,
+  onDeselect,
+}: { app: ApplicationSummary } & CardHandlers) {
   const { setNodeRef, listeners, isDragging } = useDraggable({ id: app.id, data: { status: app.status } });
   // Mouse-only drag (agreed): pointer listeners, no keyboard drag. Without a mouse the status is changed
   // in the table or on the application page.

@@ -12,20 +12,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ImportWizard } from "./import-wizard";
 
 /**
  * The import wizard on its own, opened in place (e.g. from Settings): no navigation, conflicts are
  * resolved inside the dialog, and the report offers "Открыть отклики".
  */
-export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function ImportDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const router = useRouter();
   const [inProgress, setInProgress] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);

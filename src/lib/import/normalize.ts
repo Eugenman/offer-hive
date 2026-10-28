@@ -74,14 +74,14 @@ function iso(year: number, month: number, day: number) {
   return date.toISOString().slice(0, 10);
 }
 
-const CURRENCY_SIGNS: Record<string, string> = { "₽": "RUB", "руб": "RUB", "$": "USD", "€": "EUR" };
+const CURRENCY_SIGNS: Record<string, string> = { "₽": "RUB", руб: "RUB", $: "USD", "€": "EUR" };
 
 /** "200-250к", "от 3000$", "220 000–280 000 RUB", "до 150 тыс" → min / max / currency. */
 export function parseSalary(value: string) {
   const text = value.toLocaleLowerCase("ru").replace(/\s+/g, " ").trim();
   const thousands = /(\d)\s?(к|k|тыс)/.test(text);
-  const numbers = [...text.replace(/(\d) (?=\d{3}\b)/g, "$1").matchAll(/\d+(?:[.,]\d+)?/g)].map(
-    (m) => Math.round(Number(m[0].replace(",", ".")) * (thousands ? 1000 : 1)),
+  const numbers = [...text.replace(/(\d) (?=\d{3}\b)/g, "$1").matchAll(/\d+(?:[.,]\d+)?/g)].map((m) =>
+    Math.round(Number(m[0].replace(",", ".")) * (thousands ? 1000 : 1)),
   );
   const code = text.match(/\b(rub|usd|eur)\b/)?.[1]?.toUpperCase();
   const sign = Object.keys(CURRENCY_SIGNS).find((s) => text.includes(s));
@@ -100,9 +100,21 @@ function toNumber(value: string) {
 /** Applies the column mapping to one row and validates it with the same schema as the form. */
 export function normalizeRow(cells: RawRow, mapping: (ImportField | null)[], row: number): RowResult {
   const value: ImportedApplication = {
-    id: null, company: "", position: "", status: null, appliedAt: null, url: null,
-    salaryMin: null, salaryMax: null, currency: null, workFormat: null, location: null,
-    contactName: null, contactInfo: null, source: null, notes: null,
+    id: null,
+    company: "",
+    position: "",
+    status: null,
+    appliedAt: null,
+    url: null,
+    salaryMin: null,
+    salaryMax: null,
+    currency: null,
+    workFormat: null,
+    location: null,
+    contactName: null,
+    contactInfo: null,
+    source: null,
+    notes: null,
   };
   const mapped = new Set<ImportField>();
 

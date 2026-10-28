@@ -14,16 +14,40 @@ import { applicationInputSchema } from "@/lib/schemas";
 import { Field } from "./form-field";
 
 type FormField =
-  | "company" | "position" | "status" | "appliedAt" | "url" | "salaryMin" | "salaryMax" | "currency"
-  | "workFormat" | "location" | "contactName" | "contactInfo" | "source" | "note";
+  | "company"
+  | "position"
+  | "status"
+  | "appliedAt"
+  | "url"
+  | "salaryMin"
+  | "salaryMax"
+  | "currency"
+  | "workFormat"
+  | "location"
+  | "contactName"
+  | "contactInfo"
+  | "source"
+  | "note";
 type Values = Record<FormField, string>;
 type Errors = Partial<Record<FormField, string>>;
 
 const today = () => new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD in the user's time zone
 
 const initialValues = (): Values => ({
-  company: "", position: "", status: "sent", appliedAt: today(), url: "", salaryMin: "", salaryMax: "",
-  currency: "", workFormat: "", location: "", contactName: "", contactInfo: "", source: "", note: "",
+  company: "",
+  position: "",
+  status: "sent",
+  appliedAt: today(),
+  url: "",
+  salaryMin: "",
+  salaryMax: "",
+  currency: "",
+  workFormat: "",
+  location: "",
+  contactName: "",
+  contactInfo: "",
+  source: "",
+  note: "",
 });
 
 // Native <select> keeps label, keyboard and mobile pickers working out of the box.
@@ -51,9 +75,13 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       setValues((current) => ({ ...current, [field]: event.target.value }));
       // "From > to" is reported on one field but fixed by editing either.
-      const linked: FormField[] = field === "salaryMin" || field === "salaryMax" ? ["salaryMin", "salaryMax"] : [field];
+      const linked: FormField[] =
+        field === "salaryMin" || field === "salaryMax" ? ["salaryMin", "salaryMax"] : [field];
       if (linked.some((name) => errors[name])) {
-        setErrors((current) => ({ ...current, ...Object.fromEntries(linked.map((name) => [name, undefined])) }));
+        setErrors((current) => ({
+          ...current,
+          ...Object.fromEntries(linked.map((name) => [name, undefined])),
+        }));
       }
     },
   });
@@ -94,7 +122,8 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
     if (Object.keys(next).length > 0 || !parsed.success) {
       setErrors(next);
       // Optional fields with errors live in the collapsed section — open it.
-      if (Object.keys(next).some((field) => !["company", "position", "status"].includes(field))) setMore(true);
+      if (Object.keys(next).some((field) => !["company", "position", "status"].includes(field)))
+        setMore(true);
       focusFirstError();
       return;
     }

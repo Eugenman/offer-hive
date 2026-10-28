@@ -132,7 +132,15 @@ function NoteItem({ note }: { note: Note }) {
   );
 }
 
-function AddNoteInline({ applicationId, stageId, label }: { applicationId: string; stageId: string | null; label: string }) {
+function AddNoteInline({
+  applicationId,
+  stageId,
+  label,
+}: {
+  applicationId: string;
+  stageId: string | null;
+  label: string;
+}) {
   const repository = useRepository();
   const [open, setOpen] = useState(false);
   if (!open) {
@@ -224,7 +232,12 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
           <h3 className="font-medium">{title}</h3>
           <StageDate stage={stage} />
         </div>
-        <span className={cn("inline-flex h-6 items-center rounded-md px-2 text-xs font-medium", STATE_CLASSES[stage.state])}>
+        <span
+          className={cn(
+            "inline-flex h-6 items-center rounded-md px-2 text-xs font-medium",
+            STATE_CLASSES[stage.state],
+          )}
+        >
           {STAGE_STATE_LABELS[stage.state]}
         </span>
         <DropdownMenu>
@@ -281,7 +294,11 @@ export function StagesSection({ app }: { app: ApplicationDetails }) {
         <DetailCard title="Этапы найма">
           <div className="grid gap-3">
             {app.stages.map((stage) => (
-              <StageCard key={stage.id} stage={stage} notes={app.notes.filter((note) => note.stageId === stage.id)} />
+              <StageCard
+                key={stage.id}
+                stage={stage}
+                notes={app.notes.filter((note) => note.stageId === stage.id)}
+              />
             ))}
           </div>
         </DetailCard>

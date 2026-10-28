@@ -51,13 +51,16 @@ export function ApplicationsView() {
   const filters = { search: url.query.search, statuses: url.query.statuses, sources: url.query.sources };
   const queryKey = JSON.stringify({ view, query: view === "table" ? url.query : filters });
 
-  const { data, error } = useRepositoryQuery<ViewData>(queryKey, async (repository: ApplicationsRepository) => {
-    if (view === "table") return { kind: "page", page: await repository.list(url.query) };
-    if (view === "timeline") {
-      return { kind: "details", items: await repository.listDetailed(filters), now: Date.now() };
-    }
-    return { kind: "summaries", items: (await repository.list({ ...filters, pageSize: ALL })).items };
-  });
+  const { data, error } = useRepositoryQuery<ViewData>(
+    queryKey,
+    async (repository: ApplicationsRepository) => {
+      if (view === "table") return { kind: "page", page: await repository.list(url.query) };
+      if (view === "timeline") {
+        return { kind: "details", items: await repository.listDetailed(filters), now: Date.now() };
+      }
+      return { kind: "summaries", items: (await repository.list({ ...filters, pageSize: ALL })).items };
+    },
+  );
   const { data: totalAll } = useRepositoryQuery(
     "total",
     async (repository) => (await repository.list({ pageSize: 1 })).total,

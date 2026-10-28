@@ -110,10 +110,17 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setEvent({ kind: "note" })}>Заметка</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setEvent({ kind: "status" })}>Сменить статус</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setEvent({ kind: "status" })}>
+                Сменить статус
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="icon" aria-label="Удалить отклик" onClick={() => setConfirmDelete(true)}>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Удалить отклик"
+            onClick={() => setConfirmDelete(true)}
+          >
             <Trash2 aria-hidden />
           </Button>
         </div>

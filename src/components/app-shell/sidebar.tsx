@@ -51,10 +51,7 @@ const BOTTOM_NAV: NavItem[] = [
   },
 ];
 
-type NavLinkViewProps = { item: NavItem; active: boolean } & Omit<
-  React.ComponentProps<typeof Link>,
-  "href"
->;
+type NavLinkViewProps = { item: NavItem; active: boolean } & Omit<React.ComponentProps<typeof Link>, "href">;
 
 function NavLinkView({ item, active, className, ...props }: NavLinkViewProps) {
   const Icon = item.icon;

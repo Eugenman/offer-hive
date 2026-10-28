@@ -66,7 +66,11 @@ export function ImportWizard({
     downloadFile(buildApplicationsCsv([]), "offerhive-template.csv", "text/csv;charset=utf-8");
   }
 
-  async function finish(plan: ImportPlan, decisions: Parameters<typeof applyImport>[2], invalid: RowResult[]) {
+  async function finish(
+    plan: ImportPlan,
+    decisions: Parameters<typeof applyImport>[2],
+    invalid: RowResult[],
+  ) {
     try {
       const result = await applyImport(repository, plan.toCreate, decisions);
       setStep({ name: "report", result, unchanged: plan.unchanged.length, invalid });

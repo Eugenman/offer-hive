@@ -20,7 +20,11 @@ export function Field({ label, required, error, hint, className, children }: Fie
     <div className={cn("grid gap-1.5", className)}>
       <Label htmlFor={id}>
         {label}
-        {required ? <span aria-hidden className="text-destructive">*</span> : null}
+        {required ? (
+          <span aria-hidden className="text-destructive">
+            *
+          </span>
+        ) : null}
       </Label>
       {cloneElement(children, {
         id,

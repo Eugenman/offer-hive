@@ -172,7 +172,12 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
       this.statusChanges.filter((change) => change.applicationId === id),
       (change) => change.changedAt,
     );
-    return { ...this.toPublic(app), stages: copy(stages), notes: copy(this.notesOf(id)), statusChanges: copy(statusChanges) };
+    return {
+      ...this.toPublic(app),
+      stages: copy(stages),
+      notes: copy(this.notesOf(id)),
+      statusChanges: copy(statusChanges),
+    };
   }
 
   async listSources(): Promise<string[]> {
@@ -327,7 +332,14 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
       throw new NotFoundError("Stage", stageId);
     }
     const timestamp = now();
-    const note: Note = { id: newId(), applicationId, stageId, body: data.body, createdAt: timestamp, updatedAt: timestamp };
+    const note: Note = {
+      id: newId(),
+      applicationId,
+      stageId,
+      body: data.body,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
     this.notes.set(note.id, note);
     this.emit();
     return copy(note);

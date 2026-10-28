@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -118,6 +118,7 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
   const [applyToRest, setApplyToRest] = useState(false);
   const [merging, setMerging] = useState<ComparableField[] | null>(null);
   const [picks, setPicks] = useState<Partial<Record<ComparableField, Side>>>({});
+  const applyToRestId = useId();
 
   const conflict = conflicts[index];
   const rest = conflicts.length - index - 1;
@@ -203,8 +204,8 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
         ) : (
           <>
             <div className={cn("flex flex-1 items-center gap-2", rest === 0 && "invisible")}>
-              <Checkbox id="apply-to-rest" checked={applyToRest} onCheckedChange={(v) => setApplyToRest(v === true)} />
-              <Label htmlFor="apply-to-rest" className="font-normal">
+              <Checkbox id={applyToRestId} checked={applyToRest} onCheckedChange={(v) => setApplyToRest(v === true)} />
+              <Label htmlFor={applyToRestId} className="font-normal">
                 Сделать так же для остальных ({rest})
               </Label>
             </div>

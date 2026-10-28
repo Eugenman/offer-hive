@@ -6,12 +6,10 @@ import { cn } from "@/lib/utils";
 import {
   type ApplicationDetails,
   type ApplicationStatus,
-  INTERVIEW_KIND_LABELS,
   STAGE_STATE_LABELS,
-  STAGE_TYPE_LABELS,
   STATUS_LABELS,
-  type Stage,
 } from "@/lib/domain";
+import { stageTitle } from "@/lib/stage-title";
 import { formatDate } from "@/lib/format";
 import { CompanyAvatar } from "../company-avatar";
 
@@ -29,12 +27,6 @@ const BAR_CLASSES: Record<ApplicationStatus, string> = {
 
 const dayOf = (iso: string) => Date.parse(iso.length === 10 ? `${iso}T00:00:00Z` : iso);
 const isoDay = (time: number) => new Date(time).toISOString().slice(0, 10);
-
-export function stageTitle(stage: Stage) {
-  const base = stage.title ?? STAGE_TYPE_LABELS[stage.type];
-  const kind = stage.interviewKind ? ` · ${INTERVIEW_KIND_LABELS[stage.interviewKind]}` : "";
-  return `${base}${kind} #${stage.seq}`;
-}
 
 /** Applications on a shared date axis: bar = applied → last status change (or today), dots = stages. */
 export function ApplicationsTimeline({ applications, now }: { applications: ApplicationDetails[]; now: number }) {

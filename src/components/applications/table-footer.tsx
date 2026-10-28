@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,7 @@ function pageList(current: number, last: number): (number | "gap")[] {
 }
 
 export function TableFooter({ page, pageSize, total, onPageChange, onPageSizeChange }: TableFooterProps) {
+  const labelId = useId();
   const last = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
@@ -34,9 +36,9 @@ export function TableFooter({ page, pageSize, total, onPageChange, onPageSizeCha
   return (
     <div className="flex flex-wrap items-center gap-4 border-t px-6 py-3 text-sm text-muted-foreground">
       <div className="flex items-center gap-2">
-        <span id="page-size-label">Показывать</span>
+        <span id={labelId}>Показывать</span>
         <Select value={String(pageSize)} onValueChange={(value) => onPageSizeChange(Number(value) as PageSize)}>
-          <SelectTrigger size="sm" aria-labelledby="page-size-label" className="w-18">
+          <SelectTrigger size="sm" aria-labelledby={labelId} className="w-18">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

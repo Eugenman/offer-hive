@@ -21,9 +21,9 @@ function reportError(message: string) {
 export function useApplicationActions() {
   const repository = useRepository();
 
-  async function changeStatus(ids: string[], status: ApplicationStatus) {
+  async function changeStatus(ids: string[], status: ApplicationStatus, reason?: string) {
     try {
-      await repository.changeStatus(ids, { status });
+      await repository.changeStatus(ids, { status, reason });
       toast.success(
         ids.length === 1
           ? `Статус: ${STATUS_LABELS[status]}`

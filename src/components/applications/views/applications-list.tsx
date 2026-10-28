@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import Link from "next/link";
 import { MessageSquareText } from "lucide-react";
 import {
@@ -20,6 +21,7 @@ type ApplicationsListProps = {
 
 /** Compact list grouped by status — later the default view on phones. */
 export function ApplicationsList({ applications, onChangeStatus, onDelete }: ApplicationsListProps) {
+  const idPrefix = useId();
   const groups = APPLICATION_STATUSES.map((status) => ({
     status,
     items: applications.filter((app) => app.status === status),
@@ -28,8 +30,8 @@ export function ApplicationsList({ applications, onChangeStatus, onDelete }: App
   return (
     <div className="grid gap-6 px-6 pt-1 pb-6">
       {groups.map(({ status, items }) => (
-        <section key={status} aria-labelledby={`list-${status}`}>
-          <h2 id={`list-${status}`} className="mb-1 flex items-center gap-2">
+        <section key={status} aria-labelledby={`${idPrefix}-${status}`}>
+          <h2 id={`${idPrefix}-${status}`} className="mb-1 flex items-center gap-2">
             <StatusBadge status={status} />
             <span className="text-sm font-normal text-muted-foreground tabular-nums">{items.length}</span>
           </h2>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
@@ -43,6 +43,7 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
   const [values, setValues] = useState<Values>(initialValues);
   const [errors, setErrors] = useState<Errors>({});
   const [more, setMore] = useState(false);
+  const moreId = useId();
   const [saving, setSaving] = useState(false);
 
   const bind = (field: FormField) => ({
@@ -141,14 +142,14 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
         type="button"
         onClick={() => setMore((open) => !open)}
         aria-expanded={more}
-        aria-controls="add-more-fields"
+        aria-controls={moreId}
         className="-mx-1 flex w-fit items-center gap-1 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <ChevronDown className={cn("size-4 transition-transform", !more && "-rotate-90")} aria-hidden />
         Ещё поля: ссылка, зарплата, контакт, заметка
       </button>
 
-      <div id="add-more-fields" hidden={!more} className="grid gap-4">
+      <div id={moreId} hidden={!more} className="grid gap-4">
         <Field label="Ссылка на вакансию" error={errors.url}>
           <Input {...bind("url")} type="url" inputMode="url" placeholder="https://example.com/jobs/123" />
         </Field>

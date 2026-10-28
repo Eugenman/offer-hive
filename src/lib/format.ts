@@ -22,3 +22,25 @@ export function formatSalary(min: number | null, max: number | null, currency: s
   if (min !== null) return `от ${numberFormatter.format(min)}${suffix}`;
   return `до ${numberFormatter.format(max!)}${suffix}`;
 }
+
+const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** Timestamps in the user's time zone, e.g. "30 окт. 2026, 15:00". Client-rendered only. */
+export function formatDateTime(value: string | null) {
+  if (!value) return null;
+  return dateTimeFormatter.format(new Date(value)).replace(" г.", "");
+}
+
+/** ISO timestamp → value for <input type="datetime-local"> in the user's time zone. */
+export function toDateTimeLocal(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}

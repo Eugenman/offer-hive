@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -30,6 +30,7 @@ import {
   type ApplicationSummary,
   STATUS_LABELS,
 } from "@/lib/domain";
+import { rememberListPosition } from "../detail/return-to-list";
 import { StatusBadge } from "../status-badge";
 import { ApplicationCard } from "./application-card";
 
@@ -39,13 +40,12 @@ type KanbanBoardProps = {
   onDelete: (app: ApplicationSummary) => void;
 };
 
-const HINT_ID = "kanban-card-hint";
-
 // Browsers report the Windows/Linux Delete key and Fn+⌫ on a Mac as "Delete",
 // and Backspace / ⌫ / ⌘⌫ as "Backspace", so no OS detection is needed.
 const isDeleteKey = (event: React.KeyboardEvent) => event.key === "Delete" || event.key === "Backspace";
 
 type CardHandlers = {
+  hintId: string;
   selected: boolean;
   onSelect: () => void;
   onOpen: () => void;
@@ -53,7 +53,7 @@ type CardHandlers = {
   onDeselect: () => void;
 };
 
-function DraggableCard({ app, selected, onSelect, onOpen, onRequestDelete, onDeselect }: { app: ApplicationSummary } & CardHandlers) {
+function DraggableCard({ app, hintId, selected, onSelect, onOpen, onRequestDelete, onDeselect }: { app: ApplicationSummary } & CardHandlers) {
   const { setNodeRef, listeners, isDragging } = useDraggable({ id: app.id, data: { status: app.status } });
   // Mouse-only drag (agreed): pointer listeners, no keyboard drag. Without a mouse the status is changed
   // in the table or on the application page.
@@ -68,7 +68,7 @@ function DraggableCard({ app, selected, onSelect, onOpen, onRequestDelete, onDes
       aria-roledescription="карточка отклика"
       tabIndex={0}
       aria-label={`${app.company}, ${app.position}`}
-      aria-describedby={HINT_ID}
+      aria-describedby={hintId}
       onClick={onSelect}
       onFocus={onSelect}
       onDoubleClick={onOpen}
@@ -132,6 +132,7 @@ const quoted = (summary: ApplicationSummary | undefined) => (summary ? `«${summ
 
 export function KanbanBoard({ applications, onChangeStatus, onDelete }: KanbanBoardProps) {
   const router = useRouter();
+  const hintId = useId();
   const boardRef = useRef<HTMLDivElement>(null);
   // A small distance threshold keeps clicks and double-clicks working.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
@@ -140,6 +141,15 @@ export function KanbanBoard({ applications, onChangeStatus, onDelete }: KanbanBo
   const [pendingDelete, setPendingDelete] = useState<ApplicationSummary | null>(null);
   const byId = new Map(applications.map((app) => [app.id, app]));
   const active = activeId ? byId.get(activeId) : undefined;
+
+  // Reset transient UI when Next.js hides this page (<Activity>).
+  useLayoutEffect(
+    () => () => {
+      setPendingDelete(null);
+      setSelectedId(null);
+    },
+    [],
+  );
 
   // A click anywhere outside the cards clears the selection.
   useEffect(() => {
@@ -184,9 +194,13 @@ export function KanbanBoard({ applications, onChangeStatus, onDelete }: KanbanBo
   }
 
   const cardProps = (app: ApplicationSummary): CardHandlers => ({
+    hintId,
     selected: selectedId === app.id,
     onSelect: () => setSelectedId(app.id),
-    onOpen: () => router.push(`/applications/${app.id}`),
+    onOpen: () => {
+      rememberListPosition(app.id);
+      router.push(`/applications/${app.id}`);
+    },
     onRequestDelete: () => requestDelete(app),
     onDeselect: () => setSelectedId(null),
   });
@@ -199,7 +213,7 @@ export function KanbanBoard({ applications, onChangeStatus, onDelete }: KanbanBo
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveId(null)}
     >
-      <span id={HINT_ID} className="sr-only">
+      <span id={hintId} className="sr-only">
         Enter — открыть, Delete — удалить
       </span>
       <div

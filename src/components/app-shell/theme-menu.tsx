@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Monitor, Moon, Sun, SunMoon } from "lucide-react";
+import { SunMoon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,29 +9,11 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { THEME_COOKIE, type Theme, readCookie, resolveTheme, writeCookie } from "@/lib/ui-prefs";
-
-const OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: "light", label: "Светлая", icon: Sun },
-  { value: "dark", label: "Тёмная", icon: Moon },
-  { value: "system", label: "Как в системе", icon: Monitor },
-];
-
-function readTheme(): Theme {
-  if (typeof document === "undefined") return "system";
-  const value = readCookie(THEME_COOKIE);
-  return value === "light" || value === "dark" ? value : "system";
-}
+import { THEME_OPTIONS, useTheme } from "@/hooks/use-theme";
+import type { Theme } from "@/lib/ui-prefs";
 
 export function ThemeMenu() {
-  const [theme, setTheme] = useState<Theme>(readTheme);
-
-  function apply(value: string) {
-    const next = value as Theme;
-    document.documentElement.dataset.theme = resolveTheme(next);
-    writeCookie(THEME_COOKIE, next);
-    setTheme(next);
-  }
+  const [theme, setTheme] = useTheme();
 
   return (
     <DropdownMenu>
@@ -42,8 +23,8 @@ export function ThemeMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent side="right" align="end" sideOffset={8} className="w-44">
         <DropdownMenuLabel>Тема оформления</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={theme} onValueChange={apply}>
-          {OPTIONS.map(({ value, label, icon: Icon }) => (
+        <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+          {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
             <DropdownMenuRadioItem key={value} value={value}>
               <Icon aria-hidden />
               {label}

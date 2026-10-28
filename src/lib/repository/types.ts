@@ -64,6 +64,9 @@ export interface ApplicationsRepository {
   updateNote(noteId: string, patch: NotePatch): Promise<Note>;
   removeNote(noteId: string): Promise<void>;
 
+  /** Deletes every application, stage, note and status change. Cannot be undone. */
+  clear(): Promise<void>;
+
   /** Called after every change, so views can refetch. Returns an unsubscribe function. */
   subscribe(listener: () => void): () => void;
 }

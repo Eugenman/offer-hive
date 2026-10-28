@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ApplicationDetails, ApplicationStatus, ApplicationSummary } from "@/lib/domain";
 import { useRepositoryQuery } from "@/lib/repository/provider";
 import type { ApplicationsPage, ApplicationsRepository } from "@/lib/repository/types";
 import { AddApplicationDialog } from "./add/add-application-dialog";
 import { useAddDialog } from "./add/use-add-dialog";
+import { rememberListPosition, takeReturnFocus } from "./detail/return-to-list";
 import { ApplicationsTable, type TableSort } from "./applications-table";
 import { ApplicationsToolbar } from "./applications-toolbar";
 import { BulkActionsBar } from "./bulk-actions-bar";
@@ -80,6 +81,33 @@ export function ApplicationsView() {
     if (clampedPage !== null && clampedPage !== requestedPage) setPage(clampedPage);
   }, [clampedPage, requestedPage, setPage]);
 
+  // Coming back from an application: focus the row or card the user opened.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const focusRestored = useRef(false);
+  // Next.js keeps this page alive in <Activity> while it is hidden: refs survive, effects re-run on show.
+  useEffect(
+    () => () => {
+      focusRestored.current = false;
+    },
+    [],
+  );
+  useEffect(() => {
+    if (!data || focusRestored.current) return;
+    focusRestored.current = true;
+    const id = takeReturnFocus();
+    if (!id) return;
+    const item = containerRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"]`);
+    const target = item?.matches("[tabindex='0']") ? item : item?.querySelector<HTMLElement>("a[href]");
+    target?.focus();
+    target?.scrollIntoView({ block: "center" });
+  }, [data]);
+
+  // Any link to an application remembers where the list was (view, filters, page).
+  function rememberOpenedApplication(event: React.MouseEvent) {
+    const link = (event.target as Element).closest<HTMLAnchorElement>('a[href^="/applications/"]');
+    if (link) rememberListPosition(link.pathname.split("/").pop() ?? "");
+  }
+
   function changeView(next: ViewMode) {
     rememberView(next);
     url.setView(next);
@@ -149,7 +177,7 @@ export function ApplicationsView() {
   const selectedIds = [...selected];
 
   return (
-    <>
+    <div ref={containerRef} onClickCapture={rememberOpenedApplication}>
       {totalAll === 0 ? null : (
         <ApplicationsToolbar
           view={view}
@@ -182,6 +210,6 @@ export function ApplicationsView() {
           />
         </>
       ) : null}
-    </>
+    </div>
   );
 }

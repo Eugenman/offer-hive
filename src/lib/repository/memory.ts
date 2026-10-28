@@ -343,6 +343,14 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
     return copy(next);
   }
 
+  async clear() {
+    this.applications.clear();
+    this.stages.clear();
+    this.notes.clear();
+    this.statusChanges = [];
+    this.emit();
+  }
+
   async removeNote(noteId: string) {
     if (!this.notes.delete(noteId)) throw new NotFoundError("Note", noteId);
     this.emit();

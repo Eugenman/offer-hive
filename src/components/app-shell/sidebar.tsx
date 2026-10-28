@@ -22,6 +22,8 @@ type NavItem = {
   label: string;
   hint: string;
   icon: LucideIcon;
+  /** Other sections that belong to this item, e.g. an application page belongs to "Отклики". */
+  alsoActiveOn?: string[];
 };
 
 const MAIN_NAV: NavItem[] = [
@@ -30,6 +32,7 @@ const MAIN_NAV: NavItem[] = [
     label: "Отклики",
     hint: "Все отклики: таблица, канбан, список, таймлайн",
     icon: BriefcaseBusiness,
+    alsoActiveOn: ["/applications"],
   },
   {
     href: "/statistics",
@@ -92,7 +95,9 @@ function NavLinkWithHint({ item, active }: { item: NavItem; active: boolean }) {
 // it suspends, and the fallback renders the same link without the active state.
 function ActiveNavLink({ item }: { item: NavItem }) {
   const pathname = usePathname();
-  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+  const active = [item.href, ...(item.alsoActiveOn ?? [])].some(
+    (href) => pathname === href || pathname.startsWith(`${href}/`),
+  );
   return <NavLinkWithHint item={item} active={active} />;
 }
 

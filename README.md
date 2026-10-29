@@ -14,7 +14,8 @@ A job application tracker for people who send a lot of CVs and want to see where
 - **Hiring statuses with rules:** Applied → Screening → Interview → Technical → Take-home → Offer → Negotiation, plus Rejected and Withdrawn. Optional steps can be skipped; going back only undoes a mistake.
 - **Application page** with fields edited in place, a status history, interviews and notes.
 - **Statistics:** a funnel by status, applications per week, results by source.
-- **Spreadsheet import** with automatic column mapping and duplicate checks (in progress), and **CSV export**.
+- **Import** from Excel, LibreOffice, Numbers or CSV, with automatic column mapping and duplicate checks; **export** to Excel or CSV.
+- **Backup and restore** of everything in one file.
 - **Archive:** deleted applications can be restored for 30 days.
 - **Light and dark theme.**
 
@@ -24,7 +25,7 @@ A job application tracker for people who send a lot of CVs and want to see where
 
 - **Next.js 16** (App Router, Cache Components), **React 19**, **TypeScript**
 - **Tailwind CSS 4**, **shadcn/ui** (Radix)
-- **Dexie** (IndexedDB), **Zod** for validation, **nuqs** for URL state, **dnd-kit** for drag and drop
+- **Dexie** (IndexedDB), **SheetJS** for spreadsheets, **Zod** for validation, **nuqs** for URL state, **dnd-kit** for drag and drop
 - **bun**, ESLint, Prettier
 
 ## Architecture
@@ -49,7 +50,7 @@ Then open http://localhost:3000.
 
 - [x] Interface on sample data
 - [x] Data saved in the browser (IndexedDB), with an archive and backup reminders
-- [ ] Spreadsheet import and export (xlsx, csv, ods)
+- [x] Spreadsheet import and export (xlsx, csv, ods, numbers), backup and restore
 - [ ] Tests, CI, landing page, mobile layout
 - [ ] Accounts: sign in with GitHub or Google, server storage
 

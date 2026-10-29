@@ -1,8 +1,10 @@
 "use client";
 
-import { Archive, Download, Plus } from "lucide-react";
+import { Archive, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ApplicationStatus } from "@/lib/domain";
+import type { ExportFormat } from "@/lib/export/applications-csv";
+import { ExportMenu } from "./export-menu";
 import { FilterMenu } from "./filter-menu";
 import { SearchInput } from "./search-input";
 import type { ViewMode } from "./use-applications-url-state";
@@ -19,7 +21,7 @@ type ApplicationsToolbarProps = {
   onStatusesChange: (statuses: ApplicationStatus[]) => void;
   onSourcesChange: (sources: string[]) => void;
   onResetFilters: () => void;
-  onExport: () => void;
+  onExport: (format: ExportFormat) => void;
   exportDisabled: boolean;
   onAdd: () => void;
   /** Table only: moves the checked rows to the archive; inactive until a row is checked. */
@@ -60,10 +62,7 @@ export function ApplicationsToolbar({
           onSourcesChange={onSourcesChange}
           onReset={onResetFilters}
         />
-        <Button variant="outline" onClick={onExport} disabled={exportDisabled}>
-          <Download aria-hidden />
-          Export
-        </Button>
+        <ExportMenu onExport={onExport} disabled={exportDisabled} />
       </div>
       <SearchInput value={search} onChange={onSearchChange} label="Search applications" />
       {onDeleteSelected ? (

@@ -43,7 +43,33 @@ export function buildApplicationsCsv(applications: ApplicationDetails[]) {
   return `﻿${lines.join("\r\n")}\r\n`;
 }
 
-export function downloadFile(content: string, fileName: string, type: string) {
+export type ExportFormat = "csv" | "xlsx";
+
+/**
+ * The same columns as an Excel workbook. Dates are real date cells, so Excel can sort and filter
+ * them; SheetJS is loaded only when someone exports.
+ */
+export async function buildApplicationsXlsx(applications: ApplicationDetails[]): Promise<ArrayBuffer> {
+  const xlsx = await import("xlsx");
+  const rows = applications.map((app) =>
+    COLUMNS.map((column) => {
+      const value = column.value(app);
+      return column.header === "Date applied" && typeof value === "string"
+        ? new Date(`${value}T00:00:00Z`)
+        : value;
+    }),
+  );
+  const sheet = xlsx.utils.aoa_to_sheet([COLUMNS.map((column) => column.header), ...rows], {
+    cellDates: true,
+    dateNF: "yyyy-mm-dd",
+  });
+  sheet["!cols"] = COLUMNS.map((column) => ({ wch: column.header === "Notes" ? 60 : 18 }));
+  const book = xlsx.utils.book_new();
+  xlsx.utils.book_append_sheet(book, sheet, "Applications");
+  return xlsx.write(book, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
+}
+
+export function downloadFile(content: BlobPart, fileName: string, type: string) {
   const url = URL.createObjectURL(new Blob([content], { type }));
   const link = document.createElement("a");
   link.href = url;
@@ -52,6 +78,6 @@ export function downloadFile(content: string, fileName: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
-export function exportFileName(date = new Date()) {
-  return `offerhive-${date.toISOString().slice(0, 10)}.csv`;
+export function exportFileName(format: ExportFormat = "csv", date = new Date()) {
+  return `offerhive-${date.toISOString().slice(0, 10)}.${format}`;
 }

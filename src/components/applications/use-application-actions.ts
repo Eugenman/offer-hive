@@ -4,7 +4,14 @@ import { toast } from "sonner";
 import { type ApplicationStatus, STATUS_LABELS } from "@/lib/domain";
 import { isRepositoryError } from "@/lib/repository/types";
 import { markBackedUp } from "@/lib/backup";
-import { buildApplicationsCsv, downloadFile, exportFileName } from "@/lib/export/applications-csv";
+import { backupFileName, buildBackup } from "@/lib/export/backup-file";
+import {
+  buildApplicationsCsv,
+  buildApplicationsXlsx,
+  downloadFile,
+  type ExportFormat,
+  exportFileName,
+} from "@/lib/export/applications-csv";
 import { countApplications } from "@/lib/plural";
 import { useRepository } from "@/lib/repository/provider";
 import type { ApplicationsQuery } from "@/lib/repository/types";
@@ -12,9 +19,6 @@ import type { ApplicationsQuery } from "@/lib/repository/types";
 const UNDO_DURATION_MS = 10_000;
 
 const countLabel = countApplications;
-
-const isFullExport = (query: ApplicationsQuery) =>
-  !query.search?.trim() && !query.statuses?.length && !query.sources?.length;
 
 function reportError(message: string) {
   return () => toast.error(message);
@@ -89,8 +93,11 @@ export function useApplicationActions() {
     );
   }
 
-  /** Downloads a CSV; true when a file was saved. A full, unfiltered export counts as a backup. */
-  async function exportCsv(target: { ids: string[] } | { query: ApplicationsQuery }) {
+  /** Downloads a CSV or Excel file; true when a file was saved. */
+  async function exportApplications(
+    target: { ids: string[] } | { query: ApplicationsQuery },
+    format: ExportFormat = "csv",
+  ) {
     try {
       const details =
         "ids" in target
@@ -100,9 +107,16 @@ export function useApplicationActions() {
         toast("Nothing to export");
         return false;
       }
-      downloadFile(buildApplicationsCsv(details), exportFileName(), "text/csv;charset=utf-8");
+      if (format === "xlsx") {
+        downloadFile(
+          await buildApplicationsXlsx(details),
+          exportFileName("xlsx"),
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        );
+      } else {
+        downloadFile(buildApplicationsCsv(details), exportFileName("csv"), "text/csv;charset=utf-8");
+      }
       toast.success(`Exported ${countLabel(details.length)}`);
-      if ("query" in target && isFullExport(target.query)) markBackedUp();
       return true;
     } catch {
       reportError("Couldn’t export")();
@@ -110,5 +124,19 @@ export function useApplicationActions() {
     }
   }
 
-  return { changeStatus, revertStatus, remove, exportCsv };
+  /** Downloads everything as one backup file; this is what resets the weekly reminder. */
+  async function downloadBackup() {
+    try {
+      const snapshot = await repository.exportSnapshot();
+      downloadFile(buildBackup(snapshot), backupFileName(), "application/json");
+      markBackedUp();
+      toast.success("Backup downloaded");
+      return true;
+    } catch {
+      reportError("Couldn’t create the backup")();
+      return false;
+    }
+  }
+
+  return { changeStatus, revertStatus, remove, exportApplications, downloadBackup };
 }

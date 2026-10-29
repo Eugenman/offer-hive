@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Download, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { ApplicationStatus } from "@/lib/domain";
 import { countApplications } from "@/lib/plural";
+import type { ExportFormat } from "@/lib/export/applications-csv";
+import { ExportMenu } from "./export-menu";
 import { StatusBadge } from "./status-badge";
 
 type BulkActionsBarProps = {
@@ -17,7 +19,7 @@ type BulkActionsBarProps = {
   /** Statuses every selected application may move to. */
   statuses: ApplicationStatus[];
   onChangeStatus: (status: ApplicationStatus) => void;
-  onExport: () => void;
+  onExport: (format: ExportFormat) => void;
   onClear: () => void;
 };
 
@@ -47,10 +49,7 @@ export function BulkActionsBar({ count, statuses, onChangeStatus, onExport, onCl
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button variant="ghost" size="sm" onClick={onExport}>
-        <Download aria-hidden />
-        Export
-      </Button>
+      <ExportMenu onExport={onExport} variant="ghost" size="sm" side="top" />
       <Button variant="ghost" size="icon-sm" onClick={onClear} aria-label="Clear selection">
         <X aria-hidden />
       </Button>

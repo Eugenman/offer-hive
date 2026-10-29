@@ -1,7 +1,7 @@
 "use client";
 
-import { useId, useLayoutEffect, useState } from "react";
-import { Download, Trash2, Upload } from "lucide-react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
+import { ArchiveRestore, HardDriveDownload, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -15,7 +15,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ImportDialog } from "@/components/applications/add/import-dialog";
+import { ExportMenu } from "@/components/applications/export-menu";
 import { useApplicationActions } from "@/components/applications/use-application-actions";
+import { type ParsedBackup, parseBackup } from "@/lib/export/backup-file";
+import { formatDate } from "@/lib/format";
 import { countApplications } from "@/lib/plural";
 import { useRepository, useRepositoryQuery } from "@/lib/repository/provider";
 
@@ -56,11 +59,14 @@ export function SettingsView() {
   const actions = useApplicationActions();
   const [confirmClear, setConfirmClear] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<Extract<ParsedBackup, { ok: true }> | null>(null);
+  const backupInput = useRef<HTMLInputElement>(null);
   // Next.js keeps hidden pages alive (<Activity>): close transient dialogs when leaving.
   useLayoutEffect(
     () => () => {
       setConfirmClear(false);
       setImportOpen(false);
+      setPendingRestore(null);
     },
     [],
   );
@@ -74,6 +80,25 @@ export function SettingsView() {
     "statistics-total",
     async (repo) => (await repo.listForStatistics()).length,
   );
+
+  async function chooseBackup(file: File | undefined) {
+    if (!file) return;
+    const backup = parseBackup(await file.text());
+    if (backup.ok) setPendingRestore(backup);
+    else toast.error("This file isn’t an Offerhive backup");
+  }
+
+  async function restore() {
+    if (!pendingRestore) return;
+    const { snapshot } = pendingRestore;
+    setPendingRestore(null);
+    try {
+      await repository.restoreSnapshot(snapshot);
+      toast.success("Backup restored");
+    } catch {
+      toast.error("Couldn’t restore the backup");
+    }
+  }
 
   async function clearAll() {
     try {
@@ -90,32 +115,57 @@ export function SettingsView() {
         {persistent === false ? (
           <p role="alert" className="-mt-2 text-sm text-destructive">
             This browser doesn’t let the site save data, so everything is lost when you close the tab.
-            Download a spreadsheet before you leave.
+            Download a backup before you leave.
           </p>
         ) : (
           <p className="-mt-2 max-w-xl text-sm text-muted-foreground">
-            Your applications are stored only in this browser, not on a server. Download a spreadsheet from
-            time to time to keep a backup.
+            Your applications are stored only in this browser, not on a server. Download a backup from time to
+            time, and use it to move your data to another browser.
           </p>
         )}
         <Setting
           title="Export"
           description="All applications in one spreadsheet. Opens in Excel, Numbers and LibreOffice."
         >
-          <Button
-            variant="outline"
+          <ExportMenu
+            label="Download spreadsheet"
             disabled={total === 0}
-            onClick={() => void actions.exportCsv({ query: {} })}
-          >
-            <Download aria-hidden />
-            Download spreadsheet
-          </Button>
+            onExport={(format) => void actions.exportApplications({ query: {} }, format)}
+          />
         </Setting>
         <Setting title="Import" description="Upload the spreadsheet you kept your applications in.">
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload aria-hidden />
             Import spreadsheet
           </Button>
+        </Setting>
+        <Setting title="Backup" description="Everything in one file, including the archive and statistics.">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              disabled={everything === 0}
+              onClick={() => void actions.downloadBackup()}
+            >
+              <HardDriveDownload aria-hidden />
+              Download backup
+            </Button>
+            <Button variant="outline" onClick={() => backupInput.current?.click()}>
+              <ArchiveRestore aria-hidden />
+              Restore backup
+            </Button>
+            <input
+              ref={backupInput}
+              type="file"
+              accept=".json,application/json"
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden
+              onChange={(event) => {
+                void chooseBackup(event.target.files?.[0]);
+                event.target.value = "";
+              }}
+            />
+          </div>
         </Setting>
         <Setting
           title="Delete all data"
@@ -130,13 +180,32 @@ export function SettingsView() {
 
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
 
+      <AlertDialog open={pendingRestore !== null} onOpenChange={(open) => !open && setPendingRestore(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore this backup?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingRestore
+                ? `The backup from ${formatDate(pendingRestore.exportedAt.slice(0, 10))} has ${countApplications(pendingRestore.applications)}. `
+                : ""}
+              It replaces everything in this browser, including the archive and statistics. This can’t be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void restore()}>Restore backup</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete all data?</AlertDialogTitle>
             <AlertDialogDescription>
               Every application, the archive and all statistics will be deleted. This can’t be undone.
-              Download the spreadsheet first if you may need the data.
+              Download a backup first if you may need the data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

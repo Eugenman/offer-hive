@@ -7,6 +7,7 @@ import type {
   Stage,
   StatisticsEntry,
 } from "@/lib/domain";
+import type { StoreSnapshot } from "./repository";
 import type {
   ApplicationInput,
   ApplicationPatch,
@@ -89,6 +90,11 @@ export interface ApplicationsRepository {
   addNote(applicationId: string, input: NoteInput): Promise<Note>;
   updateNote(noteId: string, patch: NotePatch): Promise<Note>;
   removeNote(noteId: string): Promise<void>;
+
+  /** Everything stored, for a backup file. */
+  exportSnapshot(): Promise<StoreSnapshot>;
+  /** Replaces everything stored with a backup. Cannot be undone. */
+  restoreSnapshot(snapshot: StoreSnapshot): Promise<void>;
 
   /** Deletes every application, stage, note, status change and statistics entry. Cannot be undone. */
   clear(): Promise<void>;

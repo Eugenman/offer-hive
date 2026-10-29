@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CircleCheck, FileSpreadsheet, Upload } from "lucide-react";
+import { CircleCheck, FileSpreadsheet, LoaderCircle, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { buildApplicationsCsv, downloadFile } from "@/lib/export/applications-csv";
 import { applyImport, type ImportResult } from "@/lib/import/apply";
-import { DEMO_TABLE } from "@/lib/import/demo-table";
 import {
   IMPORT_FIELDS,
   IMPORT_FIELD_LABELS,
@@ -17,6 +16,7 @@ import {
 } from "@/lib/import/fields";
 import { type ImportPlan, planImport } from "@/lib/import/match";
 import { normalizeRow, type RowResult } from "@/lib/import/normalize";
+import { type ParsedTable, readSpreadsheet } from "@/lib/import/read-file";
 import { countApplications } from "@/lib/plural";
 import { useRepository } from "@/lib/repository/provider";
 import { ConflictResolver } from "./conflict-resolver";
@@ -25,7 +25,7 @@ const ACCEPT = ".xlsx,.xls,.xlsb,.ods,.fods,.numbers,.csv,.tsv,.txt";
 
 type Step =
   | { name: "file" }
-  | { name: "mapping"; fileName: string; mapping: (ImportField | null)[] }
+  | { name: "mapping"; fileName: string; table: ParsedTable; mapping: (ImportField | null)[] }
   | { name: "conflicts"; plan: ImportPlan; invalid: RowResult[] }
   | { name: "report"; result: ImportResult; unchanged: number; invalid: RowResult[] };
 
@@ -33,6 +33,12 @@ const selectClass =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive dark:bg-input/30";
 
 const count = countApplications;
+
+const READ_ERRORS = {
+  too_large: "This file is larger than 10 MB. Save a copy with only your applications and try again.",
+  unreadable: "Couldn’t read this file. Save it as .xlsx or .csv and try again.",
+  empty: "No table found in this file. The first row should hold the column names.",
+} as const;
 
 export function ImportWizard({
   onDone,
@@ -49,17 +55,27 @@ export function ImportWizard({
   const [step, setStepState] = useState<Step>({ name: "file" });
   const [dragging, setDragging] = useState(false);
   const [mappingError, setMappingError] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const [readError, setReadError] = useState<string | null>(null);
 
   function setStep(next: Step) {
     setStepState(next);
     onProgressChange(next.name === "mapping" || next.name === "conflicts");
   }
 
-  // Stage 1: any chosen file is replaced by a demo table; SheetJS parsing arrives in stage 3.
-  function chooseFile(file: File | undefined) {
-    if (!file) return;
+  async function chooseFile(file: File | undefined) {
+    if (!file || reading) return;
     setMappingError(null);
-    setStep({ name: "mapping", fileName: file.name, mapping: autoMap(DEMO_TABLE.headers) });
+    setReadError(null);
+    setReading(true);
+    const result = await readSpreadsheet(file);
+    setReading(false);
+    if (!result.ok) {
+      setReadError(READ_ERRORS[result.reason]);
+      return;
+    }
+    const { table } = result;
+    setStep({ name: "mapping", fileName: file.name, table, mapping: autoMap(table.headers) });
   }
 
   function downloadTemplate() {
@@ -79,7 +95,7 @@ export function ImportWizard({
     }
   }
 
-  async function confirmMapping(mapping: (ImportField | null)[]) {
+  async function confirmMapping(table: ParsedTable, mapping: (ImportField | null)[]) {
     const missing = REQUIRED_IMPORT_FIELDS.filter((field) => !mapping.includes(field));
     if (missing.length > 0) {
       setMappingError(`Choose a column for: ${missing.map((f) => IMPORT_FIELD_LABELS[f]).join(", ")}`);
@@ -91,7 +107,7 @@ export function ImportWizard({
       setMappingError(`${IMPORT_FIELD_LABELS[duplicate]} is chosen for more than one column`);
       return;
     }
-    const rows = DEMO_TABLE.rows.map((cells, index) => normalizeRow(cells, mapping, index + 2));
+    const rows = table.rows.map((cells, index) => normalizeRow(cells, mapping, table.rowNumbers[index]));
     const valid = rows.filter((row): row is Extract<RowResult, { ok: true }> => row.ok);
     const invalid = rows.filter((row) => !row.ok);
     const existing = (await repository.list({ pageSize: 100_000 })).items;
@@ -112,15 +128,21 @@ export function ImportWizard({
           onDrop={(event) => {
             event.preventDefault();
             setDragging(false);
-            chooseFile(event.dataTransfer.files[0]);
+            void chooseFile(event.dataTransfer.files[0]);
           }}
           className={cn(
             "flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-10 text-center transition-colors hover:bg-muted/50 has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
             dragging && "border-primary bg-muted/60",
           )}
         >
-          <Upload className="size-6 text-muted-foreground" aria-hidden />
-          <span className="font-medium">Drop a file here or choose one from your computer</span>
+          {reading ? (
+            <LoaderCircle className="size-6 animate-spin text-muted-foreground" aria-hidden />
+          ) : (
+            <Upload className="size-6 text-muted-foreground" aria-hidden />
+          )}
+          <span className="font-medium" aria-live="polite">
+            {reading ? "Reading the file…" : "Drop a file here or choose one from your computer"}
+          </span>
           <span className="text-xs text-muted-foreground">
             Excel, LibreOffice, Numbers, CSV. The file is read in your browser and never uploaded.
           </span>
@@ -128,9 +150,19 @@ export function ImportWizard({
             type="file"
             accept={ACCEPT}
             className="sr-only"
-            onChange={(event) => chooseFile(event.target.files?.[0])}
+            disabled={reading}
+            onChange={(event) => {
+              void chooseFile(event.target.files?.[0]);
+              // The same file can be picked again after fixing it.
+              event.target.value = "";
+            }}
           />
         </label>
+        {readError ? (
+          <p role="alert" className="text-sm text-destructive">
+            {readError}
+          </p>
+        ) : null}
         <p className="text-sm text-muted-foreground">
           Starting from scratch?{" "}
           <button
@@ -146,7 +178,7 @@ export function ImportWizard({
   }
 
   if (step.name === "mapping") {
-    const { mapping, fileName } = step;
+    const { mapping, fileName, table } = step;
     const setField = (index: number, value: string) => {
       setMappingError(null);
       const next = [...mapping];
@@ -158,7 +190,10 @@ export function ImportWizard({
         <div className="flex items-center gap-2 text-sm">
           <FileSpreadsheet className="size-4 text-muted-foreground" aria-hidden />
           <span className="font-medium">{fileName}</span>
-          <span className="text-muted-foreground">· {count(DEMO_TABLE.rows.length)}</span>
+          <span className="text-muted-foreground">
+            · {table.sheetName ? `${table.sheetName} · ` : ""}
+            {count(table.rows.length)}
+          </span>
         </div>
         <p className="-mt-2 text-sm text-muted-foreground">
           Check where each column goes. Columns recognized automatically are already set.
@@ -173,10 +208,10 @@ export function ImportWizard({
               </tr>
             </thead>
             <tbody>
-              {DEMO_TABLE.headers.map((header, index) => {
-                const sample = DEMO_TABLE.rows.map((row) => row[index]).find(Boolean) ?? "—";
+              {table.headers.map((header, index) => {
+                const sample = table.rows.map((row) => row[index]).find(Boolean) ?? "—";
                 return (
-                  <tr key={header} className="border-t">
+                  <tr key={`${index}-${header}`} className="border-t">
                     <td className="px-3 py-2 font-medium">{header}</td>
                     <td className="max-w-48 truncate px-3 py-2 text-muted-foreground">{sample}</td>
                     <td className="px-3 py-1.5">
@@ -209,7 +244,7 @@ export function ImportWizard({
           <Button variant="outline" onClick={() => setStep({ name: "file" })}>
             Another file
           </Button>
-          <Button onClick={() => void confirmMapping(mapping)}>Continue</Button>
+          <Button onClick={() => void confirmMapping(table, mapping)}>Continue</Button>
         </div>
       </div>
     );

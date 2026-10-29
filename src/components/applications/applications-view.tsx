@@ -211,7 +211,7 @@ export function ApplicationsView() {
           onStatusesChange={url.setStatuses}
           onSourcesChange={url.setSources}
           onResetFilters={url.resetFilters}
-          onExport={() => void actions.exportCsv({ query: filters })}
+          onExport={(format) => void actions.exportApplications({ query: filters }, format)}
           exportDisabled={shownCount === 0}
           onAdd={() => addDialog.open("manual")}
           selectedCount={selectedIds.length}
@@ -239,7 +239,7 @@ export function ApplicationsView() {
             count={selectedIds.length}
             statuses={commonNextStatuses(selectedStatuses)}
             onChangeStatus={(status: ApplicationStatus) => void actions.changeStatus(selectedIds, status)}
-            onExport={() => void actions.exportCsv({ ids: selectedIds })}
+            onExport={(format) => void actions.exportApplications({ ids: selectedIds }, format)}
             onClear={() => setSelected(new Set())}
           />
         </>

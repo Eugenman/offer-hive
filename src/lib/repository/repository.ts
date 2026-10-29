@@ -655,6 +655,31 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
       await commit();
     },
 
+    async exportSnapshot() {
+      await ensureReady();
+      return copy({
+        applications: applications.values(),
+        stages: stages.values(),
+        notes: notes.values(),
+        statusChanges: statusChanges.values(),
+        deletedStatistics: deletedStatistics.values(),
+      });
+    },
+
+    async restoreSnapshot(snapshot) {
+      await ensureReady();
+      // Every current row is deleted and every backup row written, so storage ends up identical.
+      for (const table of [applications, stages, notes, statusChanges, deletedStatistics]) table.clear();
+      for (const row of snapshot.applications) applications.set(copy(row));
+      for (const row of snapshot.stages) stages.set(copy(row));
+      for (const row of snapshot.notes) notes.set(copy(row));
+      for (const row of [...snapshot.statusChanges].sort((a, b) => a.seq - b.seq))
+        statusChanges.set(copy(row));
+      for (const row of snapshot.deletedStatistics) deletedStatistics.set(copy(row));
+      nextSeq = snapshot.statusChanges.reduce((max, change) => Math.max(max, change.seq), 0) + 1;
+      await commit();
+    },
+
     async clear() {
       await ensureReady();
       applications.clear();

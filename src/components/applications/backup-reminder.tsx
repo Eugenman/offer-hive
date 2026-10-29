@@ -45,11 +45,11 @@ export function BackupReminder() {
           variant="outline"
           size="sm"
           onClick={async () => {
-            if (await actions.exportCsv({ query: {} })) setHidden(true);
+            if (await actions.downloadBackup()) setHidden(true);
           }}
         >
           <Download aria-hidden />
-          Download spreadsheet
+          Download backup
         </Button>
       </div>
     </div>

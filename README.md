@@ -2,6 +2,8 @@
 
 A job application tracker for people who send a lot of CVs and want to see where each one stands: which companies replied, what step every process is at, and where applications drop off.
 
+**Live demo:** [offerhive.vercel.app](https://offerhive.vercel.app)
+
 > **Status:** work in progress. Every screen works on sample data kept in memory, so it resets on reload. See the [roadmap](#roadmap).
 
 ![Applications table](docs/screenshots/table.png)
@@ -47,7 +49,7 @@ Then open http://localhost:3000.
 - [x] Interface on sample data
 - [ ] Data saved in the browser (IndexedDB), with protection against data loss
 - [ ] Spreadsheet import and export (xlsx, csv, ods)
-- [ ] Tests, CI, deploy to Vercel, landing page, mobile layout
+- [ ] Tests, CI, landing page, mobile layout
 - [ ] Accounts: sign in with GitHub or Google, server storage
 
 ## License

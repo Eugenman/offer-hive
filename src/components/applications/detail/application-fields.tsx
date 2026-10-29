@@ -1,5 +1,6 @@
 "use client";
 
+import { parseAmount } from "@/lib/format";
 import { type ApplicationDetails, WORK_FORMATS, WORK_FORMAT_LABELS } from "@/lib/domain";
 import { formatDate, formatSalary } from "@/lib/format";
 import { useRepository } from "@/lib/repository/provider";
@@ -7,12 +8,6 @@ import type { ApplicationPatch } from "@/lib/schemas";
 import { DetailCard } from "./detail-card";
 import { InlineField, InlineGroupField } from "./inline-field";
 import { trySave } from "./save-error";
-
-function parseAmount(value: string): number | null | "invalid" {
-  const digits = value.replace(/[\s ]/g, "");
-  if (!digits) return null;
-  return /^\d+$/.test(digits) ? Number(digits) : "invalid";
-}
 
 /** mailto: for emails, t.me for @handles — otherwise no link. */
 export function contactHref(info: string | null) {
@@ -134,7 +129,7 @@ export function ApplicationFields({ app }: { app: ApplicationDetails }) {
             label="Source"
             value={app.source}
             emptyText="Add source"
-            placeholder="hh.ru"
+            placeholder="LinkedIn"
             onSave={(value) => update({ source: value ?? "" })}
           />
         </Row>

@@ -1,5 +1,6 @@
 "use client";
 
+import { parseAmount } from "@/lib/format";
 import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
@@ -51,12 +52,6 @@ const initialValues = (): Values => ({
 // Native <select> keeps label, keyboard and mobile pickers working out of the box.
 const selectClass =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive dark:bg-input/30";
-
-function parseAmount(value: string): number | null | "invalid" {
-  const digits = value.replace(/[\s ]/g, "");
-  if (!digits) return null;
-  return /^\d+$/.test(digits) ? Number(digits) : "invalid";
-}
 
 export function ManualForm({ onDone }: { onDone: () => void }) {
   const repository = useRepository();
@@ -174,13 +169,13 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
         </Field>
         <div className="grid grid-cols-[1fr_1fr_5.5rem] gap-3">
           <Field label="Salary from" error={errors.salaryMin}>
-            <Input {...bind("salaryMin")} inputMode="numeric" placeholder="200 000" />
+            <Input {...bind("salaryMin")} inputMode="numeric" placeholder="120,000" />
           </Field>
           <Field label="to" error={errors.salaryMax}>
-            <Input {...bind("salaryMax")} inputMode="numeric" placeholder="250 000" />
+            <Input {...bind("salaryMax")} inputMode="numeric" placeholder="140,000" />
           </Field>
           <Field label="Currency" error={errors.currency}>
-            <Input {...bind("currency")} maxLength={5} placeholder="RUB" />
+            <Input {...bind("currency")} maxLength={5} placeholder="USD" />
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -207,7 +202,7 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
           </Field>
         </div>
         <Field label="Source" error={errors.source} hint="Where you found the job">
-          <Input {...bind("source")} placeholder="hh.ru" />
+          <Input {...bind("source")} placeholder="LinkedIn" />
         </Field>
         <Field label="Note">
           <Textarea {...bind("note")} rows={3} placeholder="What to remember" />

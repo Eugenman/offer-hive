@@ -46,3 +46,10 @@ export function toDateTimeLocal(value: string | null) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
 }
+
+/** "120,000", "120 000" or "120000" → 120000; empty → null; anything else → "invalid". */
+export function parseAmount(value: string): number | null | "invalid" {
+  const digits = value.replace(/[\s\u00a0,]/g, "");
+  if (!digits) return null;
+  return /^\d+$/.test(digits) ? Number(digits) : "invalid";
+}

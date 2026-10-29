@@ -16,16 +16,35 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 /** Only one field is open at a time on the page. */
-const EditingContext = createContext<{ openKey: string | null; setOpenKey: (key: string | null) => void }>({
+const EditingContext = createContext<{
+  openKey: string | null;
+  setOpenKey: (key: string | null) => void;
+  readOnly: boolean;
+}>({
   openKey: null,
   setOpenKey: () => {},
+  readOnly: false,
 });
 
-export function InlineEditingProvider({ children }: { children: ReactNode }) {
+/** `readOnly` (an archived application) shows values as plain text and hides every edit control. */
+export function InlineEditingProvider({
+  children,
+  readOnly = false,
+}: {
+  children: ReactNode;
+  readOnly?: boolean;
+}) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   // An open editor is closed when the page is hidden (<Activity>) — no half-edited field on return.
   useLayoutEffect(() => () => setOpenKey(null), []);
-  return <EditingContext.Provider value={{ openKey, setOpenKey }}>{children}</EditingContext.Provider>;
+  return (
+    <EditingContext.Provider value={{ openKey, setOpenKey, readOnly }}>{children}</EditingContext.Provider>
+  );
+}
+
+/** true on a read-only page: components hide their edit and add controls. */
+export function useReadOnly() {
+  return useContext(EditingContext).readOnly;
 }
 
 /** Returns an error message, or null when saved. */
@@ -84,7 +103,28 @@ type DisplayProps = {
 };
 
 function Display({ label, display, ariaValue, emptyText, saved, onStart, triggerRef, href }: DisplayProps) {
+  const readOnly = useReadOnly();
   const empty = ariaValue === null || ariaValue === "";
+  if (readOnly) {
+    return (
+      <div className="flex min-h-8 items-center px-2 text-sm">
+        {empty ? (
+          <span className="text-muted-foreground/60">—</span>
+        ) : href ? (
+          <a
+            href={href}
+            target={href.startsWith("mailto:") ? undefined : "_blank"}
+            rel="noreferrer"
+            className="min-w-0 truncate underline underline-offset-4 hover:no-underline"
+          >
+            {display}
+          </a>
+        ) : (
+          <span className="min-w-0 truncate">{display}</span>
+        )}
+      </div>
+    );
+  }
   const editLabel = `${label}: ${empty ? "not set" : ariaValue}. Edit`;
   const savedMark = saved ? (
     <span role="status" className="inline-flex shrink-0 items-center gap-1 text-xs text-status-offer">

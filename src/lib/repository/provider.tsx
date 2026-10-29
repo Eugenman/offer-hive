@@ -1,16 +1,20 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { MOCK_SEED } from "@/lib/mock-data";
-import { MemoryApplicationsRepository } from "./memory";
+import { indexedDbStorage } from "./indexeddb";
+import { createApplicationsRepository } from "./repository";
 import type { ApplicationsRepository } from "./types";
 
 const RepositoryContext = createContext<ApplicationsRepository | null>(null);
 
+// Server rendering only draws loading states, so it gets an empty store and never reads it.
+const serverRepository = createApplicationsRepository();
+
 // One instance per browser tab: it survives client-side navigation between pages.
 let instance: ApplicationsRepository | null = null;
 function getRepository() {
-  instance ??= new MemoryApplicationsRepository(MOCK_SEED);
+  if (typeof window === "undefined") return serverRepository;
+  instance ??= createApplicationsRepository({ storage: indexedDbStorage() });
   return instance;
 }
 

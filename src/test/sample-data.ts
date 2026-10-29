@@ -1,8 +1,7 @@
-import type { Application, Note, Stage, StatusChange } from "./domain";
-import type { MemorySeed } from "./repository/memory";
+import type { Application, Note, Stage, StatusChange } from "@/lib/domain";
+import type { RepositorySeed } from "@/lib/repository/repository";
 
-// Fictional demo data for the in-memory stage: companies, people and contacts are made up.
-// Replaced by real storage in stage 2.
+// Fictional sample data for tests: companies, people and contacts are made up.
 
 const at = (date: string, time = "10:00") => `${date}T${time}:00.000Z`;
 
@@ -224,7 +223,7 @@ const NOTES: Note[] = [
   },
 ];
 
-function buildSeed(): MemorySeed {
+function buildSeed(): RepositorySeed {
   const applications: Application[] = [];
   const statusChanges: StatusChange[] = [];
   for (const { createdOn, history, ...app } of APPLICATIONS) {
@@ -249,4 +248,4 @@ function buildSeed(): MemorySeed {
   return { applications, stages: STAGES, notes: NOTES, statusChanges };
 }
 
-export const MOCK_SEED: MemorySeed = buildSeed();
+export const SAMPLE_DATA: RepositorySeed = buildSeed();

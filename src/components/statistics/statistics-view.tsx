@@ -166,7 +166,7 @@ function Sources({ stats }: { stats: Statistics }) {
 
 export function StatisticsView() {
   const { data: stats, error } = useRepositoryQuery("statistics", async (repository) =>
-    computeStatistics(await repository.listDetailed(), new Date().toLocaleDateString("sv-SE")),
+    computeStatistics(await repository.listForStatistics(), new Date().toLocaleDateString("sv-SE")),
   );
 
   if (error) {
@@ -198,7 +198,18 @@ export function StatisticsView() {
   return (
     <div className="grid gap-6 px-6 py-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Metric label="Applications" value={stats.total} />
+        <Metric
+          label="Applications"
+          value={stats.total}
+          note={
+            [
+              stats.archived ? `${stats.archived} in the archive` : null,
+              stats.deleted ? `${stats.deleted} deleted` : null,
+            ]
+              .filter(Boolean)
+              .join(", ") || undefined
+          }
+        />
         <Metric label="In progress" value={stats.inProgress} note="Before an offer" />
         <Metric
           label="Reached screening"

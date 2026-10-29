@@ -64,9 +64,15 @@ export function SettingsView() {
     },
     [],
   );
+  const { data: persistent } = useRepositoryQuery("persistent", (repo) => repo.isPersistent());
   const { data: total = 0 } = useRepositoryQuery(
     "total",
     async (repo) => (await repo.list({ pageSize: 1 })).total,
+  );
+  // "Delete all" also covers the archive and statistics of deleted applications.
+  const { data: everything = 0 } = useRepositoryQuery(
+    "statistics-total",
+    async (repo) => (await repo.listForStatistics()).length,
   );
 
   async function clearAll() {
@@ -81,6 +87,17 @@ export function SettingsView() {
   return (
     <div className="grid max-w-3xl gap-8 px-6 py-6">
       <Section title="Data">
+        {persistent === false ? (
+          <p role="alert" className="-mt-2 text-sm text-destructive">
+            This browser doesn’t let the site save data, so everything is lost when you close the tab.
+            Download a spreadsheet before you leave.
+          </p>
+        ) : (
+          <p className="-mt-2 max-w-xl text-sm text-muted-foreground">
+            Your applications are stored only in this browser, not on a server. Download a spreadsheet from
+            time to time to keep a backup.
+          </p>
+        )}
         <Setting
           title="Export"
           description="All applications in one spreadsheet. Opens in Excel, Numbers and LibreOffice."
@@ -102,9 +119,9 @@ export function SettingsView() {
         </Setting>
         <Setting
           title="Delete all data"
-          description={`Applications, progress, notes and status history: ${countApplications(total)} now.`}
+          description={`Applications, the archive and statistics: ${countApplications(everything)} counted now.`}
         >
-          <Button variant="destructive" disabled={total === 0} onClick={() => setConfirmClear(true)}>
+          <Button variant="destructive" disabled={everything === 0} onClick={() => setConfirmClear(true)}>
             <Trash2 aria-hidden />
             Delete all
           </Button>
@@ -118,8 +135,8 @@ export function SettingsView() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete all data?</AlertDialogTitle>
             <AlertDialogDescription>
-              Every application and everything attached to it will be deleted. This can’t be undone. Download
-              the spreadsheet first if you may need the data.
+              Every application, the archive and all statistics will be deleted. This can’t be undone.
+              Download the spreadsheet first if you may need the data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

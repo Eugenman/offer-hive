@@ -165,6 +165,23 @@ export type StatusChange = {
   changedAt: IsoDateTime;
 };
 
+/**
+ * What Statistics knows about one application. It covers the whole job search, so it outlives the
+ * application: deleting an application for good keeps this entry, with the company and the steps.
+ */
+export type StatisticsEntry = {
+  id: string;
+  company: string;
+  position: string;
+  source: string | null;
+  appliedAt: IsoDate | null;
+  /** Status at the moment the entry was taken (for deleted applications: when deleted). */
+  status: ApplicationStatus;
+  /** Every status the application ever had. */
+  reached: ApplicationStatus[];
+  state: "active" | "archived" | "deleted";
+};
+
 /** A row in table / kanban / list views. */
 export type ApplicationSummary = Application & {
   /** Status before the last change: the one "undo" returns to. null when nothing to undo. */

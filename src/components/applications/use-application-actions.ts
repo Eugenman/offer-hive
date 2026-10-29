@@ -2,7 +2,8 @@
 
 import { toast } from "sonner";
 import { type ApplicationStatus, STATUS_LABELS } from "@/lib/domain";
-import { StatusTransitionError } from "@/lib/repository/types";
+import { isRepositoryError } from "@/lib/repository/types";
+import { markBackedUp } from "@/lib/backup";
 import { buildApplicationsCsv, downloadFile, exportFileName } from "@/lib/export/applications-csv";
 import { countApplications } from "@/lib/plural";
 import { useRepository } from "@/lib/repository/provider";
@@ -11,6 +12,9 @@ import type { ApplicationsQuery } from "@/lib/repository/types";
 const UNDO_DURATION_MS = 10_000;
 
 const countLabel = countApplications;
+
+const isFullExport = (query: ApplicationsQuery) =>
+  !query.search?.trim() && !query.statuses?.length && !query.sources?.length;
 
 function reportError(message: string) {
   return () => toast.error(message);
@@ -29,7 +33,7 @@ export function useApplicationActions() {
       await repository.changeStatus(ids, { status, reason });
     } catch (cause) {
       reportError(
-        cause instanceof StatusTransitionError
+        isRepositoryError(cause, "status_transition")
           ? `Can’t move to ${STATUS_LABELS[status]}`
           : "Couldn’t change the status",
       )();
@@ -66,20 +70,26 @@ export function useApplicationActions() {
     try {
       await repository.remove(ids);
     } catch {
-      reportError("Couldn’t delete")();
+      reportError("Couldn’t move to the archive")();
       return;
     }
-    toast(ids.length === 1 && name ? `Deleted ${name}` : `Deleted ${countLabel(ids.length)}`, {
-      duration: UNDO_DURATION_MS,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          repository.restore(ids).catch(reportError("Couldn’t restore"));
+    toast(
+      ids.length === 1 && name
+        ? `Moved ${name} to the archive`
+        : `Moved ${countLabel(ids.length)} to the archive`,
+      {
+        duration: UNDO_DURATION_MS,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            repository.restore(ids).catch(reportError("Couldn’t restore"));
+          },
         },
       },
-    });
+    );
   }
 
+  /** Downloads a CSV; true when a file was saved. A full, unfiltered export counts as a backup. */
   async function exportCsv(target: { ids: string[] } | { query: ApplicationsQuery }) {
     try {
       const details =
@@ -88,12 +98,15 @@ export function useApplicationActions() {
           : await repository.listDetailed(target.query);
       if (details.length === 0) {
         toast("Nothing to export");
-        return;
+        return false;
       }
       downloadFile(buildApplicationsCsv(details), exportFileName(), "text/csv;charset=utf-8");
       toast.success(`Exported ${countLabel(details.length)}`);
+      if ("query" in target && isFullExport(target.query)) markBackedUp();
+      return true;
     } catch {
       reportError("Couldn’t export")();
+      return false;
     }
   }
 

@@ -1,11 +1,12 @@
-import { type ApplicationDetails, type ApplicationStatus, PIPELINE_STATUSES, STATUS_LABELS } from "./domain";
+import { type ApplicationStatus, PIPELINE_STATUSES, STATUS_LABELS, type StatisticsEntry } from "./domain";
 
 // Funnel counts what applications ever reached (from the status log), not only where they are now:
 // an application rejected after an interview still counts as "reached an interview".
 // One step per status, never merged: a step nobody went through stays empty.
 
-function reached(app: ApplicationDetails, status: ApplicationStatus) {
-  return app.status === status || app.statusChanges.some((change) => change.toStatus === status);
+function reached(app: StatisticsEntry, status: ApplicationStatus) {
+  // Every application was sent, even one imported straight into a later status.
+  return status === "sent" || app.reached.includes(status);
 }
 
 const IN_PROGRESS: readonly ApplicationStatus[] = [
@@ -30,6 +31,10 @@ export type WeekBucket = { weekStart: string; count: number };
 
 export type Statistics = {
   total: number;
+  /** How many of `total` are in the archive. */
+  archived: number;
+  /** How many of `total` were deleted for good; Statistics still count them. */
+  deleted: number;
   inProgress: number;
   funnel: FunnelStep[];
   outcomes: { rejected: number; withdrawn: number };
@@ -47,11 +52,11 @@ export function weekStart(isoDate: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-export function computeStatistics(
-  applications: ApplicationDetails[],
-  today: string,
-  weeksBack = 8,
-): Statistics {
+/**
+ * `applications` covers the whole search: active, archived and deleted-for-good applications.
+ * Only "In progress" counts what is still active in the list.
+ */
+export function computeStatistics(applications: StatisticsEntry[], today: string, weeksBack = 8): Statistics {
   const total = applications.length;
   const funnel: FunnelStep[] = PIPELINE_STATUSES.map((status) => {
     const count = applications.filter((app) => reached(app, status)).length;
@@ -90,7 +95,10 @@ export function computeStatistics(
 
   return {
     total,
-    inProgress: applications.filter((app) => IN_PROGRESS.includes(app.status)).length,
+    archived: applications.filter((app) => app.state === "archived").length,
+    deleted: applications.filter((app) => app.state === "deleted").length,
+    inProgress: applications.filter((app) => app.state === "active" && IN_PROGRESS.includes(app.status))
+      .length,
     funnel,
     outcomes: {
       rejected: applications.filter((app) => app.status === "rejected").length,

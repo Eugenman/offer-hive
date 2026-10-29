@@ -1,10 +1,10 @@
 import { ZodError } from "zod";
-import { NotFoundError } from "@/lib/repository/types";
+import { isRepositoryError } from "@/lib/repository/types";
 
 /** Turns a repository error into a short message shown under the field. */
 export function saveErrorMessage(error: unknown): string {
   if (error instanceof ZodError) return error.issues[0]?.message ?? "Check the value";
-  if (error instanceof NotFoundError) return "Application not found. It may have been deleted";
+  if (isRepositoryError(error, "not_found")) return "Application not found. It may have been deleted";
   return "Couldn’t save";
 }
 

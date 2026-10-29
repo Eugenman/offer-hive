@@ -3,7 +3,7 @@
 import { useLayoutEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { Archive, ArrowLeft, ChevronDown, Plus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -116,10 +116,11 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
           <Button
             variant="outline"
             size="icon"
-            aria-label="Delete application"
+            aria-label="Move to archive"
+            title="Move to archive"
             onClick={() => setConfirmDelete(true)}
           >
-            <Trash2 aria-hidden />
+            <Archive aria-hidden />
           </Button>
         </div>
       </div>
@@ -129,14 +130,14 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete application?</AlertDialogTitle>
-            <AlertDialogDescription>{app.company} will be deleted.</AlertDialogDescription>
+            <AlertDialogTitle>Move to archive?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {app.company} moves to the archive. You can restore it within 30 days.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => void remove()}>
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={() => void remove()}>Move to archive</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

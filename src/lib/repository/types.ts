@@ -5,6 +5,7 @@ import type {
   ApplicationSummary,
   Note,
   Stage,
+  StatisticsEntry,
 } from "@/lib/domain";
 import type {
   ApplicationInput,
@@ -29,6 +30,12 @@ export type ApplicationsQuery = {
   pageSize?: number;
 };
 
+/** An application in the archive: deleted, restorable until `erasedAt`. */
+export type DeletedApplication = Application & { deletedAt: string; erasedAt: string };
+
+/** An archived application with everything attached, shown read-only. */
+export type ArchivedApplicationDetails = ApplicationDetails & { deletedAt: string; erasedAt: string };
+
 export type ApplicationsPage = {
   items: ApplicationSummary[];
   total: number;
@@ -47,6 +54,15 @@ export interface ApplicationsRepository {
   listDetailed(query?: Omit<ApplicationsQuery, "page" | "pageSize">): Promise<ApplicationDetails[]>;
   get(id: string): Promise<ApplicationDetails | null>;
   listSources(): Promise<string[]>;
+  /** The archive: deleted applications, newest first. They are erased for good after 30 days. */
+  listDeleted(): Promise<DeletedApplication[]>;
+  /**
+   * Everything Statistics counts: active, archived and deleted-for-good applications. The numbers
+   * cover the whole job search, not only what is in the list right now.
+   */
+  listForStatistics(): Promise<StatisticsEntry[]>;
+  /** One archived application with progress, notes and status history; null if it isn't archived. */
+  getArchived(id: string): Promise<ArchivedApplicationDetails | null>;
 
   create(input: ApplicationInput): Promise<Application>;
   update(id: string, patch: ApplicationPatch): Promise<Application>;
@@ -57,9 +73,14 @@ export interface ApplicationsRepository {
   changeStatus(ids: string[], input: StatusChangeInput, options?: { ignoreRules?: boolean }): Promise<void>;
   /** Undoes the last status change: the previous status comes back and the log entry is removed. */
   revertStatus(ids: string[]): Promise<void>;
-  /** Soft delete; `restore` brings the records back (used by the "Undo" toast). */
+  /** Moves to the archive; `restore` brings the records back (the "Undo" toast, the Archive page). */
   remove(ids: string[]): Promise<void>;
   restore(ids: string[]): Promise<void>;
+  /**
+   * Erases archived applications for good, with their progress, notes and status history.
+   * Statistics keep their entries (`listForStatistics`).
+   */
+  erase(ids: string[]): Promise<void>;
 
   addStage(applicationId: string, input: StageInput): Promise<Stage>;
   updateStage(stageId: string, patch: StagePatch): Promise<Stage>;
@@ -69,23 +90,31 @@ export interface ApplicationsRepository {
   updateNote(noteId: string, patch: NotePatch): Promise<Note>;
   removeNote(noteId: string): Promise<void>;
 
-  /** Deletes every application, stage, note and status change. Cannot be undone. */
+  /** Deletes every application, stage, note, status change and statistics entry. Cannot be undone. */
   clear(): Promise<void>;
+
+  /** false when the browser blocks storage and data lives only until the tab is closed. */
+  isPersistent(): Promise<boolean>;
 
   /** Called after every change, so views can refetch. Returns an unsubscribe function. */
   subscribe(listener: () => void): () => void;
 }
 
-export class StatusTransitionError extends Error {
-  constructor(from: string, to: string) {
-    super(`Status change not allowed: ${from} → ${to}`);
-    this.name = "StatusTransitionError";
-  }
+/** What went wrong, so the UI can pick a message: a record is gone, or a move breaks the status rules. */
+export type RepositoryErrorKind = "not_found" | "status_transition";
+
+export type RepositoryError = Error & { kind: RepositoryErrorKind };
+
+function repositoryError(kind: RepositoryErrorKind, message: string): RepositoryError {
+  return Object.assign(new Error(message), { kind });
 }
 
-export class NotFoundError extends Error {
-  constructor(what: string, id: string) {
-    super(`${what} not found: ${id}`);
-    this.name = "NotFoundError";
-  }
+export const notFound = (what: string, id: string) =>
+  repositoryError("not_found", `${what} not found: ${id}`);
+
+export const statusTransitionError = (from: string, to: string) =>
+  repositoryError("status_transition", `Status change not allowed: ${from} → ${to}`);
+
+export function isRepositoryError(error: unknown, kind: RepositoryErrorKind): error is RepositoryError {
+  return error instanceof Error && (error as Partial<RepositoryError>).kind === kind;
 }

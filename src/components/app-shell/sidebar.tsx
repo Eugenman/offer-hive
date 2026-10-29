@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, useState } from "react";
 import {
+  Archive,
   BriefcaseBusiness,
   ChartColumn,
   Hexagon,
@@ -39,6 +40,12 @@ const MAIN_NAV: NavItem[] = [
     label: "Statistics",
     hint: "Funnel, sources and weekly activity",
     icon: ChartColumn,
+  },
+  {
+    href: "/archive",
+    label: "Archive",
+    hint: "Archived applications, kept for 30 days",
+    icon: Archive,
   },
 ];
 

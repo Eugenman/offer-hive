@@ -301,7 +301,7 @@ export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDe
       onDragCancel={() => setActiveId(null)}
     >
       <span id={hintId} className="sr-only">
-        Enter to open, Delete to delete
+        Enter to open, Delete to move to the archive
       </span>
       <div
         ref={boardRef}
@@ -335,16 +335,16 @@ export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDe
           }}
         >
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete application?</AlertDialogTitle>
+            <AlertDialogTitle>Move to archive?</AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingDelete ? `${pendingDelete.company} will be deleted.` : ""}
+              {pendingDelete
+                ? `${pendingDelete.company} moves to the archive. You can restore it within 30 days.`
+                : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={confirmDelete}>
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete}>Move to archive</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

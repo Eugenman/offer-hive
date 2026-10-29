@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Ellipsis, Plus } from "lucide-react";
+import { useReadOnly } from "./inline-field";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,6 +80,7 @@ function NoteEditor({
 
 function NoteItem({ note }: { note: Note }) {
   const repository = useRepository();
+  const readOnly = useReadOnly();
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -109,25 +111,27 @@ function NoteItem({ note }: { note: Note }) {
         <p className="text-sm whitespace-pre-line">{note.body}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">{formatDateTime(note.createdAt)}</p>
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="Note actions">
-            <Ellipsis aria-hidden />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setEditing(true)}>Edit</DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            onSelect={async () => {
-              await repository.removeNote(note.id);
-              toast("Note deleted");
-            }}
-          >
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {readOnly ? null : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Note actions">
+              <Ellipsis aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setEditing(true)}>Edit</DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={async () => {
+                await repository.removeNote(note.id);
+                toast("Note deleted");
+              }}
+            >
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </li>
   );
 }
@@ -142,7 +146,9 @@ function AddNoteInline({
   label: string;
 }) {
   const repository = useRepository();
+  const readOnly = useReadOnly();
   const [open, setOpen] = useState(false);
+  if (readOnly) return null;
   if (!open) {
     return (
       <button
@@ -180,6 +186,7 @@ function StageDate({ stage }: { stage: Stage }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const label = formatDateTime(stage.scheduledAt);
+  const readOnly = useReadOnly();
 
   async function save() {
     setEditing(false);
@@ -187,6 +194,9 @@ function StageDate({ stage }: { stage: Stage }) {
     if (next !== stage.scheduledAt) await repository.updateStage(stage.id, { scheduledAt: next });
   }
 
+  if (readOnly) {
+    return label ? <p className="text-xs text-muted-foreground">{label}</p> : null;
+  }
   if (editing) {
     return (
       <input
@@ -224,6 +234,7 @@ function StageDate({ stage }: { stage: Stage }) {
 
 function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
   const repository = useRepository();
+  const readOnly = useReadOnly();
   const title = stageTitle(stage);
   return (
     <article className="border-t pt-3 first:border-0 first:pt-0" aria-label={title}>
@@ -240,37 +251,41 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
         >
           {STAGE_STATE_LABELS[stage.state]}
         </span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={`Actions: ${title}`}>
-              <Ellipsis aria-hidden />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuRadioGroup
-              value={stage.state}
-              onValueChange={(value) => void repository.updateStage(stage.id, { state: value as StageState })}
-            >
-              {STAGE_STATES.map((state) => (
-                <DropdownMenuRadioItem key={state} value={state}>
-                  {STAGE_STATE_LABELS[state]}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={async () => {
-                await repository.removeStage(stage.id);
-                toast(`${title} removed from progress`, {
-                  description: notes.length ? "Its notes moved to the application notes" : undefined,
-                });
-              }}
-            >
-              Remove from progress
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {readOnly ? null : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm" aria-label={`Actions: ${title}`}>
+                <Ellipsis aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuRadioGroup
+                value={stage.state}
+                onValueChange={(value) =>
+                  void repository.updateStage(stage.id, { state: value as StageState })
+                }
+              >
+                {STAGE_STATES.map((state) => (
+                  <DropdownMenuRadioItem key={state} value={state}>
+                    {STAGE_STATE_LABELS[state]}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={async () => {
+                  await repository.removeStage(stage.id);
+                  toast(`${title} removed from progress`, {
+                    description: notes.length ? "Its notes moved to the application notes" : undefined,
+                  });
+                }}
+              >
+                Remove from progress
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
       {notes.length ? (
         <ul className="mt-2 divide-y border-t">
@@ -287,6 +302,7 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
 }
 
 export function StagesSection({ app }: { app: ApplicationDetails }) {
+  const readOnly = useReadOnly();
   const looseNotes = app.notes.filter((note) => note.stageId === null);
   return (
     <div className="grid content-start gap-4">
@@ -310,6 +326,8 @@ export function StagesSection({ app }: { app: ApplicationDetails }) {
               <NoteItem key={note.id} note={note} />
             ))}
           </ul>
+        ) : readOnly ? (
+          <p className="text-sm text-muted-foreground">No notes</p>
         ) : null}
         <AddNoteInline applicationId={app.id} stageId={null} label="Add note" />
       </DetailCard>

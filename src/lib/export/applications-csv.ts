@@ -1,24 +1,24 @@
 import { type ApplicationDetails, STATUS_LABELS, WORK_FORMAT_LABELS } from "@/lib/domain";
 
-// "Таблица откликов" format (see the agreed template): one row per application,
-// headers and values in the interface language, all notes in one cell.
+// One row per application, headers and values in the interface language, all notes in one cell.
+// The headers are among the import synonyms, so an exported file imports back as is.
 const COLUMNS: { header: string; value: (app: ApplicationDetails) => string | number | null }[] = [
   { header: "ID", value: (app) => app.id },
-  { header: "Компания", value: (app) => app.company },
-  { header: "Должность", value: (app) => app.position },
-  { header: "Статус", value: (app) => STATUS_LABELS[app.status] },
-  { header: "Дата отклика", value: (app) => app.appliedAt },
-  { header: "Ссылка", value: (app) => app.url },
-  { header: "Зарплата от", value: (app) => app.salaryMin },
-  { header: "Зарплата до", value: (app) => app.salaryMax },
-  { header: "Валюта", value: (app) => app.currency },
-  { header: "Формат", value: (app) => (app.workFormat ? WORK_FORMAT_LABELS[app.workFormat] : null) },
-  { header: "Город", value: (app) => app.location },
-  { header: "Контакт", value: (app) => app.contactName },
-  { header: "Контакт: email или Telegram", value: (app) => app.contactInfo },
-  { header: "Источник", value: (app) => app.source },
+  { header: "Company", value: (app) => app.company },
+  { header: "Position", value: (app) => app.position },
+  { header: "Status", value: (app) => STATUS_LABELS[app.status] },
+  { header: "Date applied", value: (app) => app.appliedAt },
+  { header: "Link", value: (app) => app.url },
+  { header: "Salary from", value: (app) => app.salaryMin },
+  { header: "Salary to", value: (app) => app.salaryMax },
+  { header: "Currency", value: (app) => app.currency },
+  { header: "Work format", value: (app) => (app.workFormat ? WORK_FORMAT_LABELS[app.workFormat] : null) },
+  { header: "Location", value: (app) => app.location },
+  { header: "Contact", value: (app) => app.contactName },
+  { header: "Contact info", value: (app) => app.contactInfo },
+  { header: "Source", value: (app) => app.source },
   {
-    header: "Заметки",
+    header: "Notes",
     // Oldest first, so the cell reads like a diary.
     value: (app) =>
       [...app.notes]

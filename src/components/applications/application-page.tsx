@@ -13,7 +13,7 @@ import { StatusLog } from "./detail/status-log";
 export function ApplicationPage({ id }: { id: string }) {
   const { data, loading } = useRepositoryQuery(`application:${id}`, (repository) => repository.get(id));
   useDocumentTitle(
-    data === undefined ? null : data ? `${data.company} · Offerhive` : "Отклик не найден · Offerhive",
+    data === undefined ? null : data ? `${data.company} · Offerhive` : "Application not found · Offerhive",
   );
 
   if (data === undefined && loading) {
@@ -23,11 +23,11 @@ export function ApplicationPage({ id }: { id: string }) {
   if (!data) {
     return (
       <>
-        <PageHeader title="Отклик не найден" />
+        <PageHeader title="Application not found" />
         <p className="px-6 py-8 text-sm text-muted-foreground">
-          Возможно, его удалили.{" "}
+          It may have been deleted.{" "}
           <Link href="/dashboard" className="text-foreground underline underline-offset-4">
-            Вернуться к откликам
+            Back to applications
           </Link>
         </p>
       </>

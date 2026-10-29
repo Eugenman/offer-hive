@@ -141,7 +141,7 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
 
     const { field, direction } = query.sort ?? { field: "updatedAt", direction: "desc" };
     const sign = direction === "asc" ? 1 : -1;
-    const text = (a: string, b: string) => a.localeCompare(b, "ru");
+    const text = (a: string, b: string) => a.localeCompare(b, "en");
     rows.sort((a, b) => {
       switch (field) {
         case "company":
@@ -201,7 +201,7 @@ export class MemoryApplicationsRepository implements ApplicationsRepository {
     for (const app of this.applications.values()) {
       if (!app.deletedAt && app.source) sources.add(app.source);
     }
-    return [...sources].sort((a, b) => a.localeCompare(b, "ru"));
+    return [...sources].sort((a, b) => a.localeCompare(b, "en"));
   }
 
   async create(input: Parameters<ApplicationsRepository["create"]>[0]): Promise<Application> {

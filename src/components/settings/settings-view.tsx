@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ImportDialog } from "@/components/applications/add/import-dialog";
 import { useApplicationActions } from "@/components/applications/use-application-actions";
-import { APPLICATION_WORDS, pluralRu } from "@/lib/plural";
+import { countApplications } from "@/lib/plural";
 import { useRepository, useRepositoryQuery } from "@/lib/repository/provider";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -72,18 +72,18 @@ export function SettingsView() {
   async function clearAll() {
     try {
       await repository.clear();
-      toast.success("Все данные удалены");
+      toast.success("All data deleted");
     } catch {
-      toast.error("Не удалось удалить данные");
+      toast.error("Couldn’t delete the data");
     }
   }
 
   return (
     <div className="grid max-w-3xl gap-8 px-6 py-6">
-      <Section title="Данные">
+      <Section title="Data">
         <Setting
-          title="Экспорт"
-          description="Все отклики одной таблицей — откроется в Excel, Numbers и LibreOffice."
+          title="Export"
+          description="All applications in one spreadsheet. Opens in Excel, Numbers and LibreOffice."
         >
           <Button
             variant="outline"
@@ -91,22 +91,22 @@ export function SettingsView() {
             onClick={() => void actions.exportCsv({ query: {} })}
           >
             <Download aria-hidden />
-            Скачать таблицу
+            Download spreadsheet
           </Button>
         </Setting>
-        <Setting title="Импорт" description="Загрузите таблицу с откликами, которую вели раньше.">
+        <Setting title="Import" description="Upload the spreadsheet you kept your applications in.">
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload aria-hidden />
-            Импорт таблицы
+            Import spreadsheet
           </Button>
         </Setting>
         <Setting
-          title="Удалить все данные"
-          description={`Отклики, прогресс, заметки и журнал статусов: сейчас ${total} ${pluralRu(total, APPLICATION_WORDS)}.`}
+          title="Delete all data"
+          description={`Applications, progress, notes and status history: ${countApplications(total)} now.`}
         >
           <Button variant="destructive" disabled={total === 0} onClick={() => setConfirmClear(true)}>
             <Trash2 aria-hidden />
-            Удалить всё
+            Delete all
           </Button>
         </Setting>
       </Section>
@@ -116,16 +116,16 @@ export function SettingsView() {
       <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Удалить все данные?</AlertDialogTitle>
+            <AlertDialogTitle>Delete all data?</AlertDialogTitle>
             <AlertDialogDescription>
-              Будут удалены все данные по откликам. Это нельзя отменить. Скачайте таблицу, если данные могут
-              понадобиться.
+              Every application and everything attached to it will be deleted. This can’t be undone. Download
+              the spreadsheet first if you may need the data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={() => void clearAll()}>
-              Удалить всё
+              Delete all
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

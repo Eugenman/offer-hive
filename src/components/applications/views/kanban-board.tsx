@@ -74,7 +74,7 @@ function DraggableCard({
       data-kanban-card=""
       // A group, not a button: it contains the eye link, and nested interactive roles are an a11y error.
       role="group"
-      aria-roledescription="карточка отклика"
+      aria-roledescription="application card"
       tabIndex={0}
       aria-label={`${app.company}, ${app.position}`}
       aria-describedby={hintId}
@@ -108,16 +108,16 @@ function DraggableCard({
 
 // Six columns; three of them hold two related statuses, one zone each.
 const COLUMNS: { title: string; zones: ApplicationStatus[] }[] = [
-  { title: "Отправлен", zones: ["sent"] },
-  { title: "Скрининг", zones: ["screening"] },
-  { title: "Интервью", zones: ["interview", "technical"] },
-  { title: "Тестовое", zones: ["test_task"] },
-  { title: "Оффер", zones: ["offer", "offer_discussion"] },
-  { title: "Отказ", zones: ["rejected", "withdrawn"] },
+  { title: "Applied", zones: ["sent"] },
+  { title: "Screening", zones: ["screening"] },
+  { title: "Interview", zones: ["interview", "technical"] },
+  { title: "Take-home", zones: ["test_task"] },
+  { title: "Offer", zones: ["offer", "offer_discussion"] },
+  { title: "Closed", zones: ["rejected", "withdrawn"] },
 ];
 
-// Inside the "Отказ" column the company's refusal reads better next to "Отказался".
-const ZONE_LABELS: Partial<Record<ApplicationStatus, string>> = { rejected: "Отказали" };
+// Zone labels can differ from status names when that reads better inside a column.
+const ZONE_LABELS: Partial<Record<ApplicationStatus, string>> = {};
 
 /** While dragging: the card's own zone, a zone that accepts it, or one that does not. */
 type ZoneState = "idle" | "own" | "accepts" | "refuses";
@@ -205,7 +205,7 @@ function Column({
   );
 }
 
-const quoted = (summary: ApplicationSummary | undefined) => (summary ? `«${summary.company}»` : "отклик");
+const quoted = (summary: ApplicationSummary | undefined) => (summary ? summary.company : "Application");
 
 export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDelete }: KanbanBoardProps) {
   const router = useRouter();
@@ -238,13 +238,13 @@ export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDe
   }, []);
 
   const announcements: Announcements = {
-    onDragStart: ({ active: item }) => `Перемещается ${quoted(byId.get(String(item.id)))}`,
-    onDragOver: ({ over }) => (over ? `Над колонкой «${STATUS_LABELS[over.id as ApplicationStatus]}»` : ""),
+    onDragStart: ({ active: item }) => `Moving ${quoted(byId.get(String(item.id)))}`,
+    onDragOver: ({ over }) => (over ? `Over ${STATUS_LABELS[over.id as ApplicationStatus]}` : ""),
     onDragEnd: ({ active: item, over }) =>
       over
-        ? `${quoted(byId.get(String(item.id)))} перемещён в «${STATUS_LABELS[over.id as ApplicationStatus]}»`
-        : "Перемещение отменено",
-    onDragCancel: () => "Перемещение отменено",
+        ? `${quoted(byId.get(String(item.id)))} moved to ${STATUS_LABELS[over.id as ApplicationStatus]}`
+        : "Move cancelled",
+    onDragCancel: () => "Move cancelled",
   };
 
   function handleDragEnd({ active: item, over }: DragEndEvent) {
@@ -301,7 +301,7 @@ export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDe
       onDragCancel={() => setActiveId(null)}
     >
       <span id={hintId} className="sr-only">
-        Enter — открыть, Delete — удалить
+        Enter to open, Delete to delete
       </span>
       <div
         ref={boardRef}
@@ -335,15 +335,15 @@ export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDe
           }}
         >
           <AlertDialogHeader>
-            <AlertDialogTitle>Удалить отклик?</AlertDialogTitle>
+            <AlertDialogTitle>Delete application?</AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingDelete ? `«${pendingDelete.company}» будет удалён.` : ""}
+              {pendingDelete ? `${pendingDelete.company} will be deleted.` : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={confirmDelete}>
-              Удалить
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

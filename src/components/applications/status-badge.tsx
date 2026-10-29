@@ -51,7 +51,7 @@ export function StatusBadge({
       <ChevronDown className="size-3" aria-hidden />
     ) : null;
 
-  // One minimum width for every badge (fits «Обсуждение оффера»), so they line up in the table,
+  // One minimum width for every badge (fits the longest label), so they line up in the table,
   // menus and kanban; a longer label added later grows the badge instead of overflowing it.
   const base = cn(
     "h-6 min-w-36 items-center rounded-md px-2 text-xs font-medium whitespace-nowrap",

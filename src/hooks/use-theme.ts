@@ -5,9 +5,9 @@ import { Monitor, Moon, Sun, type LucideIcon } from "lucide-react";
 import { THEME_COOKIE, type Theme, readCookie, resolveTheme, writeCookie } from "@/lib/ui-prefs";
 
 export const THEME_OPTIONS: { value: Theme; label: string; icon: LucideIcon }[] = [
-  { value: "light", label: "Светлая", icon: Sun },
-  { value: "dark", label: "Тёмная", icon: Moon },
-  { value: "system", label: "Как в системе", icon: Monitor },
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor },
 ];
 
 const listeners = new Set<() => void>();

@@ -40,9 +40,9 @@ const selectClass =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
 const TITLES = {
-  stage: (type: StageType) => `Прогресс: ${STAGE_TYPE_LABELS[type].toLowerCase()}`,
-  note: "Новая заметка",
-  status: "Сменить статус",
+  stage: (type: StageType) => `Progress: ${STAGE_TYPE_LABELS[type].toLowerCase()}`,
+  note: "New note",
+  status: "Change status",
 };
 
 function Actions({ saving, label }: { saving: boolean; label: string }) {
@@ -77,7 +77,7 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
         state,
       });
       if (note.trim()) await repository.addNote(app.id, { body: note, stageId: stage.id });
-      toast.success(`«${stageTitle(stage)}» добавлено в прогресс`);
+      toast.success(`${stageTitle(stage)} added to progress`);
       onDone();
     } catch (cause) {
       setError(saveErrorMessage(cause));
@@ -89,13 +89,13 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
   return (
     <form onSubmit={submit} className="grid gap-4" noValidate>
       {type === "interview" ? (
-        <Field label="Вид интервью">
+        <Field label="Interview kind">
           <select
             value={interviewKind}
             onChange={(e) => setInterviewKind(e.target.value)}
             className={selectClass}
           >
-            <option value="">Не указан</option>
+            <option value="">Not set</option>
             {INTERVIEW_KINDS.map((kind) => (
               <option key={kind} value={kind}>
                 {INTERVIEW_KIND_LABELS[kind]}
@@ -104,14 +104,14 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
           </select>
         </Field>
       ) : null}
-      <Field label="Название" hint={type === "other" ? "Например, «Встреча с CTO»" : "Необязательно"}>
+      <Field label="Title" hint={type === "other" ? "For example, “Meeting with the CTO”" : "Optional"}>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Дата и время">
+        <Field label="Date and time">
           <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
         </Field>
-        <Field label="Состояние">
+        <Field label="State">
           <select
             value={state}
             onChange={(e) => setState(e.target.value as StageState)}
@@ -125,12 +125,12 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
           </select>
         </Field>
       </div>
-      <Field label="Заметка">
+      <Field label="Note">
         <Textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={3}
-          placeholder="Что важно запомнить"
+          placeholder="What to remember"
         />
       </Field>
       {error ? (
@@ -138,7 +138,7 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
           {error}
         </p>
       ) : null}
-      <Actions saving={saving} label="Добавить в прогресс" />
+      <Actions saving={saving} label="Add to progress" />
     </form>
   );
 }
@@ -155,7 +155,7 @@ function NoteForm({ app, onDone }: { app: ApplicationDetails; onDone: () => void
     setSaving(true);
     try {
       await repository.addNote(app.id, { body, stageId: stageId || null });
-      toast.success("Заметка добавлена");
+      toast.success("Note added");
       onDone();
     } catch (cause) {
       setError(saveErrorMessage(cause));
@@ -166,7 +166,7 @@ function NoteForm({ app, onDone }: { app: ApplicationDetails; onDone: () => void
 
   return (
     <form onSubmit={submit} className="grid gap-4" noValidate>
-      <Field label="Заметка" required error={error ?? undefined}>
+      <Field label="Note" required error={error ?? undefined}>
         <Textarea
           value={body}
           autoFocus
@@ -175,13 +175,13 @@ function NoteForm({ app, onDone }: { app: ApplicationDetails; onDone: () => void
             setError(null);
           }}
           rows={4}
-          placeholder="Что спрашивали, договорённости, что сделать дальше"
+          placeholder="What they asked, what you agreed on, next steps"
         />
       </Field>
       {app.stages.length > 0 ? (
-        <Field label="К чему относится">
+        <Field label="Belongs to">
           <select value={stageId} onChange={(e) => setStageId(e.target.value)} className={selectClass}>
-            <option value="">Ко всему отклику</option>
+            <option value="">The whole application</option>
             {app.stages.map((stage) => (
               <option key={stage.id} value={stage.id}>
                 {stageTitle(stage)}
@@ -190,7 +190,7 @@ function NoteForm({ app, onDone }: { app: ApplicationDetails; onDone: () => void
           </select>
         </Field>
       ) : null}
-      <Actions saving={saving} label="Добавить заметку" />
+      <Actions saving={saving} label="Add note" />
     </form>
   );
 }
@@ -212,9 +212,9 @@ function StatusForm({ app, onDone }: { app: ApplicationDetails; onDone: () => vo
     return (
       <div className="grid gap-4">
         <p className="text-sm">
-          «{STATUS_LABELS[app.status]}» — итоговый статус, дальше его сменить нельзя.
+          {STATUS_LABELS[app.status]} is a final status and can’t be changed further.
           {app.previousStatus
-            ? ` Если он поставлен по ошибке, верните «${STATUS_LABELS[app.previousStatus]}».`
+            ? ` If it was set by mistake, go back to ${STATUS_LABELS[app.previousStatus]}.`
             : ""}
         </p>
         <DialogFooter>
@@ -226,11 +226,11 @@ function StatusForm({ app, onDone }: { app: ApplicationDetails; onDone: () => vo
                 onDone();
               }}
             >
-              Вернуть «{STATUS_LABELS[app.previousStatus]}»
+              Back to {STATUS_LABELS[app.previousStatus]}
             </Button>
           ) : (
             <Button type="button" onClick={onDone}>
-              Понятно
+              Got it
             </Button>
           )}
         </DialogFooter>
@@ -240,7 +240,7 @@ function StatusForm({ app, onDone }: { app: ApplicationDetails; onDone: () => vo
 
   return (
     <form onSubmit={submit} className="grid gap-4" noValidate>
-      <Field label="Новый статус" hint={`Сейчас: ${STATUS_LABELS[app.status]}`}>
+      <Field label="New status" hint={`Now: ${STATUS_LABELS[app.status]}`}>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as ApplicationStatus)}
@@ -254,11 +254,11 @@ function StatusForm({ app, onDone }: { app: ApplicationDetails; onDone: () => vo
         </select>
       </Field>
       {withReason ? (
-        <Field label="Причина" hint="Необязательно">
+        <Field label="Reason" hint="Optional">
           <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={500} />
         </Field>
       ) : null}
-      <Actions saving={false} label="Сменить статус" />
+      <Actions saving={false} label="Change status" />
     </form>
   );
 }

@@ -64,16 +64,16 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
         className="-ml-1 inline-flex items-center gap-1 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <ArrowLeft className="size-4" aria-hidden />
-        Отклики
+        Applications
       </Link>
       <div className="mt-2 flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="-ml-2 text-xl font-semibold">
             <InlineField
               fieldKey="company"
-              label="Компания"
+              label="Company"
               value={app.company}
-              emptyText="Добавить компанию"
+              emptyText="Add company"
               onSave={(value) => trySave(() => repository.update(app.id, { company: value ?? "" }))}
               className="[&_button]:text-xl [&_input]:h-9 [&_input]:text-lg"
             />
@@ -81,14 +81,14 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
           <div className="-ml-2 text-muted-foreground">
             <InlineField
               fieldKey="position"
-              label="Должность"
+              label="Position"
               value={app.position}
-              emptyText="Добавить должность"
+              emptyText="Add position"
               onSave={(value) => trySave(() => repository.update(app.id, { position: value ?? "" }))}
             />
           </div>
           <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-            Статус: <StatusBadge status={app.status} />
+            Status: <StatusBadge status={app.status} />
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -96,29 +96,27 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
             <DropdownMenuTrigger asChild>
               <Button>
                 <Plus aria-hidden />
-                Добавить событие
+                Add event
                 <ChevronDown aria-hidden />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel>Прогресс</DropdownMenuLabel>
+              <DropdownMenuLabel>Progress</DropdownMenuLabel>
               {STAGE_TYPES.map((type) => (
                 <DropdownMenuItem key={type} onSelect={() => setEvent({ kind: "stage", type })}>
                   {STAGE_TYPE_LABELS[type]}
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setEvent({ kind: "note" })}>Заметка</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setEvent({ kind: "note" })}>Note</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setEvent({ kind: "status" })}>
-                Сменить статус
-              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setEvent({ kind: "status" })}>Change status</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
             variant="outline"
             size="icon"
-            aria-label="Удалить отклик"
+            aria-label="Delete application"
             onClick={() => setConfirmDelete(true)}
           >
             <Trash2 aria-hidden />
@@ -131,13 +129,13 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Удалить отклик?</AlertDialogTitle>
-            <AlertDialogDescription>«{app.company}» будет удалён.</AlertDialogDescription>
+            <AlertDialogTitle>Delete application?</AlertDialogTitle>
+            <AlertDialogDescription>{app.company} will be deleted.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={() => void remove()}>
-              Удалить
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

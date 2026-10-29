@@ -93,13 +93,13 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
     const next: Errors = {};
     const salaryMin = parseAmount(values.salaryMin);
     const salaryMax = parseAmount(values.salaryMax);
-    if (salaryMin === "invalid") next.salaryMin = "Только число";
-    if (salaryMax === "invalid") next.salaryMax = "Только число";
+    if (salaryMin === "invalid") next.salaryMin = "Numbers only";
+    if (salaryMax === "invalid") next.salaryMax = "Numbers only";
 
     const parsed = applicationInputSchema.safeParse({
       company: values.company,
       position: values.position,
-      // Every new application starts at "Отправлен"; it moves on from there.
+      // Every new application starts as "Applied"; it moves on from there.
       status: "sent",
       appliedAt: values.appliedAt || null,
       url: values.url,
@@ -131,13 +131,13 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
     try {
       const app = await repository.create(parsed.data);
       if (values.note.trim()) await repository.addNote(app.id, { body: values.note });
-      toast.success(`Отклик «${app.company}» добавлен`, {
-        action: { label: "Открыть", onClick: () => router.push(`/applications/${app.id}`) },
+      toast.success(`Added ${app.company}`, {
+        action: { label: "Open", onClick: () => router.push(`/applications/${app.id}`) },
       });
       setValues(initialValues());
       onDone();
     } catch {
-      toast.error("Не удалось добавить отклик");
+      toast.error("Couldn’t add the application");
     } finally {
       setSaving(false);
     }
@@ -145,14 +145,14 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form ref={formRef} onSubmit={submit} noValidate className="grid gap-4">
-      <Field label="Компания" required error={errors.company}>
-        <Input {...bind("company")} autoComplete="organization" placeholder="Северный Ветер" autoFocus />
+      <Field label="Company" required error={errors.company}>
+        <Input {...bind("company")} autoComplete="organization" placeholder="Northgate Systems" autoFocus />
       </Field>
-      <Field label="Должность" required error={errors.position}>
-        <Input {...bind("position")} autoComplete="organization-title" placeholder="Frontend-разработчик" />
+      <Field label="Position" required error={errors.position}>
+        <Input {...bind("position")} autoComplete="organization-title" placeholder="Frontend Developer" />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Дата отклика" error={errors.appliedAt}>
+        <Field label="Date applied" error={errors.appliedAt}>
           <Input {...bind("appliedAt")} type="date" />
         </Field>
       </div>
@@ -165,28 +165,28 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
         className="-mx-1 flex w-fit items-center gap-1 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <ChevronDown className={cn("size-4 transition-transform", !more && "-rotate-90")} aria-hidden />
-        Ещё поля: ссылка, зарплата, контакт, заметка
+        More fields: link, salary, contact, note
       </button>
 
       <div id={moreId} hidden={!more} className="grid gap-4">
-        <Field label="Ссылка на вакансию" error={errors.url}>
+        <Field label="Job posting link" error={errors.url}>
           <Input {...bind("url")} type="url" inputMode="url" placeholder="https://example.com/jobs/123" />
         </Field>
         <div className="grid grid-cols-[1fr_1fr_5.5rem] gap-3">
-          <Field label="Зарплата от" error={errors.salaryMin}>
+          <Field label="Salary from" error={errors.salaryMin}>
             <Input {...bind("salaryMin")} inputMode="numeric" placeholder="200 000" />
           </Field>
-          <Field label="до" error={errors.salaryMax}>
+          <Field label="to" error={errors.salaryMax}>
             <Input {...bind("salaryMax")} inputMode="numeric" placeholder="250 000" />
           </Field>
-          <Field label="Валюта" error={errors.currency}>
+          <Field label="Currency" error={errors.currency}>
             <Input {...bind("currency")} maxLength={5} placeholder="RUB" />
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Формат">
+          <Field label="Work format">
             <select {...bind("workFormat")} className={selectClass}>
-              <option value="">Не указан</option>
+              <option value="">Not set</option>
               {WORK_FORMATS.map((format) => (
                 <option key={format} value={format}>
                   {WORK_FORMAT_LABELS[format]}
@@ -194,32 +194,32 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
               ))}
             </select>
           </Field>
-          <Field label="Город" error={errors.location}>
-            <Input {...bind("location")} placeholder="Москва" />
+          <Field label="Location" error={errors.location}>
+            <Input {...bind("location")} placeholder="Berlin" />
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Контакт" error={errors.contactName}>
-            <Input {...bind("contactName")} placeholder="Имя рекрутера" />
+          <Field label="Contact" error={errors.contactName}>
+            <Input {...bind("contactName")} placeholder="Recruiter’s name" />
           </Field>
-          <Field label="Email или Telegram" error={errors.contactInfo}>
+          <Field label="Email or messenger" error={errors.contactInfo}>
             <Input {...bind("contactInfo")} placeholder="name@example.com" />
           </Field>
         </div>
-        <Field label="Источник" error={errors.source} hint="Где нашли вакансию">
+        <Field label="Source" error={errors.source} hint="Where you found the job">
           <Input {...bind("source")} placeholder="hh.ru" />
         </Field>
-        <Field label="Заметка">
-          <Textarea {...bind("note")} rows={3} placeholder="Что важно запомнить" />
+        <Field label="Note">
+          <Textarea {...bind("note")} rows={3} placeholder="What to remember" />
         </Field>
       </div>
 
       <div className="-mx-4 -mb-4 flex justify-end gap-2 rounded-b-xl border-t bg-muted/50 p-4">
         <Button type="button" variant="outline" onClick={onDone}>
-          Отмена
+          Cancel
         </Button>
         <Button type="submit" disabled={saving}>
-          Добавить
+          Add
         </Button>
       </div>
     </form>

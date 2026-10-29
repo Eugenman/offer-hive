@@ -32,7 +32,7 @@ export function TableFooter({ page, pageSize, total, onPageChange, onPageSizeCha
   return (
     <div className="flex flex-wrap items-center gap-4 border-t px-6 py-3 text-sm text-muted-foreground">
       <div className="flex items-center gap-2">
-        <span id={labelId}>Показывать</span>
+        <span id={labelId}>Rows per page</span>
         <Select
           value={String(pageSize)}
           onValueChange={(value) => onPageSizeChange(Number(value) as PageSize)}
@@ -50,12 +50,12 @@ export function TableFooter({ page, pageSize, total, onPageChange, onPageSizeCha
         </Select>
       </div>
       <span className="tabular-nums">
-        {from}–{to} из {total}
+        {from}–{to} of {total}
       </span>
-      <nav aria-label="Страницы откликов" className="ml-auto flex items-center gap-1">
+      <nav aria-label="Application pages" className="ml-auto flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
           <ChevronLeft aria-hidden />
-          Назад
+          Previous
         </Button>
         {pageList(page, last).map((item, index) =>
           item === "gap" ? (
@@ -68,7 +68,7 @@ export function TableFooter({ page, pageSize, total, onPageChange, onPageSizeCha
               variant={item === page ? "outline" : "ghost"}
               size="icon-sm"
               aria-current={item === page ? "page" : undefined}
-              aria-label={`Страница ${item}`}
+              aria-label={`Page ${item}`}
               onClick={() => onPageChange(item)}
             >
               {item}
@@ -76,7 +76,7 @@ export function TableFooter({ page, pageSize, total, onPageChange, onPageSizeCha
           ),
         )}
         <Button variant="ghost" size="sm" onClick={() => onPageChange(page + 1)} disabled={page >= last}>
-          Вперёд
+          Next
           <ChevronRight aria-hidden />
         </Button>
       </nav>

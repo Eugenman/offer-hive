@@ -67,7 +67,7 @@ function NoteEditor({
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={onCancel}>
-          Отмена
+          Cancel
         </Button>
         <Button size="sm" onClick={async () => setError(await onSubmit(body))}>
           {submitLabel}
@@ -86,8 +86,8 @@ function NoteItem({ note }: { note: Note }) {
       <li>
         <NoteEditor
           initial={note.body}
-          label="Текст заметки"
-          submitLabel="Сохранить"
+          label="Note text"
+          submitLabel="Save"
           onCancel={() => setEditing(false)}
           onSubmit={async (body) => {
             try {
@@ -111,20 +111,20 @@ function NoteItem({ note }: { note: Note }) {
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="Действия с заметкой">
+          <Button variant="ghost" size="icon-sm" aria-label="Note actions">
             <Ellipsis aria-hidden />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setEditing(true)}>Изменить</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setEditing(true)}>Edit</DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onSelect={async () => {
               await repository.removeNote(note.id);
-              toast("Заметка удалена");
+              toast("Note deleted");
             }}
           >
-            Удалить
+            Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -159,7 +159,7 @@ function AddNoteInline({
     <NoteEditor
       initial=""
       label={label}
-      submitLabel="Добавить"
+      submitLabel="Add"
       onCancel={() => setOpen(false)}
       onSubmit={async (body) => {
         try {
@@ -192,7 +192,7 @@ function StageDate({ stage }: { stage: Stage }) {
       <input
         type="datetime-local"
         autoFocus
-        aria-label={`Дата: ${stageTitle(stage)}`}
+        aria-label={`Date: ${stageTitle(stage)}`}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={() => void save()}
@@ -211,13 +211,13 @@ function StageDate({ stage }: { stage: Stage }) {
         setDraft(toDateTimeLocal(stage.scheduledAt));
         setEditing(true);
       }}
-      aria-label={`Дата: ${label ?? "не указана"}. Изменить`}
+      aria-label={`Date: ${label ?? "not set"}. Edit`}
       className={cn(
         "-ml-1 rounded-md px-1 text-xs hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
         label ? "text-muted-foreground" : "text-muted-foreground/70",
       )}
     >
-      {label ?? "Добавить дату"}
+      {label ?? "Add date"}
     </button>
   );
 }
@@ -242,7 +242,7 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
         </span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={`Действия: ${title}`}>
+            <Button variant="ghost" size="icon-sm" aria-label={`Actions: ${title}`}>
               <Ellipsis aria-hidden />
             </Button>
           </DropdownMenuTrigger>
@@ -262,12 +262,12 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
               variant="destructive"
               onSelect={async () => {
                 await repository.removeStage(stage.id);
-                toast(`«${title}» удалено из прогресса`, {
-                  description: notes.length ? "Его заметки остались в заметках к отклику" : undefined,
+                toast(`${title} removed from progress`, {
+                  description: notes.length ? "Its notes moved to the application notes" : undefined,
                 });
               }}
             >
-              Удалить из прогресса
+              Remove from progress
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -280,7 +280,7 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
         </ul>
       ) : null}
       <div className="mt-2">
-        <AddNoteInline applicationId={stage.applicationId} stageId={stage.id} label="Добавить заметку" />
+        <AddNoteInline applicationId={stage.applicationId} stageId={stage.id} label="Add note" />
       </div>
     </article>
   );
@@ -291,7 +291,7 @@ export function StagesSection({ app }: { app: ApplicationDetails }) {
   return (
     <div className="grid content-start gap-4">
       {app.stages.length > 0 ? (
-        <DetailCard title="Прогресс">
+        <DetailCard title="Progress">
           <div className="grid gap-3">
             {app.stages.map((stage) => (
               <StageCard
@@ -303,7 +303,7 @@ export function StagesSection({ app }: { app: ApplicationDetails }) {
           </div>
         </DetailCard>
       ) : null}
-      <DetailCard title="Заметки к отклику">
+      <DetailCard title="Notes">
         {looseNotes.length ? (
           <ul className="mb-2 divide-y border-y">
             {looseNotes.map((note) => (
@@ -311,7 +311,7 @@ export function StagesSection({ app }: { app: ApplicationDetails }) {
             ))}
           </ul>
         ) : null}
-        <AddNoteInline applicationId={app.id} stageId={null} label="Добавить заметку" />
+        <AddNoteInline applicationId={app.id} stageId={null} label="Add note" />
       </DetailCard>
     </div>
   );

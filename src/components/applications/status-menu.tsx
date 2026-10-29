@@ -32,7 +32,7 @@ export function StatusMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label={`Статус: ${STATUS_LABELS[status]}. Сменить статус: ${company}`}
+          aria-label={`Status: ${STATUS_LABELS[status]}. Change status: ${company}`}
           // A double click on the row opens the application; not when it lands on the badge.
           onDoubleClick={(event) => event.stopPropagation()}
           // Fixed width, so every row's badge is the same size with room for the arrow.
@@ -67,7 +67,7 @@ export function StatusMenu({
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={onRevertStatus}>
-              Вернуть «{STATUS_LABELS[previousStatus]}»
+              Back to {STATUS_LABELS[previousStatus]}
             </DropdownMenuItem>
           </>
         ) : null}

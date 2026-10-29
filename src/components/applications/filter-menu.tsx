@@ -41,9 +41,9 @@ export function FilterMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" aria-label={active ? `Фильтр, выбрано ${active}` : "Фильтр"}>
+        <Button variant="outline" aria-label={active ? `Filter, ${active} selected` : "Filter"}>
           <ListFilter aria-hidden />
-          Фильтр
+          Filter
           {active ? (
             <span className="ml-0.5 rounded-md bg-primary px-1.5 text-xs text-primary-foreground tabular-nums">
               {active}
@@ -52,7 +52,7 @@ export function FilterMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Статус</DropdownMenuLabel>
+        <DropdownMenuLabel>Status</DropdownMenuLabel>
         {APPLICATION_STATUSES.map((status) => (
           <DropdownMenuCheckboxItem
             key={status}
@@ -66,7 +66,7 @@ export function FilterMenu({
         {availableSources.length > 0 ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Источник</DropdownMenuLabel>
+            <DropdownMenuLabel>Source</DropdownMenuLabel>
             {availableSources.map((source) => (
               <DropdownMenuCheckboxItem
                 key={source}
@@ -82,7 +82,7 @@ export function FilterMenu({
         {active ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={onReset}>Сбросить фильтр</DropdownMenuItem>
+            <DropdownMenuItem onSelect={onReset}>Reset filter</DropdownMenuItem>
           </>
         ) : null}
       </DropdownMenuContent>

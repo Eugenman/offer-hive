@@ -65,7 +65,7 @@ export function ApplicationsToolbar({
       <div className="flex items-center gap-2">
         <Button onClick={onAdd}>
           <Plus aria-hidden />
-          Добавить отклик
+          Add application
         </Button>
         <FilterMenu
           statuses={statuses}
@@ -77,7 +77,7 @@ export function ApplicationsToolbar({
         />
         <Button variant="outline" onClick={onExport} disabled={exportDisabled}>
           <Download aria-hidden />
-          Экспорт
+          Export
         </Button>
       </div>
       <div className="relative w-full max-w-64">
@@ -89,15 +89,15 @@ export function ApplicationsToolbar({
           type="search"
           value={value}
           onChange={(event) => change(event.target.value)}
-          placeholder="Компания или должность"
-          aria-label="Поиск по откликам"
+          placeholder="Company or position"
+          aria-label="Search applications"
           className="pr-8 pl-8 [&::-webkit-search-cancel-button]:hidden"
         />
         {value ? (
           <button
             type="button"
             onClick={() => change("")}
-            aria-label="Очистить поиск"
+            aria-label="Clear search"
             className="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
           >
             <X className="size-3.5" aria-hidden />
@@ -110,8 +110,8 @@ export function ApplicationsToolbar({
           size="icon"
           onClick={onDeleteSelected}
           disabled={selectedCount === 0}
-          aria-label={selectedCount ? `Удалить выбранные: ${selectedCount}` : "Удалить выбранные"}
-          title={selectedCount ? `Удалить выбранные: ${selectedCount}` : "Отметьте отклики, чтобы удалить"}
+          aria-label={selectedCount ? `Delete selected: ${selectedCount}` : "Delete selected"}
+          title={selectedCount ? `Delete selected: ${selectedCount}` : "Select applications to delete"}
           className="text-destructive hover:text-destructive disabled:text-muted-foreground"
         >
           <Trash2 aria-hidden />

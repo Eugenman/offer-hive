@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ApplicationStatus } from "@/lib/domain";
-import { APPLICATION_WORDS, pluralRu } from "@/lib/plural";
+import { countApplications } from "@/lib/plural";
 import { StatusBadge } from "./status-badge";
 
 type BulkActionsBarProps = {
@@ -26,16 +26,16 @@ export function BulkActionsBar({ count, statuses, onChangeStatus, onExport, onCl
   return (
     <div
       role="toolbar"
-      aria-label="Действия с выбранными откликами"
+      aria-label="Actions for selected applications"
       className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-xl bg-popover p-1.5 pl-4 text-sm text-popover-foreground shadow-lg ring-1 ring-border"
     >
       <span className="mr-2 whitespace-nowrap tabular-nums" aria-live="polite">
-        Выбрано: {count} {pluralRu(count, APPLICATION_WORDS)}
+        {countApplications(count)} selected
       </span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" disabled={statuses.length === 0}>
-            Сменить статус
+            Change status
             <ChevronDown aria-hidden />
           </Button>
         </DropdownMenuTrigger>
@@ -49,9 +49,9 @@ export function BulkActionsBar({ count, statuses, onChangeStatus, onExport, onCl
       </DropdownMenu>
       <Button variant="ghost" size="sm" onClick={onExport}>
         <Download aria-hidden />
-        Экспорт
+        Export
       </Button>
-      <Button variant="ghost" size="icon-sm" onClick={onClear} aria-label="Снять выделение">
+      <Button variant="ghost" size="icon-sm" onClick={onClear} aria-label="Clear selection">
         <X aria-hidden />
       </Button>
     </div>

@@ -17,7 +17,7 @@ import { ImportWizard } from "./import-wizard";
 
 /**
  * The import wizard on its own, opened in place (e.g. from Settings): no navigation, conflicts are
- * resolved inside the dialog, and the report offers "Открыть отклики".
+ * resolved inside the dialog, and the report offers "Open applications".
  */
 export function ImportDialog({
   open,
@@ -54,8 +54,8 @@ export function ImportDialog({
       >
         <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Импорт таблицы</DialogTitle>
-            <DialogDescription className="sr-only">Загрузка откликов из таблицы</DialogDescription>
+            <DialogTitle>Import spreadsheet</DialogTitle>
+            <DialogDescription className="sr-only">Import applications from a spreadsheet</DialogDescription>
           </DialogHeader>
           <ImportWizard
             key={session}
@@ -72,12 +72,12 @@ export function ImportDialog({
       <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Прервать импорт?</AlertDialogTitle>
-            <AlertDialogDescription>Ничего не будет записано.</AlertDialogDescription>
+            <AlertDialogTitle>Stop the import?</AlertDialogTitle>
+            <AlertDialogDescription>Nothing will be saved.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Продолжить импорт</AlertDialogCancel>
-            <AlertDialogAction onClick={close}>Прервать</AlertDialogAction>
+            <AlertDialogCancel>Continue import</AlertDialogCancel>
+            <AlertDialogAction onClick={close}>Stop</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

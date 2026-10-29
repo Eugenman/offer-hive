@@ -12,15 +12,15 @@ export const APPLICATION_STATUSES = [
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 
 export const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  sent: "Отправлен",
-  screening: "Скрининг",
-  interview: "Интервью",
-  technical: "Техническое",
-  test_task: "Тестовое",
-  offer: "Оффер",
-  offer_discussion: "Обсуждение оффера",
-  rejected: "Отказ",
-  withdrawn: "Отказался",
+  sent: "Applied",
+  screening: "Screening",
+  interview: "Interview",
+  technical: "Technical",
+  test_task: "Take-home",
+  offer: "Offer",
+  offer_discussion: "Negotiation",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
 };
 
 /** Hiring steps in order. Every new application starts at "sent". */
@@ -41,7 +41,7 @@ const isOutcome = (status: ApplicationStatus) => (OUTCOME_STATUSES as readonly s
 
 /**
  * Where an application may move from `from`: forward to any later step (optional steps may be skipped)
- * or to an outcome. "Обсуждение оффера" only follows "Оффер", which cannot be skipped.
+ * or to an outcome. "Negotiation" only follows "Offer", which cannot be skipped.
  * Going back is not a transition: it is undoing the last change (see `revertStatus`).
  */
 export function nextStatuses(from: ApplicationStatus): ApplicationStatus[] {
@@ -74,37 +74,37 @@ export const WORK_FORMATS = ["office", "hybrid", "remote"] as const;
 export type WorkFormat = (typeof WORK_FORMATS)[number];
 
 export const WORK_FORMAT_LABELS: Record<WorkFormat, string> = {
-  office: "Офис",
-  hybrid: "Гибрид",
-  remote: "Удалёнка",
+  office: "Office",
+  hybrid: "Hybrid",
+  remote: "Remote",
 };
 
 export const STAGE_TYPES = ["interview", "test_task", "other"] as const;
 export type StageType = (typeof STAGE_TYPES)[number];
 
 export const STAGE_TYPE_LABELS: Record<StageType, string> = {
-  interview: "Интервью",
-  test_task: "Тестовое",
-  other: "Другое",
+  interview: "Interview",
+  test_task: "Take-home",
+  other: "Other",
 };
 
 export const INTERVIEW_KINDS = ["technical", "team", "manager", "final"] as const;
 export type InterviewKind = (typeof INTERVIEW_KINDS)[number];
 
 export const INTERVIEW_KIND_LABELS: Record<InterviewKind, string> = {
-  technical: "техническое",
-  team: "с командой",
-  manager: "с руководителем",
-  final: "финальное",
+  technical: "technical",
+  team: "team",
+  manager: "hiring manager",
+  final: "final",
 };
 
 export const STAGE_STATES = ["planned", "done", "cancelled"] as const;
 export type StageState = (typeof STAGE_STATES)[number];
 
 export const STAGE_STATE_LABELS: Record<StageState, string> = {
-  planned: "Запланировано",
-  done: "Пройдено",
-  cancelled: "Отменено",
+  planned: "Planned",
+  done: "Done",
+  cancelled: "Cancelled",
 };
 
 /** ISO date without time, e.g. "2026-10-12". */
@@ -138,7 +138,7 @@ export type Stage = {
   type: StageType;
   interviewKind: InterviewKind | null;
   title: string | null;
-  /** Running number among stages of the same type and kind: "Интервью · техническое #2". */
+  /** Running number among stages of the same type and kind: "Interview · technical #2". */
   seq: number;
   scheduledAt: IsoDateTime | null;
   state: StageState;

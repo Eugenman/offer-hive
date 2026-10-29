@@ -32,7 +32,7 @@ function display(field: ComparableField, value: unknown): string {
   if (field === "workFormat") return WORK_FORMAT_LABELS[value as keyof typeof WORK_FORMAT_LABELS];
   if (field === "appliedAt") return formatDate(value as string) ?? String(value);
   if (field === "salaryMin" || field === "salaryMax")
-    return new Intl.NumberFormat("ru-RU").format(value as number);
+    return new Intl.NumberFormat("en-US").format(value as number);
   return String(value);
 }
 
@@ -56,9 +56,9 @@ function Card({
   return (
     <div className="min-w-0 overflow-hidden rounded-lg ring-1 ring-border">
       <div className="bg-muted/60 px-3 py-2 text-sm font-medium">
-        {side === "existing" ? "Старый вариант" : "Новый вариант"}
+        {side === "existing" ? "Existing" : "From the file"}
       </div>
-      <div role={merging ? "radiogroup" : undefined} aria-label={merging ? "Выбор значений" : undefined}>
+      <div role={merging ? "radiogroup" : undefined} aria-label={merging ? "Choose values" : undefined}>
         {conflict.fields.map((field) => {
           const changed = conflict.changed.includes(field);
           const pickable = merging?.includes(field) ?? false;
@@ -95,8 +95,8 @@ function Card({
           );
         })}
         <div className={cn("border-t px-3 py-1.5", note && "bg-amber-50 dark:bg-amber-950/40")}>
-          <span className="block text-xs text-muted-foreground">Заметки</span>
-          <span className="block break-words">{side === "existing" ? "Сохраняются" : (note ?? "—")}</span>
+          <span className="block text-xs text-muted-foreground">Notes</span>
+          <span className="block break-words">{side === "existing" ? "Kept" : (note ?? "—")}</span>
         </div>
       </div>
     </div>
@@ -108,7 +108,7 @@ type ConflictResolverProps = {
   onResolved: (decisions: { conflict: Conflict; choice: ConflictChoice }[]) => void;
 };
 
-/** "Такой отклик уже есть": the user decides every match, one by one. */
+/** "This application already exists": the user decides every match, one by one. */
 export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProps) {
   const [index, setIndex] = useState(0);
   const [decisions, setDecisions] = useState<{ conflict: Conflict; choice: ConflictChoice }[]>([]);
@@ -157,15 +157,15 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
   return (
     <div className="grid gap-4">
       <div className="flex items-baseline gap-2">
-        <h3 className="flex-1 text-base font-semibold">Такой отклик уже есть</h3>
+        <h3 className="flex-1 text-base font-semibold">This application already exists</h3>
         <span className="text-sm text-muted-foreground tabular-nums">
-          {index + 1} из {conflicts.length}
+          {index + 1} of {conflicts.length}
         </span>
       </div>
       {merging ? (
         <p className="-mt-2 text-sm text-muted-foreground">
-          В этих полях разные значения — выберите, какое оставить. Остальное объединится, заметки сохранятся
-          из обоих вариантов.
+          These fields differ. Choose which value to keep. Everything else is merged, and notes from both are
+          kept.
         </p>
       ) : null}
 
@@ -181,7 +181,7 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
             />
             {merging ? null : (
               <Button variant="outline" onClick={() => decide({ kind: side })}>
-                Принять вариант
+                Keep this one
               </Button>
             )}
           </div>
@@ -193,7 +193,7 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
           <>
             <span className="flex-1" />
             <Button variant="outline" onClick={() => setMerging(null)}>
-              Назад
+              Back
             </Button>
             <Button
               onClick={() =>
@@ -203,7 +203,7 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
                 })
               }
             >
-              Сохранить
+              Save
             </Button>
           </>
         ) : (
@@ -215,10 +215,10 @@ export function ConflictResolver({ conflicts, onResolved }: ConflictResolverProp
                 onCheckedChange={(v) => setApplyToRest(v === true)}
               />
               <Label htmlFor={applyToRestId} className="font-normal">
-                Сделать так же для остальных ({rest})
+                Do the same for the rest ({rest})
               </Label>
             </div>
-            <Button onClick={acceptBoth}>Принять оба</Button>
+            <Button onClick={acceptBoth}>Merge both</Button>
           </>
         )}
       </div>

@@ -5,14 +5,14 @@ import { cn } from "@/lib/utils";
 import type { ViewMode } from "./use-applications-url-state";
 
 const OPTIONS: { value: ViewMode; label: string; icon: LucideIcon }[] = [
-  { value: "table", label: "Таблица", icon: Table2 },
-  { value: "kanban", label: "Канбан", icon: Columns3 },
-  { value: "timeline", label: "Таймлайн", icon: ChartGantt },
+  { value: "table", label: "Table", icon: Table2 },
+  { value: "kanban", label: "Kanban", icon: Columns3 },
+  { value: "timeline", label: "Timeline", icon: ChartGantt },
 ];
 
 export function ViewSwitcher({ value, onChange }: { value: ViewMode; onChange: (view: ViewMode) => void }) {
   return (
-    <div role="radiogroup" aria-label="Вид" className="inline-flex rounded-lg bg-muted p-0.5">
+    <div role="radiogroup" aria-label="View" className="inline-flex rounded-lg bg-muted p-0.5">
       {OPTIONS.map(({ value: option, label, icon: Icon }) => {
         const active = option === value;
         return (

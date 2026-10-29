@@ -66,7 +66,7 @@ export function ApplicationsTimeline({
     <div className="overflow-x-auto px-6 pt-1 pb-6">
       <div className="min-w-[900px]">
         <div className="grid grid-cols-[14rem_1fr] border-b pb-2 text-xs text-muted-foreground">
-          <span>Отклик</span>
+          <span>Application</span>
           <div className="relative h-4">
             {ticks.map((tick) => (
               <span
@@ -74,7 +74,7 @@ export function ApplicationsTimeline({
                 className="absolute -translate-x-1/2 whitespace-nowrap"
                 style={{ left: left(tick) }}
               >
-                {formatDate(isoDay(tick))?.replace(/ \d{4}$/, "")}
+                {formatDate(isoDay(tick))?.replace(/,? \d{4}$/, "")}
               </span>
             ))}
           </div>
@@ -114,7 +114,7 @@ export function ApplicationsTimeline({
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      aria-label={`${app.company}: ${STATUS_LABELS[app.status]}, с ${formatDate(isoDay(start))}`}
+                      aria-label={`${app.company}: ${STATUS_LABELS[app.status]}, since ${formatDate(isoDay(start))}`}
                       className={cn(
                         "absolute top-1/2 h-4 -translate-y-1/2 rounded-full ring-1 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                         BAR_CLASSES[app.status],
@@ -123,7 +123,7 @@ export function ApplicationsTimeline({
                     />
                   </TooltipTrigger>
                   <TooltipContent>
-                    {STATUS_LABELS[app.status]} · отклик {formatDate(isoDay(start))}
+                    {STATUS_LABELS[app.status]} · applied {formatDate(isoDay(start))}
                   </TooltipContent>
                 </Tooltip>
                 {app.stages.map((stage) =>
@@ -159,16 +159,16 @@ export function ApplicationsTimeline({
               aria-hidden
               className="h-2.5 w-6 rounded-full bg-status-sent-bg ring-1 ring-status-sent/30"
             />
-            от отклика до последней смены статуса или до сегодня
+            from applying to the last status change, or to today
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden className="size-2.5 rounded-full bg-foreground" /> пройдено
+            <span aria-hidden className="size-2.5 rounded-full bg-foreground" /> done
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden className="size-2.5 rounded-full border-2 border-foreground" /> запланировано
+            <span aria-hidden className="size-2.5 rounded-full border-2 border-foreground" /> planned
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden className="h-3 w-px bg-primary/50" /> сегодня
+            <span aria-hidden className="h-3 w-px bg-primary/50" /> today
           </span>
         </p>
       </div>

@@ -28,11 +28,30 @@ export type RowResult =
   | { ok: false; row: number; reason: string };
 
 const STATUS_SYNONYMS: Record<ApplicationStatus, string[]> = {
-  sent: ["отправлен", "отправлено", "отклик", "откликнулся", "ждем ответа", "ждём ответа", "sent", "applied"],
+  sent: [
+    "отправлен",
+    "отправлено",
+    "отклик",
+    "откликнулся",
+    "ждем ответа",
+    "ждём ответа",
+    "sent",
+    "applied",
+    "awaiting reply",
+  ],
   screening: ["скрининг", "hr-скрининг", "звонок рекрутера", "screening", "phone screen", "recruiter screen"],
   interview: ["интервью", "собеседование", "собес", "interview"],
   technical: ["техническое", "техническое интервью", "техсобес", "technical", "technical interview"],
-  test_task: ["тестовое", "тестовое задание", "тз", "test", "test task", "assignment"],
+  test_task: [
+    "тестовое",
+    "тестовое задание",
+    "тз",
+    "take-home",
+    "take home",
+    "test",
+    "test task",
+    "assignment",
+  ],
   offer: ["оффер", "предложение", "offer"],
   offer_discussion: ["обсуждение оффера", "переговоры", "negotiation", "negotiations"],
   rejected: ["отказ", "отказали", "rejected", "rejection", "declined by company"],
@@ -53,7 +72,10 @@ function fromSynonyms<T extends string>(value: string, table: Record<T, string[]
   return null;
 }
 
-/** "15.10.2026", "2026-10-15", "15/10/2026" or an Excel serial number → "2026-10-15". */
+/**
+ * "15.10.2026", "2026-10-15", "15/10/2026", "10/15/2026" or an Excel serial number → "2026-10-15".
+ * Day-first by default; month-first when the day-first reading is not a real date.
+ */
 export function parseDate(value: string): string | null {
   const text = value.trim();
   let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
@@ -61,7 +83,7 @@ export function parseDate(value: string): string | null {
   match = text.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2,4})$/);
   if (match) {
     const year = match[3].length === 2 ? 2000 + +match[3] : +match[3];
-    return iso(year, +match[2], +match[1]);
+    return iso(year, +match[2], +match[1]) ?? iso(year, +match[1], +match[2]);
   }
   if (/^\d{5}$/.test(text)) {
     // Excel stores dates as days since 1899-12-30.
@@ -79,11 +101,15 @@ function iso(year: number, month: number, day: number) {
 
 const CURRENCY_SIGNS: Record<string, string> = { "₽": "RUB", руб: "RUB", $: "USD", "€": "EUR" };
 
-/** "200-250к", "от 3000$", "220 000–280 000 RUB", "до 150 тыс" → min / max / currency. */
+/**
+ * "200-250к", "от 3000$", "220 000–280 000 RUB", "до 150 тыс", "$120,000", "up to 90k EUR"
+ * → min / max / currency.
+ */
 export function parseSalary(value: string) {
   const text = value.toLocaleLowerCase("ru").replace(/\s+/g, " ").trim();
   const thousands = /(\d)\s?(к|k|тыс)/.test(text);
-  const numbers = [...text.replace(/(\d) (?=\d{3}\b)/g, "$1").matchAll(/\d+(?:[.,]\d+)?/g)].map((m) =>
+  // "120 000" and "120,000" are one number; "1,5к" stays a decimal.
+  const numbers = [...text.replace(/(\d)[ ,](?=\d{3}\b)/g, "$1").matchAll(/\d+(?:[.,]\d+)?/g)].map((m) =>
     Math.round(Number(m[0].replace(",", ".")) * (thousands ? 1000 : 1)),
   );
   const code = text.match(/\b(rub|usd|eur)\b/)?.[1]?.toUpperCase();
@@ -91,7 +117,8 @@ export function parseSalary(value: string) {
   const currency = code ?? (sign ? CURRENCY_SIGNS[sign] : null);
   if (numbers.length === 0) return { salaryMin: null, salaryMax: null, currency };
   if (numbers.length >= 2) return { salaryMin: numbers[0], salaryMax: numbers[1], currency };
-  if (text.startsWith("до")) return { salaryMin: null, salaryMax: numbers[0], currency };
+  if (text.startsWith("до") || text.startsWith("up to"))
+    return { salaryMin: null, salaryMax: numbers[0], currency };
   return { salaryMin: numbers[0], salaryMax: null, currency };
 }
 
@@ -155,7 +182,7 @@ export function normalizeRow(cells: RawRow, mapping: (ImportField | null)[], row
   if (!check.success) {
     const issue = check.error.issues[0];
     const field = String(issue.path[0] ?? "");
-    const label = field === "company" ? "Компания" : field === "position" ? "Должность" : field;
+    const label = field === "company" ? "Company" : field === "position" ? "Position" : field;
     return { ok: false, row, reason: `${label}: ${issue.message.toLowerCase()}` };
   }
   return { ok: true, row, value, mapped };

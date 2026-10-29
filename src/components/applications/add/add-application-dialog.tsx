@@ -47,9 +47,9 @@ export function AddApplicationDialog() {
           )}
         >
           <DialogHeader>
-            <DialogTitle>Новый отклик</DialogTitle>
+            <DialogTitle>New application</DialogTitle>
             <DialogDescription className="sr-only">
-              Добавьте отклик вручную или загрузите таблицу с откликами
+              Add an application by hand or import a spreadsheet
             </DialogDescription>
           </DialogHeader>
           <Tabs
@@ -61,9 +61,9 @@ export function AddApplicationDialog() {
           >
             <TabsList>
               <TabsTrigger value="manual" disabled={importInProgress}>
-                Вручную
+                Manually
               </TabsTrigger>
-              <TabsTrigger value="import">Импорт таблицы</TabsTrigger>
+              <TabsTrigger value="import">Import spreadsheet</TabsTrigger>
             </TabsList>
             <TabsContent value="manual" className="pt-3">
               <ManualForm onDone={close} />
@@ -78,12 +78,12 @@ export function AddApplicationDialog() {
       <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Прервать импорт?</AlertDialogTitle>
-            <AlertDialogDescription>Ничего не будет записано.</AlertDialogDescription>
+            <AlertDialogTitle>Stop the import?</AlertDialogTitle>
+            <AlertDialogDescription>Nothing will be saved.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Продолжить импорт</AlertDialogCancel>
-            <AlertDialogAction onClick={close}>Прервать</AlertDialogAction>
+            <AlertDialogCancel>Continue import</AlertDialogCancel>
+            <AlertDialogAction onClick={close}>Stop</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

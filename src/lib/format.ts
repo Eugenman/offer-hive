@@ -1,16 +1,18 @@
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
+const LOCALE = "en-US";
+
+const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
   day: "numeric",
   month: "short",
   year: "numeric",
   timeZone: "UTC",
 });
 
-const numberFormatter = new Intl.NumberFormat("ru-RU");
+const numberFormatter = new Intl.NumberFormat(LOCALE);
 
 // Dates without time are stored as YYYY-MM-DD and formatted in UTC so server and client agree.
 export function formatDate(value: string | null) {
   if (!value) return null;
-  return dateFormatter.format(new Date(`${value}T00:00:00Z`)).replace(" г.", "");
+  return dateFormatter.format(new Date(`${value}T00:00:00Z`));
 }
 
 export function formatSalary(min: number | null, max: number | null, currency: string | null) {
@@ -19,22 +21,22 @@ export function formatSalary(min: number | null, max: number | null, currency: s
   if (min !== null && max !== null) {
     return `${numberFormatter.format(min)}–${numberFormatter.format(max)}${suffix}`;
   }
-  if (min !== null) return `от ${numberFormatter.format(min)}${suffix}`;
-  return `до ${numberFormatter.format(max!)}${suffix}`;
+  if (min !== null) return `from ${numberFormatter.format(min)}${suffix}`;
+  return `up to ${numberFormatter.format(max!)}${suffix}`;
 }
 
-const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+const dateTimeFormatter = new Intl.DateTimeFormat(LOCALE, {
   day: "numeric",
   month: "short",
   year: "numeric",
-  hour: "2-digit",
+  hour: "numeric",
   minute: "2-digit",
 });
 
-/** Timestamps in the user's time zone, e.g. "30 окт. 2026, 15:00". Client-rendered only. */
+/** Timestamps in the user's time zone, e.g. "Oct 30, 2026, 3:00 PM". Client-rendered only. */
 export function formatDateTime(value: string | null) {
   if (!value) return null;
-  return dateTimeFormatter.format(new Date(value)).replace(" г.", "");
+  return dateTimeFormatter.format(new Date(value));
 }
 
 /** ISO timestamp → value for <input type="datetime-local"> in the user's time zone. */

@@ -5,11 +5,11 @@ import Link from "next/link";
 import { ChartColumn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
-import { APPLICATION_WORDS, pluralRu } from "@/lib/plural";
+import { countApplications } from "@/lib/plural";
 import { useRepositoryQuery } from "@/lib/repository/provider";
 import { computeStatistics, type Statistics } from "@/lib/stats";
 
-const percent = new Intl.NumberFormat("ru-RU", { style: "percent", maximumFractionDigits: 0 });
+const percent = new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 0 });
 const pct = (part: number, total: number) => (total === 0 ? "—" : percent.format(part / total));
 
 function Metric({ label, value, note }: { label: string; value: string | number; note?: string }) {
@@ -82,14 +82,14 @@ function Funnel({ stats }: { stats: Statistics }) {
           rows={[
             {
               key: "rejected",
-              label: "Отказала компания",
+              label: "Rejected",
               count: stats.outcomes.rejected,
               share: share(stats.outcomes.rejected),
               color: "bg-status-rejected-bg",
             },
             {
               key: "withdrawn",
-              label: "Отказался сам",
+              label: "Withdrawn",
               count: stats.outcomes.withdrawn,
               share: share(stats.outcomes.withdrawn),
               color: "bg-status-withdrawn-bg",
@@ -104,15 +104,16 @@ function Funnel({ stats }: { stats: Statistics }) {
 function Weeks({ stats }: { stats: Statistics }) {
   const max = Math.max(1, ...stats.weeks.map((week) => week.count));
   return (
-    <ol className="flex h-44 items-end gap-2" aria-label="Отклики по неделям">
+    <ol className="flex h-44 items-end gap-2" aria-label="Applications per week">
       {stats.weeks.map((week) => {
-        const label = formatDate(week.weekStart)?.replace(/ \d{4}$/, "");
-        const short = `${week.weekStart.slice(8, 10)}.${week.weekStart.slice(5, 7)}`;
+        // "Oct 12, 2026" → "Oct 12"
+        const label = formatDate(week.weekStart)?.replace(/,? \d{4}$/, "");
+        const short = label;
         return (
           <li
             key={week.weekStart}
             className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
-            aria-label={`Неделя с ${label}: ${week.count} ${pluralRu(week.count, APPLICATION_WORDS)}`}
+            aria-label={`Week of ${label}: ${countApplications(week.count)}`}
           >
             <span aria-hidden className="text-xs tabular-nums">
               {week.count || ""}
@@ -138,12 +139,12 @@ function Sources({ stats }: { stats: Statistics }) {
       <table className="w-full min-w-[520px] text-sm">
         <thead className="text-left text-xs text-muted-foreground">
           <tr className="border-b">
-            <th className="py-2 pr-3 font-medium">Источник</th>
-            <th className="py-2 pr-3 text-right font-medium">Откликов</th>
-            <th className="py-2 pr-3 text-right font-medium">Скрининг</th>
-            <th className="py-2 pr-3 text-right font-medium">Интервью</th>
-            <th className="py-2 pr-3 text-right font-medium">Офферы</th>
-            <th className="py-2 text-right font-medium">Дошли до скрининга</th>
+            <th className="py-2 pr-3 font-medium">Source</th>
+            <th className="py-2 pr-3 text-right font-medium">Applications</th>
+            <th className="py-2 pr-3 text-right font-medium">Screening</th>
+            <th className="py-2 pr-3 text-right font-medium">Interview</th>
+            <th className="py-2 pr-3 text-right font-medium">Offers</th>
+            <th className="py-2 text-right font-medium">Reached screening</th>
           </tr>
         </thead>
         <tbody>
@@ -171,7 +172,7 @@ export function StatisticsView() {
   if (error) {
     return (
       <p role="alert" className="px-6 py-8 text-sm text-destructive">
-        Не удалось посчитать статистику. Обновите страницу.
+        Couldn’t calculate statistics. Reload the page.
       </p>
     );
   }
@@ -183,9 +184,9 @@ export function StatisticsView() {
         <span className="flex size-12 items-center justify-center rounded-xl bg-muted" aria-hidden>
           <ChartColumn className="size-6 text-muted-foreground" />
         </span>
-        <h2 className="mt-4 text-base font-semibold">Пока нечего считать</h2>
+        <h2 className="mt-4 text-base font-semibold">Nothing to count yet</h2>
         <Button asChild className="mt-5">
-          <Link href="/dashboard?add=manual">Добавить отклик</Link>
+          <Link href="/dashboard?add=manual">Add application</Link>
         </Button>
       </div>
     );
@@ -197,24 +198,24 @@ export function StatisticsView() {
   return (
     <div className="grid gap-6 px-6 py-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Metric label="Всего откликов" value={stats.total} />
-        <Metric label="В работе" value={stats.inProgress} note="До оффера" />
+        <Metric label="Applications" value={stats.total} />
+        <Metric label="In progress" value={stats.inProgress} note="Before an offer" />
         <Metric
-          label="Дошли до скрининга"
+          label="Reached screening"
           value={percent.format(screened.share)}
-          note={`${screened.count} из ${stats.total}`}
+          note={`${screened.count} of ${stats.total}`}
         />
-        <Metric label="Офферы" value={offered.count} />
+        <Metric label="Offers" value={offered.count} />
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
-        <Section title="Воронка">
+        <Section title="Funnel">
           <Funnel stats={stats} />
         </Section>
-        <Section title="Отклики по неделям">
+        <Section title="Applications per week">
           <Weeks stats={stats} />
         </Section>
       </div>
-      <Section title="Источники">
+      <Section title="Sources">
         <Sources stats={stats} />
       </Section>
     </div>

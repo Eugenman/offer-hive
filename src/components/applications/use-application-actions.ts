@@ -4,15 +4,13 @@ import { toast } from "sonner";
 import { type ApplicationStatus, STATUS_LABELS } from "@/lib/domain";
 import { StatusTransitionError } from "@/lib/repository/types";
 import { buildApplicationsCsv, downloadFile, exportFileName } from "@/lib/export/applications-csv";
-import { APPLICATION_WORDS, pluralRu } from "@/lib/plural";
+import { countApplications } from "@/lib/plural";
 import { useRepository } from "@/lib/repository/provider";
 import type { ApplicationsQuery } from "@/lib/repository/types";
 
 const UNDO_DURATION_MS = 10_000;
 
-function countLabel(count: number) {
-  return `${count} ${pluralRu(count, APPLICATION_WORDS)}`;
-}
+const countLabel = countApplications;
 
 function reportError(message: string) {
   return () => toast.error(message);
@@ -32,22 +30,22 @@ export function useApplicationActions() {
     } catch (cause) {
       reportError(
         cause instanceof StatusTransitionError
-          ? `Нельзя перевести в «${STATUS_LABELS[status]}»`
-          : "Не удалось сменить статус",
+          ? `Can’t move to ${STATUS_LABELS[status]}`
+          : "Couldn’t change the status",
       )();
       return;
     }
     if (changedIds.length === 0) return;
     toast.success(
       ids.length === 1
-        ? `Статус: ${STATUS_LABELS[status]}`
-        : `Статус «${STATUS_LABELS[status]}» — ${countLabel(changedIds.length)}`,
+        ? `Status: ${STATUS_LABELS[status]}`
+        : `${STATUS_LABELS[status]}: ${countLabel(changedIds.length)}`,
       {
         duration: UNDO_DURATION_MS,
         action: {
-          label: "Отменить",
+          label: "Undo",
           onClick: () => {
-            repository.revertStatus(changedIds).catch(reportError("Не удалось отменить смену статуса"));
+            repository.revertStatus(changedIds).catch(reportError("Couldn’t undo the status change"));
           },
         },
       },
@@ -58,9 +56,9 @@ export function useApplicationActions() {
   async function revertStatus(id: string, to: ApplicationStatus) {
     try {
       await repository.revertStatus([id]);
-      toast.success(`Статус возвращён: ${STATUS_LABELS[to]}`);
+      toast.success(`Status back to ${STATUS_LABELS[to]}`);
     } catch {
-      reportError("Не удалось вернуть статус")();
+      reportError("Couldn’t undo the status change")();
     }
   }
 
@@ -68,15 +66,15 @@ export function useApplicationActions() {
     try {
       await repository.remove(ids);
     } catch {
-      reportError("Не удалось удалить")();
+      reportError("Couldn’t delete")();
       return;
     }
-    toast(ids.length === 1 && name ? `Удалён отклик «${name}»` : `Удалено: ${countLabel(ids.length)}`, {
+    toast(ids.length === 1 && name ? `Deleted ${name}` : `Deleted ${countLabel(ids.length)}`, {
       duration: UNDO_DURATION_MS,
       action: {
-        label: "Отменить",
+        label: "Undo",
         onClick: () => {
-          repository.restore(ids).catch(reportError("Не удалось восстановить"));
+          repository.restore(ids).catch(reportError("Couldn’t restore"));
         },
       },
     });
@@ -89,13 +87,13 @@ export function useApplicationActions() {
           ? (await Promise.all(target.ids.map((id) => repository.get(id)))).filter((app) => app !== null)
           : await repository.listDetailed(target.query);
       if (details.length === 0) {
-        toast("Нечего выгружать");
+        toast("Nothing to export");
         return;
       }
       downloadFile(buildApplicationsCsv(details), exportFileName(), "text/csv;charset=utf-8");
-      toast.success(`Выгружено: ${countLabel(details.length)}`);
+      toast.success(`Exported ${countLabel(details.length)}`);
     } catch {
-      reportError("Не удалось выгрузить таблицу")();
+      reportError("Couldn’t export")();
     }
   }
 

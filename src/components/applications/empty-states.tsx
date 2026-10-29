@@ -8,19 +8,19 @@ export function NoApplications({ onAdd, onImport }: { onAdd: () => void; onImpor
       <span className="flex size-12 items-center justify-center rounded-xl bg-muted" aria-hidden>
         <BriefcaseBusiness className="size-6 text-muted-foreground" />
       </span>
-      <h2 className="mt-4 text-base font-semibold">Начните отслеживать отклики</h2>
+      <h2 className="mt-4 text-base font-semibold">Start tracking your applications</h2>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        Добавьте первый отклик вручную или загрузите таблицу, которую вели раньше в Excel, Google Sheets или
+        Add your first application by hand, or import the spreadsheet you kept in Excel, Google Sheets or
         Numbers.
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         <Button onClick={onAdd}>
           <Plus aria-hidden />
-          Добавить отклик
+          Add application
         </Button>
         <Button variant="outline" onClick={onImport}>
           <Upload aria-hidden />
-          Импорт таблицы
+          Import spreadsheet
         </Button>
       </div>
     </div>
@@ -34,12 +34,10 @@ export function NoResults({ onReset }: { onReset: () => void }) {
       <span className="flex size-12 items-center justify-center rounded-xl bg-muted" aria-hidden>
         <SearchX className="size-6 text-muted-foreground" />
       </span>
-      <h2 className="mt-4 text-base font-semibold">Ничего не найдено</h2>
-      <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        Попробуйте изменить запрос или сбросить фильтр.
-      </p>
+      <h2 className="mt-4 text-base font-semibold">Nothing found</h2>
+      <p className="mt-1 max-w-sm text-sm text-muted-foreground">Try another search or reset the filter.</p>
       <Button variant="outline" className="mt-5" onClick={onReset}>
-        Сбросить поиск и фильтр
+        Reset search and filter
       </Button>
     </div>
   );

@@ -19,10 +19,10 @@ export function ThemeMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger className="flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none data-[state=open]:bg-background data-[state=open]:text-foreground">
         <SunMoon className="size-4.5 shrink-0" aria-hidden />
-        <span className="truncate sidebar-collapsed:sr-only">Тема</span>
+        <span className="truncate sidebar-collapsed:sr-only">Theme</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="right" align="end" sideOffset={8} className="w-44">
-        <DropdownMenuLabel>Тема оформления</DropdownMenuLabel>
+        <DropdownMenuLabel>Theme</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
           {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
             <DropdownMenuRadioItem key={value} value={value}>

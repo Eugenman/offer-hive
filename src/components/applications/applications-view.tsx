@@ -136,14 +136,14 @@ export function ApplicationsView() {
   if (error) {
     content = (
       <p role="alert" className="px-6 py-8 text-sm text-destructive">
-        Не удалось загрузить отклики. Обновите страницу.
+        Couldn’t load applications. Reload the page.
       </p>
     );
   } else if (!data || totalAll === undefined) {
     content = (
       <>
         <span className="sr-only" role="status">
-          Загружаем отклики
+          Loading applications
         </span>
         <TableSkeleton />
       </>

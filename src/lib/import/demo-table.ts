@@ -1,45 +1,36 @@
 import type { RawRow } from "./normalize";
 
-// Stand-in for a parsed spreadsheet while the import UI is built (stage 1).
-// Real file parsing (SheetJS) replaces this in stage 3; everything after parsing stays.
-// Fictional data: messy headers and values on purpose, like a hand-made Google Sheet.
+// Stand-in for a parsed spreadsheet while the import UI is built.
+// Real file parsing (SheetJS) replaces this; everything after parsing stays.
+// Fictional data: messy headers and values on purpose, like a hand-made spreadsheet.
 
 export const DEMO_TABLE: { headers: string[]; rows: RawRow[] } = {
-  headers: [
-    "Работодатель",
-    "Вакансия",
-    "Статус",
-    "Когда откликнулся",
-    "Зарплата",
-    "Где нашёл",
-    "Комментарий",
-    "Кто посоветовал",
-  ],
+  headers: ["Employer", "Job title", "Status", "Applied on", "Salary", "Found on", "Comment", "Referred by"],
   rows: [
     [
-      "ООО «Ромашка Тех»",
+      "Daisy Tech LLC",
       "React Developer",
-      "собеседование",
-      "15.10.2026",
-      "250-280к",
+      "interview",
+      "10/15/2026",
+      "120-140k USD",
       "LinkedIn",
-      "Позвали на техсобес 30 окт",
+      "Tech interview on Oct 30",
       "",
     ],
-    ["Облако-9", "TypeScript Engineer", "отклик", "02.05.2026", "", "hh.ru", "", "Игорь"],
-    ["Пиксель и Ко", "UI Engineer", "отказ", "03.10.2026", "от 200 000 ₽", "hh.ru", "", ""],
+    ["Cloudberry Apps", "TypeScript Engineer", "applied", "2026-05-02", "", "Indeed", "", "Sam"],
+    ["Pixel & Co", "UI Engineer", "rejected", "03.10.2026", "from $95,000", "Indeed", "", ""],
     [
-      "Звезда Девелопмент",
+      "Starling Software",
       "Frontend Engineer",
-      "ждём ответа",
+      "awaiting reply",
       "21.10.2026",
-      "от 3000$",
-      "Telegram-канал",
-      "Нашёл через канал вакансий",
-      "Аня",
+      "€70,000",
+      "Job board",
+      "Found via a newsletter",
+      "Anna",
     ],
-    ["Кедр Лабс", "Middle Frontend", "тестовое", "2026-10-19", "180–220 тыс", "hh.ru", "", ""],
-    ["Маяк Финтех", "Frontend-разработчик", "", "17/10/2026", "", "Сайт компании", "", ""],
-    ["", "Junior Frontend", "отклик", "20.10.2026", "", "hh.ru", "", ""],
+    ["Cedar Labs", "Mid-level Frontend", "take-home", "2026-10-19", "90–110k", "Indeed", "", ""],
+    ["Lighthouse Fintech", "Frontend Developer", "", "17/10/2026", "", "Company website", "", ""],
+    ["", "Junior Frontend", "applied", "20.10.2026", "", "Indeed", "", ""],
   ],
 };

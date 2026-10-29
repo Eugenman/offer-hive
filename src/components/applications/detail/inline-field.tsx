@@ -85,11 +85,11 @@ type DisplayProps = {
 
 function Display({ label, display, ariaValue, emptyText, saved, onStart, triggerRef, href }: DisplayProps) {
   const empty = ariaValue === null || ariaValue === "";
-  const editLabel = `${label}: ${empty ? "не указано" : ariaValue}. Изменить`;
+  const editLabel = `${label}: ${empty ? "not set" : ariaValue}. Edit`;
   const savedMark = saved ? (
     <span role="status" className="inline-flex shrink-0 items-center gap-1 text-xs text-status-offer">
       <Check className="size-3.5" aria-hidden />
-      Сохранено
+      Saved
     </span>
   ) : null;
 
@@ -247,7 +247,7 @@ export function InlineField({
           onBlur={() => state.close()}
           className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
         >
-          <option value="">Не указан</option>
+          <option value="">Not set</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -376,10 +376,10 @@ export function InlineGroupField({
       <ErrorText id={errorId} error={state.error} />
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={state.close}>
-          Отмена
+          Cancel
         </Button>
         <Button size="sm" onClick={() => void save()}>
-          Сохранить
+          Save
         </Button>
       </div>
     </div>

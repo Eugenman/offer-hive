@@ -27,7 +27,7 @@ export function rememberListPosition(applicationId: string) {
   write(FOCUS_KEY, applicationId);
 }
 
-/** Where "← Отклики" leads: the exact list view the user came from. */
+/** Where "← Applications" leads: the exact list view the user came from. */
 export function listUrl() {
   const url = read(LIST_URL_KEY);
   return url?.startsWith("/dashboard") ? url : "/dashboard";

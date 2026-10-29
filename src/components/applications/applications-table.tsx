@@ -141,27 +141,27 @@ export function ApplicationsTable({
             <Checkbox
               checked={allChecked}
               onCheckedChange={toggleAll}
-              aria-label="Выбрать все отклики на странице"
+              aria-label="Select all applications on this page"
             />
           </TableHead>
           <SortableHead field="company" sort={sort} onSort={onSort}>
-            Компания и должность
+            Company and position
           </SortableHead>
           <SortableHead field="status" sort={sort} onSort={onSort}>
-            Статус
+            Status
           </SortableHead>
           <SortableHead field="appliedAt" sort={sort} onSort={onSort}>
-            Дата отклика
+            Date applied
           </SortableHead>
           <SortableHead field="salary" sort={sort} onSort={onSort}>
-            Зарплата
+            Salary
           </SortableHead>
           <SortableHead field="source" sort={sort} onSort={onSort}>
-            Источник
+            Source
           </SortableHead>
-          <TableHead>Заметки</TableHead>
+          <TableHead>Notes</TableHead>
           <TableHead className="pr-6">
-            <span className="sr-only">Действия</span>
+            <span className="sr-only">Actions</span>
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -182,7 +182,7 @@ export function ApplicationsTable({
               <Checkbox
                 checked={selected.has(app.id)}
                 onCheckedChange={() => toggleOne(app.id)}
-                aria-label={`Выбрать: ${app.company}`}
+                aria-label={`Select ${app.company}`}
               />
             </TableCell>
             <TableCell>
@@ -219,8 +219,8 @@ export function ApplicationsTable({
             <TableCell className="pr-6 text-right">
               <Link
                 href={`/applications/${app.id}`}
-                aria-label={`Открыть: ${app.company}`}
-                title="Открыть"
+                aria-label={`Open ${app.company}`}
+                title="Open"
                 className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
               >
                 <Eye className="size-4" aria-hidden />

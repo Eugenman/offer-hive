@@ -29,8 +29,8 @@ export function ApplicationCard({ app, className }: ApplicationCardProps) {
       </div>
       <Link
         href={`/applications/${app.id}`}
-        aria-label={`Открыть: ${app.company}`}
-        title="Открыть"
+        aria-label={`Open ${app.company}`}
+        title="Open"
         // Keeps a press on the button from starting a drag of the whole card.
         onPointerDown={(event) => event.stopPropagation()}
         onDoubleClick={(event) => event.stopPropagation()}
@@ -47,7 +47,7 @@ export function ApplicationCard({ app, className }: ApplicationCardProps) {
       {app.latestNote ? (
         <p className="mt-2 flex gap-1.5 text-xs text-muted-foreground">
           <MessageSquareText className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          <span className="shrink-0 tabular-nums" aria-label={`Заметок: ${app.noteCount}`}>
+          <span className="shrink-0 tabular-nums" aria-label={`Notes: ${app.noteCount}`}>
             {app.noteCount}
           </span>
           <span className="line-clamp-2">{app.latestNote.body}</span>

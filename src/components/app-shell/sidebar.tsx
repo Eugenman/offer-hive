@@ -22,22 +22,22 @@ type NavItem = {
   label: string;
   hint: string;
   icon: LucideIcon;
-  /** Other sections that belong to this item, e.g. an application page belongs to "Отклики". */
+  /** Other sections that belong to this item, e.g. an application page belongs to "Applications". */
   alsoActiveOn?: string[];
 };
 
 const MAIN_NAV: NavItem[] = [
   {
     href: "/dashboard",
-    label: "Отклики",
-    hint: "Все отклики: таблица, канбан, список, таймлайн",
+    label: "Applications",
+    hint: "All applications: table, kanban, timeline",
     icon: BriefcaseBusiness,
     alsoActiveOn: ["/applications"],
   },
   {
     href: "/statistics",
-    label: "Статистика",
-    hint: "Воронка, источники и динамика по неделям",
+    label: "Statistics",
+    hint: "Funnel, sources and weekly activity",
     icon: ChartColumn,
   },
 ];
@@ -45,8 +45,8 @@ const MAIN_NAV: NavItem[] = [
 const BOTTOM_NAV: NavItem[] = [
   {
     href: "/settings",
-    label: "Настройки",
-    hint: "Язык, тема, экспорт и аккаунт",
+    label: "Settings",
+    hint: "Export, import and your data",
     icon: Settings,
   },
 ];
@@ -123,7 +123,7 @@ export function Sidebar() {
 
   return (
     <aside
-      aria-label="Основная навигация"
+      aria-label="Main navigation"
       className="sticky top-0 flex h-screen w-60 shrink-0 flex-col gap-1 bg-sidebar px-3 py-4 sidebar-collapsed:w-16"
     >
       <div className="mb-4 flex items-center gap-2 px-1 sidebar-collapsed:flex-col">
@@ -137,7 +137,7 @@ export function Sidebar() {
         <button
           type="button"
           onClick={toggle}
-          aria-label="Свернуть боковое меню"
+          aria-label="Collapse sidebar"
           aria-expanded={state === "expanded"}
           suppressHydrationWarning
           className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-background hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
@@ -163,11 +163,11 @@ export function Sidebar() {
             className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-xs font-medium ring-1 ring-border"
             aria-hidden
           >
-            ДП
+            DU
           </span>
           <span className="min-w-0 sidebar-collapsed:sr-only">
-            <span className="block truncate text-sm font-medium">Демо-пользователь</span>
-            <span className="block truncate text-xs text-muted-foreground">Вход через GitHub</span>
+            <span className="block truncate text-sm font-medium">Demo user</span>
+            <span className="block truncate text-xs text-muted-foreground">Signed in with GitHub</span>
           </span>
         </div>
       </div>

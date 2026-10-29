@@ -3,9 +3,9 @@ import { NotFoundError } from "@/lib/repository/types";
 
 /** Turns a repository error into a short message shown under the field. */
 export function saveErrorMessage(error: unknown): string {
-  if (error instanceof ZodError) return error.issues[0]?.message ?? "Проверьте значение";
-  if (error instanceof NotFoundError) return "Отклик не найден — возможно, его удалили";
-  return "Не удалось сохранить";
+  if (error instanceof ZodError) return error.issues[0]?.message ?? "Check the value";
+  if (error instanceof NotFoundError) return "Application not found. It may have been deleted";
+  return "Couldn’t save";
 }
 
 export async function trySave(run: () => Promise<unknown>): Promise<string | null> {

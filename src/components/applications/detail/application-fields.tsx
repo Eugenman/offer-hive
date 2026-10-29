@@ -39,36 +39,36 @@ export function ApplicationFields({ app }: { app: ApplicationDetails }) {
   const contact = [app.contactName, app.contactInfo].filter(Boolean).join(" · ") || null;
 
   return (
-    <DetailCard title="Данные отклика">
+    <DetailCard title="Details">
       <dl>
-        <Row label="Дата отклика">
+        <Row label="Date applied">
           <InlineField
             fieldKey="appliedAt"
-            label="Дата отклика"
+            label="Date applied"
             kind="date"
             value={app.appliedAt}
             display={formatDate(app.appliedAt)}
-            emptyText="Добавить дату"
+            emptyText="Add date"
             onSave={(value) => update({ appliedAt: value })}
           />
         </Row>
-        <Row label="Ссылка">
+        <Row label="Link">
           <InlineField
             fieldKey="url"
-            label="Ссылка на вакансию"
+            label="Job posting link"
             kind="url"
             value={app.url}
             display={app.url?.replace(/^https?:\/\//, "")}
             href={app.url}
-            emptyText="Добавить ссылку"
+            emptyText="Add link"
             placeholder="https://example.com/jobs/123"
             onSave={(value) => update({ url: value })}
           />
         </Row>
-        <Row label="Зарплата">
+        <Row label="Salary">
           <InlineGroupField
             fieldKey="salary"
-            label="Зарплата"
+            label="Salary"
             values={{
               min: app.salaryMin?.toString() ?? "",
               max: app.salaryMax?.toString() ?? "",
@@ -76,64 +76,64 @@ export function ApplicationFields({ app }: { app: ApplicationDetails }) {
             }}
             display={salary}
             ariaValue={salary}
-            emptyText="Добавить зарплату"
+            emptyText="Add salary"
             parts={[
-              { key: "min", label: "Зарплата от", placeholder: "от", inputMode: "numeric" },
-              { key: "max", label: "Зарплата до", placeholder: "до", inputMode: "numeric" },
-              { key: "currency", label: "Валюта", placeholder: "RUB", maxLength: 5, className: "max-w-20" },
+              { key: "min", label: "Salary from", placeholder: "from", inputMode: "numeric" },
+              { key: "max", label: "Salary to", placeholder: "to", inputMode: "numeric" },
+              { key: "currency", label: "Currency", placeholder: "USD", maxLength: 5, className: "max-w-20" },
             ]}
             onSave={async (values) => {
               const min = parseAmount(values.min);
               const max = parseAmount(values.max);
-              if (min === "invalid" || max === "invalid") return "Зарплата — только числа";
+              if (min === "invalid" || max === "invalid") return "Salary: numbers only";
               return update({ salaryMin: min, salaryMax: max, currency: values.currency });
             }}
           />
         </Row>
-        <Row label="Формат">
+        <Row label="Work format">
           <InlineField
             fieldKey="workFormat"
-            label="Формат работы"
+            label="Work format"
             kind="select"
             value={app.workFormat}
             display={app.workFormat ? WORK_FORMAT_LABELS[app.workFormat] : null}
             options={WORK_FORMATS.map((format) => ({ value: format, label: WORK_FORMAT_LABELS[format] }))}
-            emptyText="Выбрать формат"
+            emptyText="Choose format"
             onSave={(value) => update({ workFormat: (value as ApplicationPatch["workFormat"]) ?? null })}
           />
         </Row>
-        <Row label="Город">
+        <Row label="Location">
           <InlineField
             fieldKey="location"
-            label="Город"
+            label="Location"
             value={app.location}
-            emptyText="Добавить город"
-            placeholder="Москва"
+            emptyText="Add location"
+            placeholder="Berlin"
             onSave={(value) => update({ location: value ?? "" })}
           />
         </Row>
-        <Row label="Контакт">
+        <Row label="Contact">
           <InlineGroupField
             fieldKey="contact"
-            label="Контакт"
+            label="Contact"
             values={{ name: app.contactName ?? "", info: app.contactInfo ?? "" }}
             display={contact}
             ariaValue={contact}
             href={contactHref(app.contactInfo)}
-            emptyText="Добавить контакт"
+            emptyText="Add contact"
             parts={[
-              { key: "name", label: "Имя контакта", placeholder: "Имя" },
-              { key: "info", label: "Email или Telegram", placeholder: "name@example.com" },
+              { key: "name", label: "Contact name", placeholder: "Name" },
+              { key: "info", label: "Email or messenger", placeholder: "name@example.com" },
             ]}
             onSave={(values) => update({ contactName: values.name, contactInfo: values.info })}
           />
         </Row>
-        <Row label="Источник">
+        <Row label="Source">
           <InlineField
             fieldKey="source"
-            label="Источник"
+            label="Source"
             value={app.source}
-            emptyText="Добавить источник"
+            emptyText="Add source"
             placeholder="hh.ru"
             onSave={(value) => update({ source: value ?? "" })}
           />

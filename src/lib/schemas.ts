@@ -9,25 +9,25 @@ import {
 } from "./domain";
 
 // One set of schemas validates forms, imports and storage writes.
-// Error messages are Russian for now; they move to next-intl in stage 4.
+// Error messages are shown to the user as is.
 
 const optionalText = (max: number) =>
   z
     .string()
     .trim()
-    .max(max, `Не длиннее ${max} символов`)
+    .max(max, `At most ${max} characters`)
     .transform((value) => (value === "" ? null : value))
     .nullable();
 
 const requiredText = (max: number) =>
-  z.string().trim().min(1, "Обязательное поле").max(max, `Не длиннее ${max} символов`);
+  z.string().trim().min(1, "Required").max(max, `At most ${max} characters`);
 
 const isoDate = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Неверная дата")
-  .refine((value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)), "Неверная дата");
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date")
+  .refine((value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)), "Invalid date");
 
-const salary = z.number().int("Только целое число").nonnegative("Не меньше нуля").nullable();
+const salary = z.number().int("Whole numbers only").nonnegative("Must be 0 or more").nullable();
 
 const urlField = z
   .string()
@@ -36,7 +36,7 @@ const urlField = z
   .nullable()
   .refine(
     (value) => value === null || /^https?:\/\/\S+\.\S+/.test(value),
-    "Ссылка должна начинаться с http:// или https://",
+    "The link must start with http:// or https://",
   );
 
 const applicationFields = z.object({
@@ -58,7 +58,7 @@ const applicationFields = z.object({
 const salaryOrder = (value: { salaryMin?: number | null; salaryMax?: number | null }) =>
   value.salaryMin == null || value.salaryMax == null || value.salaryMin <= value.salaryMax;
 
-const salaryOrderIssue = { message: "«От» больше, чем «до»", path: ["salaryMin"] };
+const salaryOrderIssue = { message: "“From” is greater than “to”", path: ["salaryMin"] };
 
 export const applicationInputSchema = applicationFields
   .partial()
@@ -99,7 +99,7 @@ export const stageInputSchema = stageFields
   .partial()
   .required({ type: true })
   .refine(interviewKindOnlyForInterviews, {
-    message: "Вид указывается только для интервью",
+    message: "The kind applies to interviews only",
     path: ["interviewKind"],
   });
 export type StageInput = z.input<typeof stageInputSchema>;

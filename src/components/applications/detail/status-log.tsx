@@ -9,14 +9,14 @@ import { useApplicationActions } from "../use-application-actions";
 import { DetailCard } from "./detail-card";
 
 /**
- * Every status change with its system time and, for "Отказ / Отказался", the reason.
+ * Every status change with its system time and, for "Rejected / Withdrawn", the reason.
  * The newest change can be undone: going back is only allowed to fix a mistake.
  */
 export function StatusLog({ app }: { app: ApplicationDetails }) {
   const actions = useApplicationActions();
   const previous = app.previousStatus;
   return (
-    <DetailCard title="Журнал статусов">
+    <DetailCard title="Status history">
       <ol className="grid gap-2">
         {app.statusChanges.map((change, index) => (
           <li key={change.id} className="text-sm">
@@ -24,10 +24,10 @@ export function StatusLog({ app }: { app: ApplicationDetails }) {
               {change.fromStatus ? (
                 <>
                   <StatusBadge status={change.fromStatus} />
-                  <ArrowRight className="size-3.5 text-muted-foreground" aria-label="на" />
+                  <ArrowRight className="size-3.5 text-muted-foreground" aria-label="to" />
                 </>
               ) : (
-                <span className="text-muted-foreground">Создан со статусом</span>
+                <span className="text-muted-foreground">Created as</span>
               )}
               <StatusBadge status={change.toStatus} />
               {index === 0 && previous ? (
@@ -38,14 +38,14 @@ export function StatusLog({ app }: { app: ApplicationDetails }) {
                   onClick={() => void actions.revertStatus(app.id, previous)}
                 >
                   <Undo2 aria-hidden />
-                  Вернуть «{STATUS_LABELS[previous]}»
+                  Back to {STATUS_LABELS[previous]}
                 </Button>
               ) : null}
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
               <time dateTime={change.changedAt}>{formatDateTime(change.changedAt)}</time>
             </p>
-            {change.reason ? <p className="mt-0.5 text-sm">Причина: {change.reason}</p> : null}
+            {change.reason ? <p className="mt-0.5 text-sm">Reason: {change.reason}</p> : null}
           </li>
         ))}
       </ol>

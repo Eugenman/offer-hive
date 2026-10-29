@@ -55,13 +55,13 @@ export function computeStatistics(
   const total = applications.length;
   const funnel: FunnelStep[] = PIPELINE_STATUSES.map((status) => {
     const count = applications.filter((app) => reached(app, status)).length;
-    const label = status === "sent" ? "Отправлено" : STATUS_LABELS[status];
+    const label = STATUS_LABELS[status];
     return { key: status, label, count, share: share(count, total) };
   });
 
   const bySource = new Map<string, SourceRow>();
   for (const app of applications) {
-    const source = app.source ?? "Не указан";
+    const source = app.source ?? "Not specified";
     const row = bySource.get(source) ?? { source, total: 0, screenings: 0, interviews: 0, offers: 0 };
     row.total += 1;
     if (reached(app, "screening")) row.screenings += 1;
@@ -70,7 +70,7 @@ export function computeStatistics(
     bySource.set(source, row);
   }
   const sources = [...bySource.values()].sort(
-    (a, b) => b.total - a.total || a.source.localeCompare(b.source, "ru"),
+    (a, b) => b.total - a.total || a.source.localeCompare(b.source, "en"),
   );
 
   // Applications per week by the date the user applied (not when the record was created).

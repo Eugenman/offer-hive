@@ -17,7 +17,7 @@ import {
 } from "@/lib/import/fields";
 import { type ImportPlan, planImport } from "@/lib/import/match";
 import { normalizeRow, type RowResult } from "@/lib/import/normalize";
-import { APPLICATION_WORDS, pluralRu } from "@/lib/plural";
+import { countApplications } from "@/lib/plural";
 import { useRepository } from "@/lib/repository/provider";
 import { ConflictResolver } from "./conflict-resolver";
 
@@ -32,7 +32,7 @@ type Step =
 const selectClass =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive dark:bg-input/30";
 
-const count = (n: number) => `${n} ${pluralRu(n, APPLICATION_WORDS)}`;
+const count = countApplications;
 
 export function ImportWizard({
   onDone,
@@ -42,7 +42,7 @@ export function ImportWizard({
   onDone: () => void;
   /** True while there is something to lose on close (after a file is chosen, before writing). */
   onProgressChange: (inProgress: boolean) => void;
-  /** Shown as "Открыть отклики" in the report when the wizard runs outside the applications page. */
+  /** Shown as "Open applications" in the report when the wizard runs outside the applications page. */
   onOpenList?: () => void;
 }) {
   const repository = useRepository();
@@ -75,20 +75,20 @@ export function ImportWizard({
       const result = await applyImport(repository, plan.toCreate, decisions);
       setStep({ name: "report", result, unchanged: plan.unchanged.length, invalid });
     } catch {
-      toast.error("Не удалось импортировать таблицу");
+      toast.error("Couldn’t import the spreadsheet");
     }
   }
 
   async function confirmMapping(mapping: (ImportField | null)[]) {
     const missing = REQUIRED_IMPORT_FIELDS.filter((field) => !mapping.includes(field));
     if (missing.length > 0) {
-      setMappingError(`Выберите колонку для поля: ${missing.map((f) => IMPORT_FIELD_LABELS[f]).join(", ")}`);
+      setMappingError(`Choose a column for: ${missing.map((f) => IMPORT_FIELD_LABELS[f]).join(", ")}`);
       return;
     }
     const used = mapping.filter((field): field is ImportField => field !== null);
     const duplicate = used.find((field, index) => used.indexOf(field) !== index);
     if (duplicate) {
-      setMappingError(`Поле «${IMPORT_FIELD_LABELS[duplicate]}» выбрано для нескольких колонок`);
+      setMappingError(`${IMPORT_FIELD_LABELS[duplicate]} is chosen for more than one column`);
       return;
     }
     const rows = DEMO_TABLE.rows.map((cells, index) => normalizeRow(cells, mapping, index + 2));
@@ -120,9 +120,9 @@ export function ImportWizard({
           )}
         >
           <Upload className="size-6 text-muted-foreground" aria-hidden />
-          <span className="font-medium">Перетащите файл сюда или выберите на компьютере</span>
+          <span className="font-medium">Drop a file here or choose one from your computer</span>
           <span className="text-xs text-muted-foreground">
-            Excel, LibreOffice, Numbers, CSV. Файл обрабатывается в браузере и никуда не отправляется.
+            Excel, LibreOffice, Numbers, CSV. The file is read in your browser and never uploaded.
           </span>
           <input
             type="file"
@@ -132,13 +132,13 @@ export function ImportWizard({
           />
         </label>
         <p className="text-sm text-muted-foreground">
-          Начинаете с нуля?{" "}
+          Starting from scratch?{" "}
           <button
             type="button"
             onClick={downloadTemplate}
             className="text-foreground underline underline-offset-4 hover:no-underline"
           >
-            Скачайте шаблон таблицы
+            Download the template
           </button>
         </p>
       </div>
@@ -161,15 +161,15 @@ export function ImportWizard({
           <span className="text-muted-foreground">· {count(DEMO_TABLE.rows.length)}</span>
         </div>
         <p className="-mt-2 text-sm text-muted-foreground">
-          Проверьте, какие колонки куда попадут. Что распознано автоматически, уже выбрано.
+          Check where each column goes. Columns recognized automatically are already set.
         </p>
         <div className="max-h-[50vh] overflow-auto rounded-lg ring-1 ring-border">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-muted text-left text-xs text-muted-foreground">
               <tr>
-                <th className="px-3 py-2 font-medium">Колонка в файле</th>
-                <th className="px-3 py-2 font-medium">Пример значения</th>
-                <th className="w-56 px-3 py-2 font-medium">Поле в Offerhive</th>
+                <th className="px-3 py-2 font-medium">Column in the file</th>
+                <th className="px-3 py-2 font-medium">Sample value</th>
+                <th className="w-56 px-3 py-2 font-medium">Field in Offerhive</th>
               </tr>
             </thead>
             <tbody>
@@ -183,10 +183,10 @@ export function ImportWizard({
                       <select
                         value={mapping[index] ?? ""}
                         onChange={(event) => setField(index, event.target.value)}
-                        aria-label={`Поле для колонки «${header}»`}
+                        aria-label={`Field for column ${header}`}
                         className={cn(selectClass, !mapping[index] && "text-muted-foreground")}
                       >
-                        <option value="">Не импортировать</option>
+                        <option value="">Don’t import</option>
                         {IMPORT_FIELDS.map((field) => (
                           <option key={field} value={field}>
                             {IMPORT_FIELD_LABELS[field]}
@@ -207,9 +207,9 @@ export function ImportWizard({
         ) : null}
         <div className="-mx-4 -mb-4 flex justify-end gap-2 rounded-b-xl border-t bg-muted/50 p-4">
           <Button variant="outline" onClick={() => setStep({ name: "file" })}>
-            Другой файл
+            Another file
           </Button>
-          <Button onClick={() => void confirmMapping(mapping)}>Продолжить</Button>
+          <Button onClick={() => void confirmMapping(mapping)}>Continue</Button>
         </div>
       </div>
     );
@@ -227,18 +227,18 @@ export function ImportWizard({
 
   const { result, unchanged, invalid } = step;
   const lines = [
-    { label: "Добавлено", value: result.created },
-    { label: "Обновлено", value: result.updated },
-    { label: "Оставлено как было", value: result.kept },
-    { label: "Без изменений, пропущено", value: unchanged },
-    { label: "Не импортировано из-за ошибок", value: invalid.length },
+    { label: "Added", value: result.created },
+    { label: "Updated", value: result.updated },
+    { label: "Kept as is", value: result.kept },
+    { label: "Unchanged, skipped", value: unchanged },
+    { label: "Not imported because of errors", value: invalid.length },
   ].filter((line) => line.value > 0);
 
   return (
     <div className="grid gap-4">
       <div className="flex items-center gap-2">
         <CircleCheck className="size-5 text-status-offer" aria-hidden />
-        <h3 className="text-base font-semibold">Импорт завершён</h3>
+        <h3 className="text-base font-semibold">Import finished</h3>
       </div>
       <dl className="grid gap-1 text-sm">
         {lines.map((line) => (
@@ -250,12 +250,12 @@ export function ImportWizard({
       </dl>
       {invalid.length > 0 ? (
         <div className="rounded-lg bg-muted/60 p-3 text-sm">
-          <p className="mb-1 font-medium">Строки с ошибками</p>
+          <p className="mb-1 font-medium">Rows with errors</p>
           <ul className="grid gap-0.5 text-muted-foreground">
             {invalid.map((row) =>
               row.ok ? null : (
                 <li key={row.row}>
-                  Строка {row.row}: {row.reason}
+                  Row {row.row}: {row.reason}
                 </li>
               ),
             )}
@@ -265,10 +265,10 @@ export function ImportWizard({
       <div className="-mx-4 -mb-4 flex justify-end gap-2 rounded-b-xl border-t bg-muted/50 p-4">
         {onOpenList ? (
           <Button variant="outline" onClick={onOpenList}>
-            Открыть отклики
+            Open applications
           </Button>
         ) : null}
-        <Button onClick={onDone}>Готово</Button>
+        <Button onClick={onDone}>Done</Button>
       </div>
     </div>
   );

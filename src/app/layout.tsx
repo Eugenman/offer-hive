@@ -20,13 +20,13 @@ export const metadata: Metadata = {
     default: "Offerhive",
     template: "%s · Offerhive",
   },
-  description: "Трекер откликов на вакансии",
+  description: "Track your job applications",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="ru"
+      lang="en"
       data-theme="light"
       data-sidebar="expanded"
       suppressHydrationWarning

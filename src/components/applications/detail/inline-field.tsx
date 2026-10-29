@@ -12,6 +12,7 @@ import {
 } from "react";
 import { Check, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/date-picker";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -294,10 +295,29 @@ export function InlineField({
             </option>
           ))}
         </select>
+      ) : kind === "date" ? (
+        <DateInput
+          autoFocus
+          defaultOpen
+          size="sm"
+          aria-label={label}
+          aria-invalid={state.error ? true : undefined}
+          aria-describedby={state.error ? errorId : undefined}
+          value={draft}
+          onValueChange={(next) => {
+            setDraft(next);
+            if (state.error) state.setError(null);
+          }}
+          onCommit={(next) => {
+            if (next && !/^\d{4}-\d{2}-\d{2}$/.test(next)) state.setError("Enter a date like Oct 29, 2026");
+            else void save(next);
+          }}
+          onCancel={() => state.close()}
+        />
       ) : (
         <Input
           {...common}
-          type={kind === "date" ? "date" : kind === "url" ? "url" : "text"}
+          type={kind === "url" ? "url" : "text"}
           value={draft}
           placeholder={placeholder}
           maxLength={maxLength}

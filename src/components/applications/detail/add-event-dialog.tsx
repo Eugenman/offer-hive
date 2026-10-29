@@ -29,6 +29,7 @@ import {
   nextStatuses,
 } from "@/lib/domain";
 import { useRepository } from "@/lib/repository/provider";
+import { DateTimeInput, isDateTime } from "@/components/date-picker";
 import { Field } from "../add/form-field";
 import { useApplicationActions } from "../use-application-actions";
 import { stageTitle } from "@/lib/stage-title";
@@ -67,6 +68,10 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (scheduledAt && !isDateTime(scheduledAt)) {
+      setError("Enter a date like Oct 29, 2026");
+      return;
+    }
     setSaving(true);
     try {
       const stage = await repository.addStage(app.id, {
@@ -107,10 +112,10 @@ function StageForm({ app, type, onDone }: { app: ApplicationDetails; type: Stage
       <Field label="Title" hint={type === "other" ? "For example, “Meeting with the CTO”" : "Optional"}>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
       </Field>
+      <Field label="Date and time">
+        <DateTimeInput value={scheduledAt} onValueChange={setScheduledAt} />
+      </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Date and time">
-          <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
-        </Field>
         <Field label="State">
           <select
             value={state}

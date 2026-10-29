@@ -24,6 +24,7 @@ import {
   type Stage,
   type StageState,
 } from "@/lib/domain";
+import { DateTimeInput, isDateTime } from "@/components/date-picker";
 import { formatDateTime, toDateTimeLocal } from "@/lib/format";
 import { useRepository } from "@/lib/repository/provider";
 import { stageTitle } from "@/lib/stage-title";
@@ -188,9 +189,11 @@ function StageDate({ stage }: { stage: Stage }) {
   const label = formatDateTime(stage.scheduledAt);
   const readOnly = useReadOnly();
 
-  async function save() {
+  async function save(value: string) {
+    // An unfinished date stays in the field, marked invalid, until it is fixed or Esc is pressed.
+    if (value && !isDateTime(value)) return;
     setEditing(false);
-    const next = draft ? new Date(draft).toISOString() : null;
+    const next = value ? new Date(value).toISOString() : null;
     if (next !== stage.scheduledAt) await repository.updateStage(stage.id, { scheduledAt: next });
   }
 
@@ -199,18 +202,15 @@ function StageDate({ stage }: { stage: Stage }) {
   }
   if (editing) {
     return (
-      <input
-        type="datetime-local"
+      <DateTimeInput
         autoFocus
+        size="sm"
         aria-label={`Date: ${stageTitle(stage)}`}
         value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={() => void save()}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") void save();
-          if (event.key === "Escape") setEditing(false);
-        }}
-        className="mt-0.5 h-7 rounded-md border border-input bg-transparent px-2 text-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+        onValueChange={setDraft}
+        onCommit={(value) => void save(value)}
+        onCancel={() => setEditing(false)}
+        className="mt-0.5 max-w-72"
       />
     );
   }

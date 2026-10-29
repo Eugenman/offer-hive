@@ -195,6 +195,14 @@
   html {
     @apply font-sans;
   }
+  /*
+    Closing animations (dialogs, menus, the calendar) keep their last frame until the element is
+    removed. Otherwise the browser can paint one frame at full opacity between the end of the
+    animation and the removal, and the shadow of a dialog flashes.
+  */
+  [data-state="closed"] {
+    --tw-animation-fill-mode: forwards;
+  }
 }
 
 /*

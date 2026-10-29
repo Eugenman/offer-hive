@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/date-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -63,20 +64,23 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
   const moreId = useId();
   const [saving, setSaving] = useState(false);
 
+  function setField(field: FormField, value: string) {
+    setValues((current) => ({ ...current, [field]: value }));
+    // "From > to" is reported on one field but fixed by editing either.
+    const linked: FormField[] =
+      field === "salaryMin" || field === "salaryMax" ? ["salaryMin", "salaryMax"] : [field];
+    if (linked.some((name) => errors[name])) {
+      setErrors((current) => ({
+        ...current,
+        ...Object.fromEntries(linked.map((name) => [name, undefined])),
+      }));
+    }
+  }
+
   const bind = (field: FormField) => ({
     value: values[field],
-    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-      setValues((current) => ({ ...current, [field]: event.target.value }));
-      // "From > to" is reported on one field but fixed by editing either.
-      const linked: FormField[] =
-        field === "salaryMin" || field === "salaryMax" ? ["salaryMin", "salaryMax"] : [field];
-      if (linked.some((name) => errors[name])) {
-        setErrors((current) => ({
-          ...current,
-          ...Object.fromEntries(linked.map((name) => [name, undefined])),
-        }));
-      }
-    },
+    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+      setField(field, event.target.value),
   });
 
   function focusFirstError() {
@@ -148,7 +152,7 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Date applied" error={errors.appliedAt}>
-          <Input {...bind("appliedAt")} type="date" />
+          <DateInput value={values.appliedAt} onValueChange={(value) => setField("appliedAt", value)} />
         </Field>
       </div>
 

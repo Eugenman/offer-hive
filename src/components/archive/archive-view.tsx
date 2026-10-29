@@ -23,6 +23,7 @@ import { formatDate } from "@/lib/format";
 import { countApplications, plural } from "@/lib/plural";
 import { useRepository, useRepositoryQuery } from "@/lib/repository/provider";
 import type { DeletedApplication } from "@/lib/repository/types";
+import { trackHorizontalScroll } from "@/lib/table-scroll";
 import { CompanyAvatar } from "../applications/company-avatar";
 import { SearchInput } from "../applications/search-input";
 import { StatusBadge } from "../applications/status-badge";
@@ -175,25 +176,25 @@ export function ArchiveView() {
           <Trash2 aria-hidden />
         </Button>
       </div>
-      <Table className="min-w-[960px] table-fixed">
+      <Table ref={trackHorizontalScroll} className="min-w-[896px] table-fixed">
         <colgroup>
           <col className="w-14" />
-          <col className="w-80" />
-          <col className="w-52" />
+          <col className="w-52 desktop:w-80" />
+          <col className="w-36" />
           <col className="w-40" />
           <col className="w-32" />
           <col className="w-44" />
         </colgroup>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="pl-6">
+            <TableHead className="pinned-cell left-0 pl-6">
               <Checkbox
                 checked={allChecked}
                 onCheckedChange={toggleAll}
                 aria-label="Select all archived applications"
               />
             </TableHead>
-            <TableHead>Company and position</TableHead>
+            <TableHead className="pinned-cell-edge pinned-cell left-14">Company and position</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Archived</TableHead>
             <TableHead>Erased in</TableHead>
@@ -215,14 +216,14 @@ export function ArchiveView() {
               }}
               className="cursor-default"
             >
-              <TableCell className="pl-6">
+              <TableCell className="pinned-cell left-0 pl-6">
                 <Checkbox
                   checked={selected.has(app.id)}
                   onCheckedChange={() => toggleOne(app.id)}
                   aria-label={`Select ${app.company}`}
                 />
               </TableCell>
-              <TableCell>
+              <TableCell className="pinned-cell-edge pinned-cell left-14">
                 <Link
                   href={`/archive/${app.id}`}
                   className="group flex min-w-0 items-center gap-3 rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"

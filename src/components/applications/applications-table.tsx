@@ -12,6 +12,7 @@ import { formatDate, formatSalary } from "@/lib/format";
 import type { SortDirection, SortField } from "@/lib/repository/types";
 import { CompanyAvatar } from "./company-avatar";
 import { rememberListPosition } from "./detail/return-to-list";
+import { trackHorizontalScroll } from "@/lib/table-scroll";
 import { StatusMenu } from "./status-menu";
 
 const EMPTY = <span className="text-muted-foreground/60">—</span>;
@@ -51,16 +52,21 @@ function SortableHead({
   sort,
   onSort,
   children,
+  className,
 }: {
   field: SortField;
   sort: TableSort;
   onSort: (sort: TableSort) => void;
   children: React.ReactNode;
+  className?: string;
 }) {
   const active = sort?.field === field ? sort.direction : null;
   const Icon = active === "asc" ? ArrowUp : active === "desc" ? ArrowDown : ArrowUpDown;
   return (
-    <TableHead aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : "none"}>
+    <TableHead
+      aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : "none"}
+      className={className}
+    >
       <button
         type="button"
         onClick={() => onSort(nextSort(sort, field))}
@@ -124,11 +130,12 @@ export function ApplicationsTable({
   }
 
   return (
-    <Table className="min-w-[1000px] table-fixed">
+    // Company and position stay pinned on the left when the table scrolls sideways.
+    <Table ref={trackHorizontalScroll} className="min-w-[1080px] table-fixed">
       <colgroup>
         <col className="w-14" />
-        <col className="w-64" />
-        <col className="w-52" />
+        <col className="w-52 desktop:w-64" />
+        <col className="w-36" />
         <col className="w-36" />
         <col className="w-48" />
         <col className="w-36" />
@@ -137,14 +144,19 @@ export function ApplicationsTable({
       </colgroup>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead className="pl-6">
+          <TableHead className="pinned-cell left-0 pl-6">
             <Checkbox
               checked={allChecked}
               onCheckedChange={toggleAll}
               aria-label="Select all applications on this page"
             />
           </TableHead>
-          <SortableHead field="company" sort={sort} onSort={onSort}>
+          <SortableHead
+            field="company"
+            sort={sort}
+            onSort={onSort}
+            className="pinned-cell-edge pinned-cell left-14"
+          >
             Company and position
           </SortableHead>
           <SortableHead field="status" sort={sort} onSort={onSort}>
@@ -178,14 +190,14 @@ export function ApplicationsTable({
             }}
             className="cursor-default"
           >
-            <TableCell className="pl-6">
+            <TableCell className="pinned-cell left-0 pl-6">
               <Checkbox
                 checked={selected.has(app.id)}
                 onCheckedChange={() => toggleOne(app.id)}
                 aria-label={`Select ${app.company}`}
               />
             </TableCell>
-            <TableCell>
+            <TableCell className="pinned-cell-edge pinned-cell left-14">
               <Link
                 href={`/applications/${app.id}`}
                 className="group flex min-w-0 items-center gap-3 rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"

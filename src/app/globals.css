@@ -3,7 +3,13 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-@custom-variant sidebar-collapsed (&:where([data-sidebar="collapsed"] *));
+/* The sidebar collapsed to a rail of icons. Scoped to the sidebar itself, so the drawer keeps its labels. */
+@custom-variant sidebar-collapsed (&:where([data-sidebar="collapsed"] [data-rail], [data-sidebar="collapsed"] [data-rail] *));
+
+/* Desktop starts above 1024px; at 1024px and below the app uses its mobile layout. */
+@theme {
+  --breakpoint-desktop: 64.0625rem;
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -188,5 +194,43 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/*
+  Columns pinned to the left of a table that scrolls sideways (company and position stay in view).
+  The cells need a solid background; it repeats the row's hover, open-menu and selected colors.
+*/
+@utility pinned-cell {
+  position: sticky;
+  z-index: 1;
+  background: var(--background);
+  tbody tr:hover > &,
+  tbody tr:has([aria-expanded="true"]) > & {
+    background: color-mix(in oklab, var(--muted) 50%, var(--background));
+  }
+  tbody tr[data-state="selected"] > & {
+    background: var(--muted);
+  }
+}
+
+/* A shadow on the pinned edge, shown only once the table is scrolled. */
+@utility pinned-cell-edge {
+  &::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    right: -12px;
+    width: 12px;
+    pointer-events: none;
+    background: linear-gradient(to right, oklch(0 0 0 / 0.08), transparent);
+    opacity: 0;
+    transition: opacity 150ms;
+  }
+  [data-scrolled] &::after {
+    opacity: 1;
+  }
+  [data-theme="dark"] &::after {
+    background: linear-gradient(to right, oklch(0 0 0 / 0.35), transparent);
   }
 }

@@ -62,7 +62,8 @@ The image runs the standalone Next.js server on Node.js, as a non-root user.
 - [x] Interface on sample data
 - [x] Data saved in the browser (IndexedDB), with an archive and backup reminders
 - [x] Spreadsheet import and export (xlsx, csv, ods, numbers), backup and restore
-- [ ] CI with Lighthouse, Docker image, landing page, mobile layout
+- [x] CI with Lighthouse and a Docker image
+- [x] Tablet layout (768px and up)
 - [ ] Tests: unit and end-to-end
 - [ ] Accounts: sign in with GitHub or Google, server storage
 

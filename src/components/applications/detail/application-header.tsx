@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { MenuButton } from "@/components/app-shell/nav-menu";
 import { useRouter } from "next/navigation";
 import { Archive, ArrowLeft, ChevronDown, Plus } from "lucide-react";
 import {
@@ -59,13 +60,16 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
 
   return (
     <header className="border-b px-6 pt-4 pb-4">
-      <Link
-        href={backHref}
-        className="-ml-1 inline-flex items-center gap-1 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-      >
-        <ArrowLeft className="size-4" aria-hidden />
-        Applications
-      </Link>
+      <div className="flex items-center gap-2">
+        <MenuButton />
+        <Link
+          href={backHref}
+          className="-ml-1 inline-flex items-center gap-1 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          Applications
+        </Link>
+      </div>
       <div className="mt-2 flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="-ml-2 text-xl font-semibold">

@@ -36,7 +36,7 @@ export function StatusMenu({
           // A double click on the row opens the application; not when it lands on the badge.
           onDoubleClick={(event) => event.stopPropagation()}
           // Fixed width, so every row's badge is the same size with room for the arrow.
-          className="group flex w-46 rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          className="group flex w-30 rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           <StatusBadge status={status} chevron />
         </button>

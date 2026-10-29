@@ -197,7 +197,7 @@ export function StatisticsView() {
   const offered = step("offer");
   return (
     <div className="grid gap-6 px-6 py-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 desktop:grid-cols-4">
         <Metric
           label="Applications"
           value={stats.total}
@@ -218,7 +218,7 @@ export function StatisticsView() {
         />
         <Metric label="Offers" value={offered.count} />
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 desktop:grid-cols-2">
         <Section title="Funnel">
           <Funnel stats={stats} />
         </Section>

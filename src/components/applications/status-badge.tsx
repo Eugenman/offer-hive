@@ -54,7 +54,7 @@ export function StatusBadge({
   // One minimum width for every badge (fits the longest label), so they line up in the table,
   // menus and kanban; a longer label added later grows the badge instead of overflowing it.
   const base = cn(
-    "h-6 min-w-36 items-center rounded-md px-2 text-xs font-medium whitespace-nowrap",
+    "h-6 min-w-28 items-center rounded-md px-2 text-xs font-medium whitespace-nowrap",
     STATUS_CLASSES[status],
   );
 
@@ -68,7 +68,7 @@ export function StatusBadge({
     <span
       className={cn(
         base,
-        "grid grid-cols-[minmax(1rem,1fr)_auto_minmax(1rem,1fr)] gap-x-2 px-1",
+        "grid grid-cols-[minmax(1rem,1fr)_auto_minmax(1rem,1fr)] gap-x-1.5 px-1",
         (checked !== undefined || chevron) && "w-full",
         className,
       )}

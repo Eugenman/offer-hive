@@ -66,7 +66,7 @@ export function ApplicationPage({
   return (
     <InlineEditingProvider>
       <ApplicationHeader app={data} />
-      <div className="grid gap-4 px-6 py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+      <div className="grid gap-4 px-6 py-6 desktop:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <div className="grid content-start gap-4">
           <ApplicationFields app={data} />
           <StatusLog app={data} />

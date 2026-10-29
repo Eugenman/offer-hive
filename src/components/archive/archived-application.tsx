@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useState } from "react";
 import Link from "next/link";
+import { MenuButton } from "@/components/app-shell/nav-menu";
 import { useRouter } from "next/navigation";
 import { Archive, ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -64,13 +65,16 @@ export function ArchivedApplication({ app, now }: { app: ArchivedApplicationDeta
   return (
     <>
       <header className="border-b px-6 pt-4 pb-4">
-        <Link
-          href="/archive"
-          className="-ml-1 inline-flex items-center gap-1 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-        >
-          <ArrowLeft className="size-4" aria-hidden />
-          Archive
-        </Link>
+        <div className="flex items-center gap-2">
+          <MenuButton />
+          <Link
+            href="/archive"
+            className="-ml-1 inline-flex items-center gap-1 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          >
+            <ArrowLeft className="size-4" aria-hidden />
+            Archive
+          </Link>
+        </div>
         <div className="mt-2 flex flex-wrap items-start gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-xl font-semibold">{app.company}</h1>
@@ -111,7 +115,7 @@ export function ArchivedApplication({ app, now }: { app: ArchivedApplicationDeta
 
       {/* Read-only: values as plain text, no edit or add controls. */}
       <InlineEditingProvider readOnly>
-        <div className="grid gap-4 px-6 py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <div className="grid gap-4 px-6 py-6 desktop:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
           <div className="grid content-start gap-4">
             <ApplicationFields app={app} />
             <StatusLog app={{ ...app, previousStatus: null }} />

@@ -1,0 +1,13 @@
+# Built inside the image or not needed there.
+node_modules
+.next
+out
+coverage
+.vercel
+.git
+.github
+docs
+*.tsbuildinfo
+.env*
+Dockerfile
+.dockerignore

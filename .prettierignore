@@ -11,3 +11,6 @@ bun.lock
 next-env.d.ts
 *.tsbuildinfo
 public
+
+# Lighthouse reports
+.lighthouseci

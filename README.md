@@ -26,7 +26,7 @@ A job application tracker for people who send a lot of CVs and want to see where
 - **Next.js 16** (App Router, Cache Components), **React 19**, **TypeScript**
 - **Tailwind CSS 4**, **shadcn/ui** (Radix)
 - **Dexie** (IndexedDB), **SheetJS** for spreadsheets, **Zod** for validation, **nuqs** for URL state, **dnd-kit** for drag and drop
-- **bun**, ESLint, Prettier
+- **bun**, ESLint, Prettier, GitHub Actions, Lighthouse CI, Docker
 
 ## Architecture
 
@@ -37,7 +37,9 @@ A job application tracker for people who send a lot of CVs and want to see where
 
 ## Getting started
 
-Requires [bun](https://bun.sh) 1.4+.
+To try it without installing anything, open the [live demo](https://offerhive.vercel.app).
+
+To run it locally, you need [bun](https://bun.sh) 1.4+:
 
 ```bash
 bun install
@@ -46,12 +48,22 @@ bun dev
 
 Then open http://localhost:3000.
 
+### With Docker
+
+```bash
+docker build -t offerhive .
+docker run -p 3000:3000 offerhive
+```
+
+The image runs the standalone Next.js server on Node.js, as a non-root user.
+
 ## Roadmap
 
 - [x] Interface on sample data
 - [x] Data saved in the browser (IndexedDB), with an archive and backup reminders
 - [x] Spreadsheet import and export (xlsx, csv, ods, numbers), backup and restore
-- [ ] Tests, CI, landing page, mobile layout
+- [ ] CI with Lighthouse, Docker image, landing page, mobile layout
+- [ ] Tests: unit and end-to-end
 - [ ] Accounts: sign in with GitHub or Google, server storage
 
 ## License

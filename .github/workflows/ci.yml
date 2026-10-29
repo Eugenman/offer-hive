@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# A newer push to the same branch cancels the run still in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Format, lint, types, build, Lighthouse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - run: bun install --frozen-lockfile
+      - run: bun run format:check
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run build
+
+      # The same standalone server the Docker image runs.
+      - name: Start the production server
+        run: |
+          mkdir -p public
+          cp -R .next/static .next/standalone/.next/static
+          cp -R public .next/standalone/public
+          PORT=3000 HOSTNAME=127.0.0.1 node .next/standalone/server.js &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:3000/dashboard && exit 0; sleep 1; done
+          echo "The server did not start" && exit 1
+
+      - name: Lighthouse
+        run: bunx @lhci/cli@0.15.1 autorun
+
+      - name: Keep Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse
+          path: .lighthouseci
+          if-no-files-found: ignore
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: offerhive:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test
+        run: |
+          docker run -d --name offerhive -p 3000:3000 offerhive:ci
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:3000/dashboard && exit 0; sleep 1; done
+          docker logs offerhive && exit 1

@@ -1,15 +1,13 @@
 "use client";
 
 import { parseAmount } from "@/lib/format";
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/date-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { WORK_FORMATS, WORK_FORMAT_LABELS } from "@/lib/domain";
 import { useRepository } from "@/lib/repository/provider";
 import { applicationInputSchema } from "@/lib/schemas";
@@ -60,8 +58,6 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [values, setValues] = useState<Values>(initialValues);
   const [errors, setErrors] = useState<Errors>({});
-  const [more, setMore] = useState(false);
-  const moreId = useId();
   const [saving, setSaving] = useState(false);
 
   function setField(field: FormField, value: string) {
@@ -119,9 +115,6 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
     }
     if (Object.keys(next).length > 0 || !parsed.success) {
       setErrors(next);
-      // Optional fields with errors live in the collapsed section — open it.
-      if (Object.keys(next).some((field) => !["company", "position", "appliedAt"].includes(field)))
-        setMore(true);
       focusFirstError();
       return;
     }
@@ -156,18 +149,7 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
         </Field>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setMore((open) => !open)}
-        aria-expanded={more}
-        aria-controls={moreId}
-        className="-mx-1 flex w-fit items-center gap-1 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-      >
-        <ChevronDown className={cn("size-4 transition-transform", !more && "-rotate-90")} aria-hidden />
-        More fields: link, salary, contact, note
-      </button>
-
-      <div id={moreId} hidden={!more} className="grid gap-4">
+      <div className="grid gap-4">
         <Field label="Job posting link" error={errors.url}>
           <Input {...bind("url")} type="url" inputMode="url" placeholder="https://example.com/jobs/123" />
         </Field>

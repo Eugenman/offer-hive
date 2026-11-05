@@ -10,7 +10,6 @@ import {
 import { useRepositoryQuery } from "@/lib/repository/provider";
 import type { ApplicationsPage, ApplicationsRepository } from "@/lib/repository/types";
 import { AddApplicationDialog } from "./add/add-application-dialog";
-import { BackupReminder } from "./backup-reminder";
 import { useAddDialog } from "./add/use-add-dialog";
 import { rememberListPosition, takeReturnFocus } from "./detail/return-to-list";
 import { ApplicationsTable, type TableSort } from "./applications-table";
@@ -211,8 +210,6 @@ export function ApplicationsView() {
           onStatusesChange={url.setStatuses}
           onSourcesChange={url.setSources}
           onResetFilters={url.resetFilters}
-          onExport={(format) => void actions.exportApplications({ query: filters }, format)}
-          exportDisabled={shownCount === 0}
           onAdd={() => addDialog.open("manual")}
           selectedCount={selectedIds.length}
           onDeleteSelected={
@@ -228,7 +225,6 @@ export function ApplicationsView() {
           }
         />
       )}
-      {totalAll ? <BackupReminder /> : null}
       {content}
       <AddApplicationDialog />
       {view === "table" && selectedIds.length > 0 ? (

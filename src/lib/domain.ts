@@ -186,8 +186,8 @@ export type StatisticsEntry = {
 export type ApplicationSummary = Application & {
   /** Status before the last change: the one "undo" returns to. null when nothing to undo. */
   previousStatus: ApplicationStatus | null;
-  noteCount: number;
-  latestNote: Note | null;
+  /** Newest first. */
+  notes: Note[];
 };
 
 /** Everything shown on the application page. */

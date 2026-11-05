@@ -1,0 +1,73 @@
+# Offerhive with its database, for local development.
+#   cp .env.example .env         once, then set POSTGRES_PASSWORD in .env
+#   docker compose up --build    app + Postgres; migrations run before the app starts
+#   docker compose up -d db mailpit    Postgres and Mailpit, for `bun dev` on the same computer
+#   Mailpit inbox: http://localhost:8025 (every email the app sends lands there, nothing leaves)
+#
+# Settings come from .env (never committed):
+#   POSTGRES_PASSWORD   required
+#   BETTER_AUTH_SECRET  sign-in (see .env.example)
+#   APP_PORT, DB_PORT   host ports, 3000 and 5432 by default
+#   BIND_ADDRESS        127.0.0.1 by default: reachable only from the computer running compose.
+#                       Set 0.0.0.0 to open the app and the database to the local network.
+# Production doesn't use this file; it has its own DATABASE_URL.
+
+name: offerhive
+
+x-database-url: &database-url postgres://offerhive:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (copy .env.example)}@db:5432/offerhive
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: offerhive
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (copy .env.example)}
+      POSTGRES_DB: offerhive
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${DB_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U offerhive -d offerhive"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  # Local mail: catches every email the app sends and shows it at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:1025:1025"
+      - "${BIND_ADDRESS:-127.0.0.1}:8025:8025"
+
+  # Applies pending migrations from drizzle/ and exits. Uses the build stage, which has bun and
+  # drizzle-kit; the runtime image stays small.
+  migrate:
+    build:
+      context: .
+      target: build
+    command: ["bun", "run", "db:migrate"]
+    environment:
+      DATABASE_URL: *database-url
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build: .
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: *database-url
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env (copy .env.example)}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      MAIL_FROM: ${MAIL_FROM:-Offerhive <no-reply@offerhive.local>}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  db-data:

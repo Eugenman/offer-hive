@@ -3,7 +3,6 @@
 import { toast } from "sonner";
 import { type ApplicationStatus, STATUS_LABELS } from "@/lib/domain";
 import { isRepositoryError } from "@/lib/repository/types";
-import { markBackedUp } from "@/lib/backup";
 import { backupFileName, buildBackup } from "@/lib/export/backup-file";
 import {
   buildApplicationsCsv,
@@ -124,12 +123,11 @@ export function useApplicationActions() {
     }
   }
 
-  /** Downloads everything as one backup file; this is what resets the weekly reminder. */
+  /** Downloads everything as one backup file. */
   async function downloadBackup() {
     try {
       const snapshot = await repository.exportSnapshot();
       downloadFile(buildBackup(snapshot), backupFileName(), "application/json");
-      markBackedUp();
       toast.success("Backup downloaded");
       return true;
     } catch {

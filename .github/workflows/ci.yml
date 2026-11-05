@@ -15,8 +15,28 @@ permissions:
 
 jobs:
   checks:
-    name: Format, lint, types, build, Lighthouse
+    name: Format, lint, types, migrations, build, Lighthouse
     runs-on: ubuntu-latest
+    # An empty Postgres for this run only: the migrations must apply to it from scratch.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: offerhive
+          POSTGRES_PASSWORD: offerhive-ci
+          POSTGRES_DB: offerhive
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U offerhive"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    # Values for this throwaway CI database and server only, not secrets of any real deployment.
+    env:
+      DATABASE_URL: postgres://offerhive:offerhive-ci@127.0.0.1:5432/offerhive
+      BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else
+      BETTER_AUTH_URL: http://127.0.0.1:3000
     steps:
       - uses: actions/checkout@v5
 
@@ -32,6 +52,8 @@ jobs:
       - run: bun run format:check
       - run: bun run lint
       - run: bun run typecheck
+      - name: Apply the migrations to an empty database
+        run: bun run db:migrate
       - run: bun run build
 
       # The same standalone server the Docker image runs.
@@ -41,7 +63,7 @@ jobs:
           cp -R .next/static .next/standalone/.next/static
           cp -R public .next/standalone/public
           PORT=3000 HOSTNAME=127.0.0.1 node .next/standalone/server.js &
-          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:3000/dashboard && exit 0; sleep 1; done
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:3000/login && exit 0; sleep 1; done
           echo "The server did not start" && exit 1
 
       - name: Lighthouse
@@ -72,6 +94,6 @@ jobs:
 
       - name: Smoke test
         run: |
-          docker run -d --name offerhive -p 3000:3000 offerhive:ci
-          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:3000/dashboard && exit 0; sleep 1; done
+          docker run -d --name offerhive -p 3000:3000 -e BETTER_AUTH_SECRET=ci-only-secret offerhive:ci
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:3000/login && exit 0; sleep 1; done
           docker logs offerhive && exit 1

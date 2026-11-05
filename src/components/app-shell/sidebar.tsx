@@ -119,7 +119,12 @@ function NavLinkWithHint({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <NavLinkView item={item} active={active} />
+        <NavLinkView
+          item={item}
+          active={active}
+          // The page is already open: a click would drop its filters and view from the URL.
+          onClick={current ? (event) => event.preventDefault() : undefined}
+        />
       </TooltipTrigger>
       <TooltipContent side="right" sideOffset={8} className="max-w-56">
         <p className="font-medium">{item.label}</p>
@@ -148,22 +153,26 @@ function NavLink({ item, inDrawer }: { item: NavItem; inDrawer: boolean }) {
 }
 
 /** Logo, navigation, theme and account: the same in the sidebar and in the drawer. */
-function SidebarContent({ inDrawer, headerAction }: { inDrawer: boolean; headerAction: React.ReactNode }) {
+function SidebarContent({
+  inDrawer,
+  headerAction,
+  account,
+}: {
+  inDrawer: boolean;
+  headerAction: React.ReactNode;
+  account: React.ReactNode;
+}) {
   const { setOpen } = useNavMenu();
   return (
     <>
       <div className="mb-4 flex items-center gap-2 px-1 sidebar-collapsed:flex-col">
         <Link
           href="/dashboard"
-          onClick={
-            inDrawer
-              ? (event) => {
-                  // Same as the nav links: on the page already open, only close the drawer.
-                  if (window.location.pathname === "/dashboard") event.preventDefault();
-                  setOpen(false);
-                }
-              : undefined
-          }
+          onClick={(event) => {
+            // Same as the nav links: on the page already open, keep it as it is (and close the drawer).
+            if (window.location.pathname === "/dashboard") event.preventDefault();
+            if (inDrawer) setOpen(false);
+          }}
           className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1.5 py-1 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           <Hexagon className="size-6 shrink-0 fill-foreground text-foreground" aria-hidden />
@@ -183,18 +192,7 @@ function SidebarContent({ inDrawer, headerAction }: { inDrawer: boolean; headerA
           <NavLink key={item.href} item={item} inDrawer={inDrawer} />
         ))}
         <ThemeMenu />
-        <div className="mt-2 flex items-center gap-3 rounded-lg px-1.5 py-2 sidebar-collapsed:justify-center">
-          <span
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-xs font-medium ring-1 ring-border"
-            aria-hidden
-          >
-            DU
-          </span>
-          <span className="min-w-0 sidebar-collapsed:sr-only">
-            <span className="block truncate text-sm font-medium">Demo user</span>
-            <span className="block truncate text-xs text-muted-foreground">Signed in with GitHub</span>
-          </span>
-        </div>
+        {account}
       </div>
     </>
   );
@@ -209,7 +207,8 @@ function readSidebarState(): SidebarState {
  * The sidebar above 1024px; its button collapses or expands it, and the choice is kept in a cookie.
  * At 1024px and below there is only the drawer, opened from the burger in the page header.
  */
-export function Sidebar() {
+/** `account`: the signed-in account row, rendered on the server. */
+export function Sidebar({ account }: { account: React.ReactNode }) {
   const [state, setState] = useState<SidebarState>(readSidebarState);
 
   function toggle() {
@@ -223,10 +222,18 @@ export function Sidebar() {
     <aside
       data-rail
       aria-label="Main navigation"
+      // A double click on the sidebar's empty space collapses or expands it; links and buttons
+      // keep their own behavior.
+      onDoubleClick={(event) => {
+        if ((event.target as Element).closest("a, button, input, [role='menuitem']")) return;
+        window.getSelection()?.removeAllRanges();
+        toggle();
+      }}
       className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-1 bg-sidebar px-3 py-4 desktop:flex sidebar-collapsed:w-16"
     >
       <SidebarContent
         inDrawer={false}
+        account={account}
         headerAction={
           <button
             type="button"
@@ -246,7 +253,7 @@ export function Sidebar() {
 }
 
 /** The full sidebar sliding in from the left over the page, on phones and tablets. */
-export function NavDrawer() {
+export function NavDrawer({ account }: { account: React.ReactNode }) {
   const { open, setOpen } = useNavMenu();
   return (
     <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
@@ -259,6 +266,7 @@ export function NavDrawer() {
           <DialogPrimitive.Title className="sr-only">Menu</DialogPrimitive.Title>
           <SidebarContent
             inDrawer
+            account={account}
             headerAction={
               <DialogPrimitive.Close aria-label="Close menu" className={ICON_BUTTON}>
                 <X className="size-4" aria-hidden />

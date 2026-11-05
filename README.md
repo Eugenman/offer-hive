@@ -4,7 +4,7 @@ A job application tracker for people who send a lot of CVs and want to see where
 
 **Live demo:** [offerhive.vercel.app](https://offerhive.vercel.app)
 
-> **Status:** work in progress. Your applications are saved in your browser; nothing is sent to a server. See the [roadmap](#roadmap).
+> **Status:** work in progress. The live demo is an earlier version that keeps data in the browser; the current version saves applications to your account on a server. See the [roadmap](#roadmap).
 
 ![Applications table](docs/screenshots/table.png)
 
@@ -25,47 +25,79 @@ A job application tracker for people who send a lot of CVs and want to see where
 
 - **Next.js 16** (App Router, Cache Components), **React 19**, **TypeScript**
 - **Tailwind CSS 4**, **shadcn/ui** (Radix)
-- **Dexie** (IndexedDB), **SheetJS** for spreadsheets, **Zod** for validation, **nuqs** for URL state, **dnd-kit** for drag and drop
+- **PostgreSQL** with **Drizzle ORM**, **Better Auth** (email and password)
+- **Dexie** (IndexedDB) for the queue of unsent changes, **SheetJS** for spreadsheets, **Zod** for validation, **nuqs** for URL state, **dnd-kit** for drag and drop
 - **bun**, ESLint, Prettier, GitHub Actions, Lighthouse CI, Docker
 
 ## Architecture
 
-- **Local-first.** A job search is private data, so everything is kept in the browser's IndexedDB: no account, no server. Changes sync between open tabs. Accounts come later, as an option.
-- **Swappable storage.** Screens never touch storage directly; they go through one `ApplicationsRepository` interface. It is backed by IndexedDB today and can move to a server later without changing the UI.
+- **Server as the main store, with a queue in the browser.** Every change goes into a queue in IndexedDB first, then to the server, and leaves the queue only after the server confirms it. The interface never waits for the network; without a connection, changes wait and are sent when it returns. One tab sends at a time (Web Locks), and open tabs stay in sync.
+- **Swappable storage.** Screens never touch storage directly; they go through one `ApplicationsRepository` interface. The same repository ran on IndexedDB alone before the server existed; only the storage under it changed.
 - **Domain rules in one place.** Statuses and allowed transitions live in `src/lib/domain.ts`; the table, kanban and application page all ask the same functions.
 - **Built for Next.js 16.** A static app shell with small dynamic leaves under `<Suspense>` for Cache Components, and pages that stay correct when kept alive in the background by `<Activity>`.
 
 ## Getting started
 
-To try it without installing anything, open the [live demo](https://offerhive.vercel.app).
+The [live demo](https://offerhive.vercel.app) is an earlier version that keeps data in the browser, with no account.
 
-To run it locally, you need [bun](https://bun.sh) 1.4+:
+To run the current version locally you need [bun](https://bun.sh) 1.4+ and Docker.
+
+1. Create the settings file and fill it in:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Set `POSTGRES_PASSWORD` (letters and digits) and `BETTER_AUTH_SECRET` (any long random string, for example `openssl rand -base64 32`).
+
+2. Start Postgres and Mailpit, the local mail inbox:
+
+   ```bash
+   docker compose up -d db mailpit
+   ```
+
+3. Install the packages and create the tables:
+
+   ```bash
+   bun install
+   bun run db:migrate
+   ```
+
+4. Start the app:
+
+   ```bash
+   bun dev
+   ```
+
+Open http://localhost:3000 and create an account. Emails the app sends, such as the recovery code, arrive in Mailpit at http://localhost:8025: nothing leaves your computer.
+
+### Everything in Docker
 
 ```bash
-bun install
-bun dev
+cp .env.example .env   # then set POSTGRES_PASSWORD and BETTER_AUTH_SECRET
+docker compose up --build
 ```
 
-Then open http://localhost:3000.
+This starts Postgres, Mailpit and the app, and applies the migrations before the app starts. The app image runs the standalone Next.js server on Node.js, as a non-root user. The ports are open only on your computer; `BIND_ADDRESS=0.0.0.0` in `.env` opens them to the local network.
 
-### With Docker
+### Checks
 
 ```bash
-docker build -t offerhive .
-docker run -p 3000:3000 offerhive
+bun run format:check && bun run lint && bun run typecheck && bun run build
 ```
 
-The image runs the standalone Next.js server on Node.js, as a non-root user.
+Stop `bun dev` before `bun run build`: running both at once breaks the development server's cache. CI runs the same checks on every pull request, applies the migrations to an empty Postgres and runs Lighthouse on the sign-in, password reset and privacy pages.
 
 ## Roadmap
 
 - [x] Interface on sample data
-- [x] Data saved in the browser (IndexedDB), with an archive and backup reminders
+- [x] Data saved in the browser (IndexedDB), with an archive
 - [x] Spreadsheet import and export (xlsx, csv, ods, numbers), backup and restore
 - [x] CI with Lighthouse and a Docker image
 - [x] Tablet layout (768px and up)
 - [ ] Tests: unit and end-to-end
-- [ ] Accounts: sign in with GitHub or Google, server storage
+- [x] Accounts with email and password, recovery codes
+- [x] Server storage (PostgreSQL) with a queue for offline changes
 
 ## License
 

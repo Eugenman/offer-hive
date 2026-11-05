@@ -318,8 +318,7 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
     return {
       ...toPublic(app),
       previousStatus: lastChange(app.id)?.fromStatus ?? null,
-      noteCount: appNotes.length,
-      latestNote: appNotes[0] ? copy(appNotes[0]) : null,
+      notes: copy(appNotes),
     };
   }
 

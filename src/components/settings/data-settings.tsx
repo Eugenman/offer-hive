@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { ArchiveRestore, HardDriveDownload, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -21,40 +21,10 @@ import { type ParsedBackup, parseBackup } from "@/lib/export/backup-file";
 import { formatDate } from "@/lib/format";
 import { countApplications } from "@/lib/plural";
 import { useRepository, useRepositoryQuery } from "@/lib/repository/provider";
+import { Section, Setting } from "./section";
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  const id = useId();
-  return (
-    <section aria-labelledby={id} className="grid gap-4 border-b pb-8 last:border-0">
-      <h2 id={id} className="text-base font-semibold">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function Setting({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
-      <div className="max-w-md">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-export function SettingsView() {
+/** Settings → Data: export, import, backup, and deleting everything. */
+export function DataSettings() {
   const repository = useRepository();
   const actions = useApplicationActions();
   const [confirmClear, setConfirmClear] = useState(false);
@@ -70,7 +40,6 @@ export function SettingsView() {
     },
     [],
   );
-  const { data: persistent } = useRepositoryQuery("persistent", (repo) => repo.isPersistent());
   const { data: total = 0 } = useRepositoryQuery(
     "total",
     async (repo) => (await repo.list({ pageSize: 1 })).total,
@@ -110,19 +79,11 @@ export function SettingsView() {
   }
 
   return (
-    <div className="grid max-w-3xl gap-8 px-6 py-6">
+    <div className="grid gap-8">
       <Section title="Data">
-        {persistent === false ? (
-          <p role="alert" className="-mt-2 text-sm text-destructive">
-            This browser doesn’t let the site save data, so everything is lost when you close the tab.
-            Download a backup before you leave.
-          </p>
-        ) : (
-          <p className="-mt-2 max-w-xl text-sm text-muted-foreground">
-            Your applications are stored only in this browser, not on a server. Download a backup from time to
-            time, and use it to move your data to another browser.
-          </p>
-        )}
+        <p className="-mt-2 max-w-xl text-sm text-muted-foreground">
+          Your applications are saved to your account. Download a backup to keep a copy of your own.
+        </p>
         <Setting
           title="Export"
           description="All applications in one spreadsheet. Opens in Excel, Numbers and LibreOffice."
@@ -168,6 +129,7 @@ export function SettingsView() {
           </div>
         </Setting>
         <Setting
+          danger
           title="Delete all data"
           description={`Applications, the archive and statistics: ${countApplications(everything)} counted now.`}
         >

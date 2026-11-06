@@ -12,6 +12,18 @@ import * as schema from "@/lib/db/schema";
 /** Shortest password accepted on sign-up and reset. */
 export const MIN_PASSWORD_LENGTH = 10;
 
+/**
+ * Extra origins allowed to sign in, comma-separated (BETTER_AUTH_TRUSTED_ORIGINS). Every preview
+ * deployment gets its own URL, so the browser's origin differs from BETTER_AUTH_URL; without this
+ * list Better Auth rejects those requests. Wildcards are allowed, e.g. "https://*.vercel.app".
+ */
+function trustedOrigins(): string[] {
+  return (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
 function createAuth() {
   return betterAuth({
     // BETTER_AUTH_SECRET and BETTER_AUTH_URL come from the environment.
@@ -32,6 +44,7 @@ function createAuth() {
       },
     },
     advanced: { ipAddress: { disableIpTracking: true } },
+    trustedOrigins: trustedOrigins(),
     databaseHooks: {
       // Accounts are stored with the email only, whatever a client sends as a name or picture.
       user: {

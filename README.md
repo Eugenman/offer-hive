@@ -4,8 +4,6 @@ A job application tracker for people who send a lot of CVs and want to see where
 
 **Live demo:** [offerhive.vercel.app](https://offerhive.vercel.app)
 
-> **Status:** work in progress. The live demo is an earlier version that keeps data in the browser; the current version saves applications to your account on a server. See the [roadmap](#roadmap).
-
 ![Applications table](docs/screenshots/table.png)
 
 ## Features
@@ -39,7 +37,7 @@ A job application tracker for people who send a lot of CVs and want to see where
 
 ## Getting started
 
-The [live demo](https://offerhive.vercel.app) is an earlier version that keeps data in the browser, with no account.
+The [live demo](https://offerhive.vercel.app) runs the current version. Create an account to try it: the recovery code is shown on screen, because email is not connected yet.
 
 To run the current version locally you need [bun](https://bun.sh) 1.4+ and Docker.
 

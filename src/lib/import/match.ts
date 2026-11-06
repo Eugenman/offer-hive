@@ -31,16 +31,20 @@ function touchedFields(mapped: Set<ImportField>): Set<ComparableField> {
   return fields;
 }
 
-/** Soft key: case, spaces, quotes, ё/е and legal forms do not matter. */
+/** Soft key: case, spaces, quotes, commas, ё/е and legal forms do not matter. */
 export function matchKey(value: string) {
   return (
     value
       .toLocaleLowerCase("ru")
       .replaceAll("ё", "е")
-      .replace(/["«»'„“”]/g, "")
+      // A comma separates parts of a name ("Acme, Inc."), it does not distinguish two companies.
+      .replace(/["«»'„“”,]/g, "")
       // \b is ASCII-only in JS, so word edges are spelled out for Cyrillic.
       .replace(/(^|\s)(ооо|оао|зао|пао|ао|ип|llc|inc|ltd|gmbh)\.?(?=\s|$)/g, " ")
       .replace(/\s+/g, " ")
+      .trim()
+      // Left over after a legal form: "Acme ." or "Acme,".
+      .replace(/[.,]+$/, "")
       .trim()
   );
 }

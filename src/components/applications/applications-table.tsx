@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, ArrowUpDown, Eye, MessageSquareText } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Eye } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { ApplicationStatus, ApplicationSummary } from "@/lib/domain";
 import { formatDate, formatSalary } from "@/lib/format";
@@ -13,30 +12,10 @@ import type { SortDirection, SortField } from "@/lib/repository/types";
 import { CompanyAvatar } from "./company-avatar";
 import { rememberListPosition } from "./detail/return-to-list";
 import { trackHorizontalScroll } from "@/lib/table-scroll";
+import { NoteCell } from "./note-cell";
 import { StatusMenu } from "./status-menu";
 
 const EMPTY = <span className="text-muted-foreground/60">—</span>;
-
-function NoteCell({ count, latest }: { count: number; latest: ApplicationSummary["latestNote"] }) {
-  if (!latest) return EMPTY;
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="flex max-w-full items-center gap-1.5 rounded-md text-left text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-        >
-          <MessageSquareText className="size-3.5 shrink-0" aria-hidden />
-          <span className="text-xs tabular-nums">{count}</span>
-          <span className="truncate">{latest.body}</span>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" align="start" className="max-w-80 whitespace-pre-line">
-        {latest.body}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
 
 export type TableSort = { field: SortField; direction: SortDirection } | null;
 
@@ -130,8 +109,13 @@ export function ApplicationsTable({
   }
 
   return (
-    // Company and position stay pinned on the left when the table scrolls sideways.
-    <Table ref={trackHorizontalScroll} className="min-w-[1080px] table-fixed">
+    // Below a 1870px window the table keeps the width it has at 1870px (1622px next to the open
+    // sidebar) and scrolls sideways, so columns never get cramped; company and position stay
+    // pinned on the left. Without the sidebar (1024px and below) it keeps that same 1622px.
+    <Table
+      ref={trackHorizontalScroll}
+      className="min-w-[1622px] table-fixed desktop:min-w-[max(100%,calc(100%_+_1870px_-_100vw))]"
+    >
       <colgroup>
         <col className="w-14" />
         <col className="w-52 desktop:w-64" />
@@ -172,7 +156,8 @@ export function ApplicationsTable({
             Source
           </SortableHead>
           <TableHead>Notes</TableHead>
-          <TableHead className="pr-6">
+          {/* Pinned to the right edge: the action stays in view while the table scrolls. */}
+          <TableHead className="pinned-cell right-0 pr-6">
             <span className="sr-only">Actions</span>
           </TableHead>
         </TableRow>
@@ -225,10 +210,10 @@ export function ApplicationsTable({
             <TableCell className="truncate">
               {app.source ? <span className="text-muted-foreground">{app.source}</span> : EMPTY}
             </TableCell>
-            <TableCell className="max-w-0">
-              <NoteCell count={app.noteCount} latest={app.latestNote} />
+            <TableCell className="relative max-w-0">
+              <NoteCell notes={app.notes} />
             </TableCell>
-            <TableCell className="pr-6 text-right">
+            <TableCell className="pinned-cell right-0 pr-6 text-right">
               <Link
                 href={`/applications/${app.id}`}
                 aria-label={`Open ${app.company}`}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { VIEWS, type ViewMode } from "./use-applications-url-state";
 
 const STORAGE_KEY = "offerhive:view";
@@ -22,17 +22,24 @@ export function rememberView(view: ViewMode) {
   }
 }
 
+const noSubscription = () => () => {};
+
 /**
- * The view from the URL wins. Without it, the last chosen view is restored into the URL
- * (replacing the history entry), so the address always matches what is on screen.
- * Stage 5 moves "last view" from localStorage to the user profile.
+ * The view from the URL wins. Without it, the last chosen view is shown right away (no frame of
+ * the table first) and restored into the URL (replacing the history entry), so the address
+ * always matches what is on screen.
  */
 export function useViewMode(urlView: ViewMode | null, restore: (view: ViewMode) => void): ViewMode {
+  // Server rendering and hydration see no stored view; after that it is read on every render.
+  const stored = useSyncExternalStore(noSubscription, readStored, () => null);
+
+  // After a full page load the first render can't read storage (it must match the server), so the
+  // saved view is read here too.
   useEffect(() => {
     if (urlView) return;
-    const stored = readStored();
-    if (stored && stored !== "table") restore(stored);
+    const saved = readStored();
+    if (saved && saved !== "table") restore(saved);
   }, [urlView, restore]);
 
-  return urlView ?? "table";
+  return urlView ?? stored ?? "table";
 }

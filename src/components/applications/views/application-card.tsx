@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, MessageSquareText } from "lucide-react";
+import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ApplicationSummary } from "@/lib/domain";
 import { formatDate, formatSalary } from "@/lib/format";
 import { CompanyAvatar } from "../company-avatar";
+import { NoteCell } from "../note-cell";
 
 type ApplicationCardProps = {
   app: ApplicationSummary;
@@ -44,14 +45,11 @@ export function ApplicationCard({ app, className }: ApplicationCardProps) {
           {salary ? <span>{salary}</span> : null}
         </p>
       ) : null}
-      {app.latestNote ? (
-        <p className="mt-2 flex gap-1.5 text-xs text-muted-foreground">
-          <MessageSquareText className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          <span className="shrink-0 tabular-nums" aria-label={`Notes: ${app.noteCount}`}>
-            {app.noteCount}
-          </span>
-          <span className="line-clamp-2">{app.latestNote.body}</span>
-        </p>
+      {app.notes.length > 0 ? (
+        // The notes button covers this row: hovering it shows every note, as in the table.
+        <div className="relative mt-2">
+          <NoteCell notes={app.notes} />
+        </div>
       ) : null}
     </article>
   );

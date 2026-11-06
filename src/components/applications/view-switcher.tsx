@@ -1,37 +1,47 @@
 "use client";
 
-import { ChartGantt, Columns3, Table2, type LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { ViewMode } from "./use-applications-url-state";
+import { ChartGantt, ChevronDown, Columns3, Table2, type LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { VIEWS, type ViewMode } from "./use-applications-url-state";
 
-const OPTIONS: { value: ViewMode; label: string; icon: LucideIcon }[] = [
-  { value: "table", label: "Table", icon: Table2 },
-  { value: "kanban", label: "Kanban", icon: Columns3 },
-  { value: "timeline", label: "Timeline", icon: ChartGantt },
-];
+const OPTIONS: Record<ViewMode, { label: string; icon: LucideIcon }> = {
+  table: { label: "Table", icon: Table2 },
+  kanban: { label: "Kanban", icon: Columns3 },
+  timeline: { label: "Timeline", icon: ChartGantt },
+};
 
+/** One button with the current view; the other views are in its menu. */
 export function ViewSwitcher({ value, onChange }: { value: ViewMode; onChange: (view: ViewMode) => void }) {
+  const { label, icon: Icon } = OPTIONS[value];
   return (
-    <div role="radiogroup" aria-label="View" className="inline-flex rounded-lg bg-muted p-0.5">
-      {OPTIONS.map(({ value: option, label, icon: Icon }) => {
-        const active = option === value;
-        return (
-          <button
-            key={option}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(option)}
-            className={cn(
-              "inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-              active && "bg-background text-foreground shadow-xs ring-1 ring-border",
-            )}
-          >
-            <Icon className="size-4" aria-hidden />
-            {label}
-          </button>
-        );
-      })}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" aria-label={`View: ${label}`}>
+          <Icon aria-hidden />
+          {label}
+          <ChevronDown className="text-muted-foreground" aria-hidden />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-44">
+        <DropdownMenuRadioGroup value={value} onValueChange={(next) => onChange(next as ViewMode)}>
+          {VIEWS.map((view) => {
+            const { label: optionLabel, icon: OptionIcon } = OPTIONS[view];
+            return (
+              <DropdownMenuRadioItem key={view} value={view}>
+                <OptionIcon aria-hidden />
+                {optionLabel}
+              </DropdownMenuRadioItem>
+            );
+          })}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

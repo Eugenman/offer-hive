@@ -2,10 +2,9 @@
   "ci": {
     "collect": {
       "url": [
-        "http://127.0.0.1:3000/dashboard",
-        "http://127.0.0.1:3000/statistics",
-        "http://127.0.0.1:3000/archive",
-        "http://127.0.0.1:3000/settings"
+        "http://127.0.0.1:3000/login",
+        "http://127.0.0.1:3000/reset-password",
+        "http://127.0.0.1:3000/privacy"
       ],
       "numberOfRuns": 1,
       "settings": { "preset": "desktop" }

@@ -1,7 +1,16 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { indexedDbStorage } from "./indexeddb";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+import { toast } from "sonner";
+import { syncStorage, type SyncStatus, type SyncStorage } from "@/lib/sync/sync-storage";
 import { createApplicationsRepository } from "./repository";
 import type { ApplicationsRepository } from "./types";
 
@@ -12,10 +21,44 @@ const serverRepository = createApplicationsRepository();
 
 // One instance per browser tab: it survives client-side navigation between pages.
 let instance: ApplicationsRepository | null = null;
+let storage: SyncStorage | null = null;
+
+function getStorage() {
+  storage ??= syncStorage({
+    onRejected: () => toast.error("A change couldn’t be saved. Your data was reloaded."),
+    onSignedOut: () => {
+      // A full page load, not client navigation: this tab's data must not outlive the session.
+      const login = new URL("/login", location.href);
+      login.searchParams.set("next", location.pathname + location.search);
+      location.assign(login);
+    },
+  });
+  return storage;
+}
+
 function getRepository() {
   if (typeof window === "undefined") return serverRepository;
-  instance ??= createApplicationsRepository({ storage: indexedDbStorage() });
+  instance ??= createApplicationsRepository({ storage: getStorage() });
   return instance;
+}
+
+/** Whether changes are on their way to the server; "idle" during server rendering. */
+export function useSyncStatus(): SyncStatus {
+  return useSyncExternalStore(
+    (listener) => getStorage().subscribeStatus(listener),
+    () => getStorage().getStatus(),
+    () => "idle",
+  );
+}
+
+/** Changes of this account that haven't reached the server yet. */
+export function countUnsentChanges(): Promise<number> {
+  return typeof window === "undefined" ? Promise.resolve(0) : getStorage().pendingCount();
+}
+
+/** Drops this account's unsent changes (after the account is deleted). */
+export function discardUnsentChanges(): Promise<void> {
+  return typeof window === "undefined" ? Promise.resolve() : getStorage().discardPending();
 }
 
 export function RepositoryProvider({ children }: { children: ReactNode }) {

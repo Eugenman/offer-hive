@@ -14,6 +14,8 @@ import type { ValidChangeSet } from "./payload";
 mock.module("server-only", () => ({}));
 
 const url = process.env.TEST_DATABASE_URL;
+// In CI a missing database means the setup is broken, not that these tests do not apply.
+if (!url && process.env.CI) throw new Error("TEST_DATABASE_URL is not set in CI");
 if (url) process.env.DATABASE_URL = url;
 
 const { getDb } = await import("@/lib/db");

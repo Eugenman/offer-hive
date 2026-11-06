@@ -28,9 +28,16 @@ const COLUMNS: { header: string; value: (app: ApplicationDetails) => string | nu
   },
 ];
 
+/**
+ * A cell starting with one of these is a formula to Excel and Sheets, not text. A dash followed by
+ * a space cannot be a formula: that is how bullet lists in notes start.
+ */
+const LOOKS_LIKE_A_FORMULA = /^[=+@\t\r]|^-\S/;
+
 function escapeCell(value: string | number | null) {
   if (value === null) return "";
-  const text = String(value);
+  // Text from an imported file must not run when the export is opened: the apostrophe keeps it text.
+  const text = typeof value === "string" && LOOKS_LIKE_A_FORMULA.test(value) ? `'${value}` : String(value);
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 

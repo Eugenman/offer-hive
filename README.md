@@ -27,6 +27,7 @@ A job application tracker for people who send a lot of CVs and want to see where
 - **Tailwind CSS 4**, **shadcn/ui** (Radix)
 - **PostgreSQL** with **Drizzle ORM**, **Better Auth** (email and password)
 - **Dexie** (IndexedDB) for the queue of unsent changes, **SheetJS** for spreadsheets, **Zod** for validation, **nuqs** for URL state, **dnd-kit** for drag and drop
+- **bun test** with **fake-indexeddb** and **@testing-library/react** on happy-dom, **Playwright** planned for end-to-end
 - **bun**, ESLint, Prettier, GitHub Actions, Lighthouse CI, Docker
 
 ## Architecture
@@ -83,10 +84,12 @@ This starts Postgres, Mailpit and the app, and applies the migrations before the
 ### Checks
 
 ```bash
-bun run format:check && bun run lint && bun run typecheck && bun run build
+bun run format:check && bun run lint && bun run typecheck && bun run test && bun run build
 ```
 
-Stop `bun dev` before `bun run build`: running both at once breaks the development server's cache. CI runs the same checks on every pull request, applies the migrations to an empty Postgres and runs Lighthouse on the sign-in, password reset and privacy pages.
+The unit tests need no database. The sync tests that apply a batch to Postgres run only when `TEST_DATABASE_URL` points at a throwaway database, and are skipped otherwise: they empty its tables. Locally: `docker compose exec db createdb -U offerhive offerhive_test`, apply the migrations to it (`DATABASE_URL=… bun run db:migrate`), then run the suite with `TEST_DATABASE_URL` set. CI does the same with its own throwaway Postgres.
+
+Stop `bun dev` before `bun run build`: running both at once breaks the development server's cache. CI runs the same checks on every pull request — migrations first, then the tests against that database — and runs Lighthouse on the sign-in, password reset and privacy pages.
 
 ## Roadmap
 
@@ -95,7 +98,8 @@ Stop `bun dev` before `bun run build`: running both at once breaks the developme
 - [x] Spreadsheet import and export (xlsx, csv, ods, numbers), backup and restore
 - [x] CI with Lighthouse and a Docker image
 - [x] Tablet layout (768px and up)
-- [ ] Tests: unit and end-to-end
+- [x] Unit tests (`bun test`)
+- [ ] End-to-end tests (Playwright with axe)
 - [x] Accounts with email and password, recovery codes
 - [x] Server storage (PostgreSQL) with a queue for offline changes
 

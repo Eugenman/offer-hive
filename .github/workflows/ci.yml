@@ -52,8 +52,13 @@ jobs:
       - run: bun run format:check
       - run: bun run lint
       - run: bun run typecheck
+      # The database tests need the schema, so migrations go first; this checkout's database is
+      # throwaway, so the tests may empty its tables.
       - name: Apply the migrations to an empty database
         run: bun run db:migrate
+      - run: bun run test
+        env:
+          TEST_DATABASE_URL: ${{ env.DATABASE_URL }}
       - run: bun run build
 
       # The same standalone server the Docker image runs.

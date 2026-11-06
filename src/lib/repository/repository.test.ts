@@ -327,9 +327,9 @@ describe("listing", () => {
 
   test("filters by status and by source", async () => {
     const repository = await seeded();
-    const all = await repository.list();
-    const [first] = all.items;
-    await repository.changeStatus([first.id], { status: "screening" });
+    // Chosen by name, not by position: the default order depends on timestamps that may tie.
+    const [acme] = (await repository.list({ search: "Acme" })).items;
+    await repository.changeStatus([acme.id], { status: "screening" });
 
     expect((await repository.list({ statuses: ["screening"] })).total).toBe(1);
     expect((await repository.list({ sources: ["LinkedIn"] })).total).toBe(2);

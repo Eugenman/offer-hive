@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 import { type ApplicationStatus, STATUS_LABELS } from "@/lib/domain";
 import { isRepositoryError } from "@/lib/repository/types";
-import { backupFileName, buildBackup } from "@/lib/export/backup-file";
+import { backupTableFileName } from "@/lib/export/backup-file";
 import {
   buildApplicationsCsv,
   buildApplicationsXlsx,
@@ -123,12 +123,24 @@ export function useApplicationActions() {
     }
   }
 
-  /** Downloads everything as one backup file. */
-  async function downloadBackup() {
+  /** The user's applications in the same columns as the downloadable template. */
+  async function downloadTableBackup(format: ExportFormat = "csv") {
     try {
-      const snapshot = await repository.exportSnapshot();
-      downloadFile(buildBackup(snapshot), backupFileName(), "application/json");
-      toast.success("Backup downloaded");
+      const details = await repository.listDetailed();
+      if (details.length === 0) {
+        toast("Nothing to export");
+        return false;
+      }
+      if (format === "xlsx") {
+        downloadFile(
+          await buildApplicationsXlsx(details),
+          backupTableFileName("xlsx"),
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        );
+      } else {
+        downloadFile(buildApplicationsCsv(details), backupTableFileName("csv"), "text/csv;charset=utf-8");
+      }
+      toast.success(`Backed up ${countLabel(details.length)}`);
       return true;
     } catch {
       reportError("Couldn’t create the backup")();
@@ -136,5 +148,5 @@ export function useApplicationActions() {
     }
   }
 
-  return { changeStatus, revertStatus, remove, exportApplications, downloadBackup };
+  return { changeStatus, revertStatus, remove, exportApplications, downloadTableBackup };
 }

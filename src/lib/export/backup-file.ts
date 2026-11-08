@@ -40,6 +40,11 @@ export function backupFileName(date = new Date()) {
   return `offerhive-backup-${date.toISOString().slice(0, 10)}.json`;
 }
 
+/** The same backup as a table: the columns of the downloadable template, with the user's rows. */
+export function backupTableFileName(format: "csv" | "xlsx" = "csv", date = new Date()) {
+  return `offerhive-backup-${date.toISOString().slice(0, 10)}.${format}`;
+}
+
 export type ParsedBackup =
   { ok: true; snapshot: StoreSnapshot; exportedAt: string; applications: number } | { ok: false };
 

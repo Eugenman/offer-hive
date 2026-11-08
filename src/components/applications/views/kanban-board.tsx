@@ -13,16 +13,8 @@ import {
   type Announcements,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Archive } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { type ApplicationStatus, type ApplicationSummary, STATUS_LABELS, nextStatuses } from "@/lib/domain";
 import { rememberListPosition } from "../detail/return-to-list";
@@ -34,6 +26,8 @@ type KanbanBoardProps = {
   onChangeStatus: (id: string, status: ApplicationStatus) => void;
   onRevertStatus: (app: ApplicationSummary) => void;
   onDelete: (app: ApplicationSummary) => void;
+  /** Archives every card of one column. */
+  onArchiveColumn: (ids: string[]) => void;
 };
 
 /** Columns a card may be dropped on: allowed next statuses, plus the previous one (undo). */
@@ -174,14 +168,17 @@ function Column({
   applications,
   cardProps,
   zoneState,
+  onArchive,
 }: {
   title: string;
   zones: ApplicationStatus[];
   applications: ApplicationSummary[];
   cardProps: (app: ApplicationSummary) => CardHandlers;
   zoneState: (status: ApplicationStatus) => ZoneState;
+  onArchive: (ids: string[]) => void;
 }) {
-  const total = applications.filter((app) => zones.includes(app.status)).length;
+  const inColumn = applications.filter((app) => zones.includes(app.status));
+  const total = inColumn.length;
   return (
     <section
       aria-label={`${title}: ${total}`}
@@ -189,6 +186,17 @@ function Column({
     >
       <header className="flex items-center gap-2 px-1 pt-1 pb-1">
         <StatusBadge status={zones[0]} label={title} count={total} />
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="ml-auto"
+          disabled={total === 0}
+          onClick={() => onArchive(inColumn.map((app) => app.id))}
+          aria-label={`Archive all in ${title}: ${total}`}
+          title={total === 0 ? `Nothing in ${title}` : `Archive all ${total} in ${title}`}
+        >
+          <Archive aria-hidden />
+        </Button>
       </header>
       {zones.map((status, index) => (
         <Zone
@@ -207,7 +215,13 @@ function Column({
 
 const quoted = (summary: ApplicationSummary | undefined) => (summary ? summary.company : "Application");
 
-export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDelete }: KanbanBoardProps) {
+export function KanbanBoard({
+  applications,
+  onChangeStatus,
+  onRevertStatus,
+  onDelete,
+  onArchiveColumn,
+}: KanbanBoardProps) {
   const router = useRouter();
   const hintId = useId();
   const boardRef = useRef<HTMLDivElement>(null);
@@ -215,18 +229,12 @@ export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDe
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<ApplicationSummary | null>(null);
+
   const byId = new Map(applications.map((app) => [app.id, app]));
   const active = activeId ? byId.get(activeId) : undefined;
 
   // Reset transient UI when Next.js hides this page (<Activity>).
-  useLayoutEffect(
-    () => () => {
-      setPendingDelete(null);
-      setSelectedId(null);
-    },
-    [],
-  );
+  useLayoutEffect(() => () => setSelectedId(null), []);
 
   // A click anywhere outside the cards clears the selection.
   useEffect(() => {
@@ -258,22 +266,6 @@ export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDe
     else onChangeStatus(app.id, status);
   }
 
-  // Remembers which card to refocus when the dialog closes without deleting.
-  const [cancelledId, setCancelledId] = useState<string | null>(null);
-
-  function requestDelete(app: ApplicationSummary) {
-    setCancelledId(app.id);
-    setPendingDelete(app);
-  }
-
-  function confirmDelete() {
-    if (!pendingDelete) return;
-    setCancelledId(null);
-    onDelete(pendingDelete);
-    setPendingDelete(null);
-    setSelectedId(null);
-  }
-
   const zoneState = (status: ApplicationStatus): ZoneState => {
     if (!active) return "idle";
     if (status === active.status) return "own";
@@ -288,7 +280,8 @@ export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDe
       rememberListPosition(app.id);
       router.push(`/applications/${app.id}`);
     },
-    onRequestDelete: () => requestDelete(app),
+    // The page confirms the move, so every archive comes from one dialog.
+    onRequestDelete: () => onDelete(app),
     onDeselect: () => setSelectedId(null),
   });
 
@@ -316,38 +309,13 @@ export function KanbanBoard({ applications, onChangeStatus, onRevertStatus, onDe
             applications={applications}
             cardProps={cardProps}
             zoneState={zoneState}
+            onArchive={onArchiveColumn}
           />
         ))}
       </div>
       <DragOverlay dropAnimation={null}>
         {active ? <ApplicationCard app={active} className="w-60 rotate-1 cursor-grabbing shadow-lg" /> : null}
       </DragOverlay>
-
-      <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => !open && setPendingDelete(null)}>
-        <AlertDialogContent
-          onCloseAutoFocus={(event) => {
-            // There is no trigger button to return to: put focus back on the card (or the board after delete).
-            event.preventDefault();
-            const card = cancelledId
-              ? boardRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(cancelledId)}"]`)
-              : null;
-            (card ?? boardRef.current)?.focus();
-          }}
-        >
-          <AlertDialogHeader>
-            <AlertDialogTitle>Move to archive?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingDelete
-                ? `${pendingDelete.company} moves to the archive. You can restore it within 30 days.`
-                : ""}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Move to archive</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </DndContext>
   );
 }

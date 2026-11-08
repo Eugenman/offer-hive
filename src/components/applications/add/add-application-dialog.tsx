@@ -18,7 +18,14 @@ import { ImportWizard } from "./import-wizard";
 import { ManualForm } from "./manual-form";
 import { type AddTab, useAddDialog } from "./use-add-dialog";
 
-export function AddApplicationDialog() {
+export function AddApplicationDialog({
+  initialFile,
+  onFileConsumed,
+}: {
+  initialFile?: File | null;
+  /** Called once the wizard has started reading that file, so it is never re-read. */
+  onFileConsumed?: () => void;
+} = {}) {
   const dialog = useAddDialog();
   const [importInProgress, setImportInProgress] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
@@ -69,7 +76,13 @@ export function AddApplicationDialog() {
               <ManualForm onDone={close} />
             </TabsContent>
             <TabsContent value="import" className="pt-3">
-              <ImportWizard key={importSession} onDone={close} onProgressChange={setImportInProgress} />
+              <ImportWizard
+                key={importSession}
+                initialFile={initialFile}
+                onFileConsumed={onFileConsumed}
+                onDone={close}
+                onProgressChange={setImportInProgress}
+              />
             </TabsContent>
           </Tabs>
         </DialogContent>

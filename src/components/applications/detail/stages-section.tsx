@@ -15,6 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   type ApplicationDetails,
@@ -236,6 +238,20 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
   const repository = useRepository();
   const readOnly = useReadOnly();
   const title = stageTitle(stage);
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState(stage.title ?? "");
+
+  async function rename() {
+    const next = draft.trim();
+    try {
+      await repository.updateStage(stage.id, { title: next === "" ? null : next });
+      setRenaming(false);
+      toast(next ? "Stage renamed" : "Stage title reset");
+    } catch (error) {
+      toast.error(saveErrorMessage(error));
+    }
+  }
+
   return (
     <article className="border-t pt-3 first:border-0 first:pt-0" aria-label={title}>
       <div className="flex items-start gap-2">
@@ -273,6 +289,14 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
               </DropdownMenuRadioGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                onSelect={() => {
+                  setDraft(stage.title ?? "");
+                  setRenaming(true);
+                }}
+              >
+                Rename…
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 variant="destructive"
                 onSelect={async () => {
                   await repository.removeStage(stage.id);
@@ -285,6 +309,40 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        )}
+        {readOnly ? null : (
+          <Dialog open={renaming} onOpenChange={setRenaming}>
+            <DialogContent className="sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Rename the stage</DialogTitle>
+              </DialogHeader>
+              <form
+                className="grid gap-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void rename();
+                }}
+              >
+                <div className="grid gap-1.5">
+                  <Input
+                    autoFocus
+                    maxLength={120}
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    placeholder="Interview · technical"
+                    aria-label="Stage title"
+                  />
+                  <p className="text-xs text-muted-foreground">Leave it empty to use the type name.</p>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setRenaming(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Save</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
       {notes.length ? (

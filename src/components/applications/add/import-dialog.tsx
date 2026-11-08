@@ -22,9 +22,14 @@ import { ImportWizard } from "./import-wizard";
 export function ImportDialog({
   open,
   onOpenChange,
+  initialFile,
+  onFileConsumed,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** A backup or a spreadsheet chosen outside the dialog: read it at once. */
+  initialFile?: File | null;
+  onFileConsumed?: () => void;
 }) {
   const router = useRouter();
   const [inProgress, setInProgress] = useState(false);
@@ -59,6 +64,8 @@ export function ImportDialog({
           </DialogHeader>
           <ImportWizard
             key={session}
+            initialFile={initialFile}
+            onFileConsumed={onFileConsumed}
             onDone={close}
             onProgressChange={setInProgress}
             onOpenList={() => {

@@ -27,6 +27,26 @@ export function NoApplications({ onAdd, onImport }: { onAdd: () => void; onImpor
   );
 }
 
+/** Shown instead of the empty state while a spreadsheet is dragged over the page. */
+export function DropSpreadsheet() {
+  return (
+    <div className="px-6 pt-6">
+      <div
+        className="flex flex-col items-center rounded-xl border-2 border-dashed border-primary/40 bg-muted/40 px-6 py-16 text-center"
+        aria-live="polite"
+      >
+        <span className="flex size-12 items-center justify-center rounded-xl bg-background" aria-hidden>
+          <Upload className="size-6 text-muted-foreground" />
+        </span>
+        <h2 className="mt-4 text-base font-semibold">Drop the spreadsheet here</h2>
+        <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+          Excel, LibreOffice, Numbers, CSV or TSV. The file is read in your browser and never uploaded.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /** Applications exist, but the search or filter hides all of them. */
 export function NoResults({ onReset }: { onReset: () => void }) {
   return (

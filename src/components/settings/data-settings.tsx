@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { ArchiveRestore, HardDriveDownload, Trash2, Upload } from "lucide-react";
+import { ArchiveRestore, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -30,6 +30,7 @@ export function DataSettings() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [pendingRestore, setPendingRestore] = useState<Extract<ParsedBackup, { ok: true }> | null>(null);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const backupInput = useRef<HTMLInputElement>(null);
   // Next.js keeps hidden pages alive (<Activity>): close transient dialogs when leaving.
   useLayoutEffect(
@@ -50,11 +51,17 @@ export function DataSettings() {
     async (repo) => (await repo.listForStatistics()).length,
   );
 
-  async function chooseBackup(file: File | undefined) {
+  async function chooseRestoreFile(file: File | undefined) {
     if (!file) return;
-    const backup = parseBackup(await file.text());
-    if (backup.ok) setPendingRestore(backup);
-    else toast.error("This file isn’t an Offerhive backup");
+    // A full copy from an older version is still a JSON file: take it quietly.
+    if (file.name.toLowerCase().endsWith(".json")) {
+      const backup = parseBackup(await file.text());
+      if (backup.ok) setPendingRestore(backup);
+      else toast.error("This file isn’t an Offerhive backup");
+      return;
+    }
+    setRestoreFile(file);
+    setImportOpen(true);
   }
 
   async function restore() {
@@ -84,32 +91,22 @@ export function DataSettings() {
         <p className="-mt-2 max-w-xl text-sm text-muted-foreground">
           Your applications are saved to your account. Download a backup to keep a copy of your own.
         </p>
-        <Setting
-          title="Export"
-          description="All applications in one spreadsheet. Opens in Excel, Numbers and LibreOffice."
-        >
-          <ExportMenu
-            label="Download spreadsheet"
-            disabled={total === 0}
-            onExport={(format) => void actions.exportApplications({ query: {} }, format)}
-          />
-        </Setting>
         <Setting title="Import" description="Upload the spreadsheet you kept your applications in.">
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload aria-hidden />
             Import spreadsheet
           </Button>
         </Setting>
-        <Setting title="Backup" description="Everything in one file, including the archive and statistics.">
+        <Setting
+          title="Backup"
+          description="Your applications in the same table as the template: open it in Excel, or load it back later — rows match by ID, so nothing is duplicated."
+        >
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              disabled={everything === 0}
-              onClick={() => void actions.downloadBackup()}
-            >
-              <HardDriveDownload aria-hidden />
-              Download backup
-            </Button>
+            <ExportMenu
+              label="Download backup"
+              disabled={total === 0}
+              onExport={(format) => void actions.downloadTableBackup(format)}
+            />
             <Button variant="outline" onClick={() => backupInput.current?.click()}>
               <ArchiveRestore aria-hidden />
               Restore backup
@@ -117,12 +114,12 @@ export function DataSettings() {
             <input
               ref={backupInput}
               type="file"
-              accept=".json,application/json"
+              accept=".csv,.xlsx,.xls,.json"
               className="sr-only"
               tabIndex={-1}
               aria-hidden
               onChange={(event) => {
-                void chooseBackup(event.target.files?.[0]);
+                void chooseRestoreFile(event.target.files?.[0]);
                 event.target.value = "";
               }}
             />
@@ -140,7 +137,12 @@ export function DataSettings() {
         </Setting>
       </Section>
 
-      <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      <ImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        initialFile={restoreFile}
+        onFileConsumed={() => setRestoreFile(null)}
+      />
 
       <AlertDialog open={pendingRestore !== null} onOpenChange={(open) => !open && setPendingRestore(null)}>
         <AlertDialogContent>

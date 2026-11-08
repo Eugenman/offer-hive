@@ -20,9 +20,11 @@ type ApplicationsToolbarProps = {
   onSourcesChange: (sources: string[]) => void;
   onResetFilters: () => void;
   onAdd: () => void;
-  /** Table only: moves the checked rows to the archive; inactive until a row is checked. */
-  selectedCount?: number;
-  onDeleteSelected?: () => void;
+  /**
+   * Archive control: checked rows in the table, every shown card in the kanban.
+   * Inactive when there is nothing to archive.
+   */
+  archive?: { count: number; label: string; onArchive: () => void };
 };
 
 export function ApplicationsToolbar({
@@ -37,8 +39,7 @@ export function ApplicationsToolbar({
   onSourcesChange,
   onResetFilters,
   onAdd,
-  selectedCount = 0,
-  onDeleteSelected,
+  archive,
 }: ApplicationsToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 px-6 py-4">
@@ -59,14 +60,14 @@ export function ApplicationsToolbar({
       </div>
       <SearchInput value={search} onChange={onSearchChange} label="Search applications" />
       <ViewSwitcher value={view} onChange={onViewChange} />
-      {onDeleteSelected ? (
+      {archive ? (
         <Button
           variant="outline"
           size="icon"
-          onClick={onDeleteSelected}
-          disabled={selectedCount === 0}
-          aria-label={selectedCount ? `Archive selected: ${selectedCount}` : "Archive selected"}
-          title={selectedCount ? `Archive selected: ${selectedCount}` : "Select applications to archive"}
+          onClick={archive.onArchive}
+          disabled={archive.count === 0}
+          aria-label={archive.label}
+          title={archive.label}
         >
           <Archive aria-hidden />
         </Button>

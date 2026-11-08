@@ -27,12 +27,13 @@ export function Setting({
   children?: React.ReactNode;
 }) {
   return (
-    <div className={`flex flex-wrap items-center justify-between gap-4 ${danger ? "border-t pt-6" : ""}`}>
-      <div className="max-w-md">
+    <div className={`flex items-center justify-between gap-4 ${danger ? "border-t pt-6" : ""}`}>
+      {/* The text gives way first: the action keeps its place on the right and never drops below. */}
+      <div className="max-w-md min-w-0">
         <p className={`text-sm font-medium ${danger ? "text-destructive" : ""}`}>{title}</p>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
-      {children}
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">{children}</div>
     </div>
   );
 }

@@ -12,10 +12,22 @@ import type { ApplicationsPage, ApplicationsRepository } from "@/lib/repository/
 import { AddApplicationDialog } from "./add/add-application-dialog";
 import { useAddDialog } from "./add/use-add-dialog";
 import { rememberListPosition, takeReturnFocus } from "./detail/return-to-list";
+import { useFileDrop } from "@/hooks/use-file-drop";
 import { ApplicationsTable, type TableSort } from "./applications-table";
 import { ApplicationsToolbar } from "./applications-toolbar";
 import { BulkActionsBar } from "./bulk-actions-bar";
-import { NoApplications, NoResults } from "./empty-states";
+import { DropSpreadsheet, NoApplications, NoResults } from "./empty-states";
+import { countApplications } from "@/lib/plural";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { TableFooter } from "./table-footer";
 import { useApplicationActions } from "./use-application-actions";
 import { type ViewMode, useApplicationsUrlState } from "./use-applications-url-state";
@@ -120,6 +132,13 @@ export function ApplicationsView() {
     url.setView(next);
   }
 
+  // Every archive goes through one confirmation: the table's checked rows, a kanban column, the whole board.
+  const [pendingArchive, setPendingArchive] = useState<{ ids: string[]; name?: string } | null>(null);
+  function requestArchive(ids: string[], name?: string) {
+    if (ids.length === 0) return;
+    setPendingArchive({ ids, name });
+  }
+
   function deleteIds(ids: string[], name?: string) {
     setSelected((current) => new Set([...current].filter((id) => !ids.includes(id))));
     void actions.remove(ids, name);
@@ -129,8 +148,19 @@ export function ApplicationsView() {
   const revertStatus = (app: ApplicationSummary) => {
     if (app.previousStatus) void actions.revertStatus(app.id, app.previousStatus);
   };
-  const deleteOne = (app: ApplicationSummary) => deleteIds([app.id], app.company);
+  const deleteOne = (app: ApplicationSummary) => requestArchive([app.id], app.company);
   const shownCount = !data ? 0 : data.kind === "page" ? data.page.total : data.items.length;
+  const filtered =
+    Boolean(url.query.search) ||
+    (url.query.statuses?.length ?? 0) > 0 ||
+    (url.query.sources?.length ?? 0) > 0;
+
+  // On an empty list a dropped spreadsheet replaces the empty state and opens the import with it.
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const draggingFile = useFileDrop(totalAll === 0 && addDialog.tab === null, (file) => {
+    setPendingFile(file);
+    addDialog.open("import");
+  });
 
   let content: React.ReactNode;
   if (error) {
@@ -149,7 +179,9 @@ export function ApplicationsView() {
       </>
     );
   } else if (totalAll === 0) {
-    content = (
+    content = draggingFile ? (
+      <DropSpreadsheet />
+    ) : (
       <NoApplications onAdd={() => addDialog.open("manual")} onImport={() => addDialog.open("import")} />
     );
   } else if (shownCount === 0) {
@@ -185,6 +217,7 @@ export function ApplicationsView() {
         onChangeStatus={changeStatus}
         onRevertStatus={revertStatus}
         onDelete={deleteOne}
+        onArchiveColumn={(ids) => requestArchive(ids)}
       />
     );
   }
@@ -211,22 +244,73 @@ export function ApplicationsView() {
           onSourcesChange={url.setSources}
           onResetFilters={url.resetFilters}
           onAdd={() => addDialog.open("manual")}
-          selectedCount={selectedIds.length}
-          onDeleteSelected={
+          archive={
             view === "table"
-              ? () => {
-                  const only =
-                    selectedIds.length === 1 && data?.kind === "page"
-                      ? data.page.items.find((app) => app.id === selectedIds[0])
-                      : undefined;
-                  deleteIds(selectedIds, only?.company);
+              ? {
+                  count: selectedIds.length,
+                  label: selectedIds.length
+                    ? `Archive selected: ${selectedIds.length}`
+                    : "Select applications to archive",
+                  onArchive: () => {
+                    const only =
+                      selectedIds.length === 1 && data?.kind === "page"
+                        ? data.page.items.find((app) => app.id === selectedIds[0])
+                        : undefined;
+                    requestArchive(selectedIds, only?.company);
+                  },
                 }
-              : undefined
+              : view === "kanban" && data?.kind === "summaries"
+                ? {
+                    count: data.items.length,
+                    label: `Archive all shown: ${data.items.length}`,
+                    onArchive: () => requestArchive(data.items.map((app) => app.id)),
+                  }
+                : undefined
           }
         />
       )}
       {content}
-      <AddApplicationDialog />
+      <AddApplicationDialog initialFile={pendingFile} onFileConsumed={() => setPendingFile(null)} />
+
+      <AlertDialog
+        open={pendingArchive !== null}
+        onOpenChange={(open) => {
+          if (open) return;
+          setPendingArchive(null);
+          // Cancelling in the table also clears the checkboxes, so the next attempt starts from zero.
+          if (view === "table") setSelected(new Set());
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move to the archive?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingArchive ? (
+                <>
+                  {countApplications(pendingArchive.ids.length)} will move to the archive.
+                  {filtered
+                    ? ` That is ${pendingArchive.ids.length} of ${countApplications(totalAll ?? 0)} — only what matches the current search and filters.`
+                    : ""}{" "}
+                  You can restore {pendingArchive.ids.length === 1 ? "it" : "them"} from Archive within 30
+                  days.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const pending = pendingArchive;
+                setPendingArchive(null);
+                if (pending) deleteIds(pending.ids, pending.name);
+              }}
+            >
+              Move to the archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {view === "table" && selectedIds.length > 0 ? (
         <>
           {/* Room for the floating bar so it never covers the last row or the pager. */}

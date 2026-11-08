@@ -25,7 +25,7 @@ function Metric({ label, value, note }: { label: string; value: string | number;
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const id = useId();
   return (
-    <section aria-labelledby={id} className="rounded-xl p-4 ring-1 ring-border">
+    <section aria-labelledby={id} className="flex flex-col rounded-xl p-4 ring-1 ring-border">
       <h2 id={id} className="mb-4 text-sm font-semibold">
         {title}
       </h2>
@@ -49,13 +49,12 @@ type BarRow = { key: string; label: string; count: number; share: number; color:
 
 function BarRows({ rows }: { rows: BarRow[] }) {
   return (
-    <ol className="grid gap-3">
+    // The label column is just wide enough for "Negotiation": a fixed width keeps both groups
+    // (the funnel and the outcomes) aligned, and the gap to the bar stays small.
+    <ol className="grid grid-cols-[6rem_minmax(0,1fr)_5.5rem] items-center gap-x-3 gap-y-3 text-sm">
       {rows.map((row) => (
-        <li
-          key={row.key}
-          className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_auto] items-center gap-3 text-sm"
-        >
-          <span className="text-muted-foreground">{row.label}</span>
+        <li key={row.key} className="col-span-3 grid grid-cols-subgrid items-center">
+          <span className="truncate text-muted-foreground">{row.label}</span>
           <span aria-hidden className="h-6 overflow-hidden rounded-md bg-muted">
             <span
               className={`block h-full rounded-md ${row.color}`}
@@ -104,7 +103,7 @@ function Funnel({ stats }: { stats: Statistics }) {
 function Weeks({ stats }: { stats: Statistics }) {
   const max = Math.max(1, ...stats.weeks.map((week) => week.count));
   return (
-    <ol className="flex h-44 items-end gap-2" aria-label="Applications per week">
+    <ol className="flex min-h-44 flex-1 items-end gap-2" aria-label="Applications per week">
       {stats.weeks.map((week) => {
         // "Oct 12, 2026" → "Oct 12"
         const label = formatDate(week.weekStart)?.replace(/,? \d{4}$/, "");
@@ -112,18 +111,25 @@ function Weeks({ stats }: { stats: Statistics }) {
         return (
           <li
             key={week.weekStart}
-            className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
+            className="flex h-full min-w-0 flex-1 flex-col"
             aria-label={`Week of ${label}: ${countApplications(week.count)}`}
           >
-            <span aria-hidden className="text-xs tabular-nums">
-              {week.count || ""}
-            </span>
-            <span
-              aria-hidden
-              className="w-full max-w-10 rounded-t-md bg-status-sent/55"
-              style={{ height: `${(week.count / max) * 100}%`, minHeight: week.count ? 4 : 1 }}
-            />
-            <span aria-hidden className="text-xs text-muted-foreground tabular-nums">
+            {/* The bar is a percentage of this area only, so flex cannot squeeze two bars into one height. */}
+            <div className="relative flex w-full flex-1 items-end justify-center">
+              <span
+                aria-hidden
+                className="absolute inset-x-0 text-center text-xs tabular-nums"
+                style={{ bottom: `calc(${(week.count / max) * 100}% + 2px)` }}
+              >
+                {week.count || ""}
+              </span>
+              <span
+                aria-hidden
+                className="w-full max-w-10 shrink-0 rounded-t-md bg-status-sent/55"
+                style={{ height: `${(week.count / max) * 100}%`, minHeight: week.count ? 4 : 1 }}
+              />
+            </div>
+            <span aria-hidden className="pt-1 text-center text-xs text-muted-foreground tabular-nums">
               {short}
             </span>
           </li>

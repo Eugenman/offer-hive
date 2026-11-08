@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CircleCheck, FileSpreadsheet, LoaderCircle, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -44,12 +44,18 @@ export function ImportWizard({
   onDone,
   onProgressChange,
   onOpenList,
+  initialFile,
+  onFileConsumed,
 }: {
   onDone: () => void;
   /** True while there is something to lose on close (after a file is chosen, before writing). */
   onProgressChange: (inProgress: boolean) => void;
   /** Shown as "Open applications" in the report when the wizard runs outside the applications page. */
   onOpenList?: () => void;
+  /** A file dropped on the empty page: read it at once instead of asking for one. */
+  initialFile?: File | null;
+  /** Told once that file is being read, so the page forgets it and does not read it twice. */
+  onFileConsumed?: () => void;
 }) {
   const repository = useRepository();
   const [step, setStepState] = useState<Step>({ name: "file" });
@@ -77,6 +83,19 @@ export function ImportWizard({
     const { table } = result;
     setStep({ name: "mapping", fileName: file.name, table, mapping: autoMap(table.headers) });
   }
+
+  // A file dropped outside the dialog is already chosen: read it once, then let the wizard run.
+  const startedWithFile = useRef(false);
+  const readFile = useRef(chooseFile);
+  useEffect(() => {
+    readFile.current = chooseFile;
+  });
+  useEffect(() => {
+    if (startedWithFile.current || !initialFile) return;
+    startedWithFile.current = true;
+    void readFile.current(initialFile);
+    onFileConsumed?.();
+  }, [initialFile, onFileConsumed]);
 
   function downloadTemplate() {
     downloadFile(buildApplicationsCsv([]), "offerhive-template.csv", "text/csv;charset=utf-8");

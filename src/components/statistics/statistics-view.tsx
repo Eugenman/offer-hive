@@ -1,9 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import Link from "next/link";
 import { ChartColumn } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
 import { countApplications } from "@/lib/plural";
 import { useRepositoryQuery } from "@/lib/repository/provider";
@@ -191,9 +189,10 @@ export function StatisticsView() {
           <ChartColumn className="size-6 text-muted-foreground" />
         </span>
         <h2 className="mt-4 text-base font-semibold">Nothing to count yet</h2>
-        <Button asChild className="mt-5">
-          <Link href="/dashboard?add=manual">Add application</Link>
-        </Button>
+        <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+          Once you add applications, this page shows where they stand: how far each one got, how many you sent
+          per week, and which sources bring responses.
+        </p>
       </div>
     );
   }

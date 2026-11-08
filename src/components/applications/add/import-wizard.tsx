@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CircleCheck, FileSpreadsheet, LoaderCircle, Upload } from "lucide-react";
+import { CircleAlert, CircleCheck, FileSpreadsheet, LoaderCircle, TriangleAlert, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { buildApplicationsCsv, downloadFile } from "@/lib/export/applications-csv";
+import { importReport } from "@/lib/import/report";
 import { applyImport, type ImportResult } from "@/lib/import/apply";
 import {
   IMPORT_FIELDS,
@@ -280,6 +281,11 @@ export function ImportWizard({
   }
 
   const { result, unchanged, invalid } = step;
+  const saved = result.created + result.updated + result.kept;
+  const { title, tone } = importReport(saved, invalid.length);
+  const ReportIcon = tone === "ok" ? CircleCheck : tone === "bad" ? CircleAlert : TriangleAlert;
+  const toneClass =
+    tone === "ok" ? "text-status-offer" : tone === "bad" ? "text-destructive" : "text-amber-600";
   const lines = [
     { label: "Added", value: result.created },
     { label: "Updated", value: result.updated },
@@ -291,8 +297,8 @@ export function ImportWizard({
   return (
     <div className="grid gap-4">
       <div className="flex items-center gap-2">
-        <CircleCheck className="size-5 text-status-offer" aria-hidden />
-        <h3 className="text-base font-semibold">Import finished</h3>
+        <ReportIcon className={`size-5 ${toneClass}`} aria-hidden />
+        <h3 className="text-base font-semibold">{title}</h3>
       </div>
       <dl className="grid gap-1 text-sm">
         {lines.map((line) => (

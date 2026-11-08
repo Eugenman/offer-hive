@@ -31,6 +31,10 @@ export function AddApplicationDialog({
   const [confirmClose, setConfirmClose] = useState(false);
   // Remounts the import wizard after it was closed, so it starts from the first step.
   const [importSession, setImportSession] = useState(0);
+  // The URL clears the tab on close; keep the last one so the dialog does not flash the other tab
+  // while it fades out. Adjusting state during render is React's documented pattern for this.
+  const [lastTab, setLastTab] = useState<AddTab>("manual");
+  if (dialog.tab && dialog.tab !== lastTab) setLastTab(dialog.tab);
 
   function close() {
     setImportInProgress(false);
@@ -60,7 +64,7 @@ export function AddApplicationDialog({
             </DialogDescription>
           </DialogHeader>
           <Tabs
-            value={dialog.tab ?? "manual"}
+            value={dialog.tab ?? lastTab}
             onValueChange={(value) => {
               if (dialog.tab === "import" && importInProgress) return;
               dialog.switchTo(value as AddTab);

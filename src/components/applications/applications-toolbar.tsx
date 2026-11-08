@@ -3,6 +3,8 @@
 import { Archive, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ApplicationStatus } from "@/lib/domain";
+import type { ExportFormat } from "@/lib/export/applications-csv";
+import { ExportMenu } from "./export-menu";
 import { FilterMenu } from "./filter-menu";
 import { SearchInput } from "./search-input";
 import type { ViewMode } from "./use-applications-url-state";
@@ -25,6 +27,9 @@ type ApplicationsToolbarProps = {
    * Inactive when there is nothing to archive.
    */
   archive?: { count: number; label: string; onArchive: () => void };
+  /** Downloads the current list; hidden while there is nothing to export. */
+  onExport?: (format: ExportFormat) => void;
+  exportDisabled?: boolean;
 };
 
 export function ApplicationsToolbar({
@@ -40,6 +45,8 @@ export function ApplicationsToolbar({
   onResetFilters,
   onAdd,
   archive,
+  onExport,
+  exportDisabled,
 }: ApplicationsToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 px-6 py-4">
@@ -60,6 +67,7 @@ export function ApplicationsToolbar({
       </div>
       <SearchInput value={search} onChange={onSearchChange} label="Search applications" />
       <ViewSwitcher value={view} onChange={onViewChange} />
+      {onExport ? <ExportMenu label="Export" disabled={exportDisabled} onExport={onExport} /> : null}
       {archive ? (
         <Button
           variant="outline"

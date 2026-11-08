@@ -245,3 +245,16 @@
     background: linear-gradient(to right, oklch(0 0 0 / 0.35), transparent);
   }
 }
+
+.import-drop-overlay {
+  top: 4rem;
+  left: 0;
+}
+@media (min-width: 64.0625rem) {
+  .import-drop-overlay {
+    left: 15rem;
+  }
+  [data-sidebar="collapsed"] .import-drop-overlay {
+    left: 4rem;
+  }
+}

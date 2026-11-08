@@ -229,7 +229,7 @@ export function Sidebar({ account }: { account: React.ReactNode }) {
         window.getSelection()?.removeAllRanges();
         toggle();
       }}
-      className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-1 bg-sidebar px-3 py-4 desktop:flex sidebar-collapsed:w-16"
+      className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-1 bg-sidebar px-3 py-4 select-none desktop:flex sidebar-collapsed:w-16"
     >
       <SidebarContent
         inDrawer={false}
@@ -261,7 +261,7 @@ export function NavDrawer({ account }: { account: React.ReactNode }) {
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/20 duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
-          className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col gap-1 bg-sidebar px-3 py-4 shadow-lg duration-200 outline-none data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left"
+          className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col gap-1 bg-sidebar px-3 py-4 shadow-lg duration-200 outline-none select-none data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left"
         >
           <DialogPrimitive.Title className="sr-only">Menu</DialogPrimitive.Title>
           <SidebarContent

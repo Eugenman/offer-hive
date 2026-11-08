@@ -27,6 +27,10 @@ export function RecoveryCodeScreen({
   return (
     <div className="grid gap-5" data-recovery-code>
       <Title className="text-xl font-semibold">Save your recovery code</Title>
+      <p className="text-sm text-muted-foreground">
+        This code is the only way back into your account if you forget your password. Together with your email
+        it signs you in when a reset link can’t be sent. We don’t store it and can’t show it again.
+      </p>
       <p className="rounded-lg bg-muted px-4 py-3 text-center font-mono text-lg tracking-wider select-all">
         {code}
       </p>

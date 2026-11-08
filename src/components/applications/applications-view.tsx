@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Upload } from "lucide-react";
 import {
   type ApplicationDetails,
   type ApplicationStatus,
@@ -16,7 +17,7 @@ import { useFileDrop } from "@/hooks/use-file-drop";
 import { ApplicationsTable, type TableSort } from "./applications-table";
 import { ApplicationsToolbar } from "./applications-toolbar";
 import { BulkActionsBar } from "./bulk-actions-bar";
-import { DropSpreadsheet, NoApplications, NoResults } from "./empty-states";
+import { NoApplications, NoResults } from "./empty-states";
 import { countApplications } from "@/lib/plural";
 import {
   AlertDialog,
@@ -157,7 +158,7 @@ export function ApplicationsView() {
 
   // On an empty list a dropped spreadsheet replaces the empty state and opens the import with it.
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const draggingFile = useFileDrop(totalAll === 0 && addDialog.tab === null, (file) => {
+  const draggingFile = useFileDrop(addDialog.tab === null, (file) => {
     setPendingFile(file);
     addDialog.open("import");
   });
@@ -179,9 +180,7 @@ export function ApplicationsView() {
       </>
     );
   } else if (totalAll === 0) {
-    content = draggingFile ? (
-      <DropSpreadsheet />
-    ) : (
+    content = (
       <NoApplications onAdd={() => addDialog.open("manual")} onImport={() => addDialog.open("import")} />
     );
   } else if (shownCount === 0) {
@@ -230,7 +229,7 @@ export function ApplicationsView() {
       : [];
 
   return (
-    <div ref={containerRef} onClickCapture={rememberOpenedApplication}>
+    <div ref={containerRef} onClickCapture={rememberOpenedApplication} className="relative">
       {totalAll === 0 ? null : (
         <ApplicationsToolbar
           view={view}
@@ -244,6 +243,8 @@ export function ApplicationsView() {
           onSourcesChange={url.setSources}
           onResetFilters={url.resetFilters}
           onAdd={() => addDialog.open("manual")}
+          onExport={(format) => void actions.exportApplications({ query: url.query }, format)}
+          exportDisabled={shownCount === 0}
           archive={
             view === "table"
               ? {
@@ -270,6 +271,19 @@ export function ApplicationsView() {
         />
       )}
       {content}
+      {draggingFile ? (
+        <div className="import-drop-overlay pointer-events-none fixed right-0 bottom-0 z-40 flex bg-background/85 p-3 backdrop-blur-[1px]">
+          <div className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary/50">
+            <span className="flex size-12 items-center justify-center rounded-xl bg-muted" aria-hidden>
+              <Upload className="size-6 text-muted-foreground" />
+            </span>
+            <p className="mt-4 text-base font-semibold">Drop the spreadsheet here</p>
+            <p className="mt-1 max-w-sm px-6 text-center text-sm text-muted-foreground">
+              Excel, LibreOffice, Numbers, CSV or TSV. The file is read in your browser and never uploaded.
+            </p>
+          </div>
+        </div>
+      ) : null}
       <AddApplicationDialog initialFile={pendingFile} onFileConsumed={() => setPendingFile(null)} />
 
       <AlertDialog

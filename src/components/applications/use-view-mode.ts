@@ -5,6 +5,9 @@ import { VIEWS, type ViewMode } from "./use-applications-url-state";
 
 const STORAGE_KEY = "offerhive:view";
 
+/** The board is what most people want first; the table is one click away. */
+export const DEFAULT_VIEW: ViewMode = "kanban";
+
 function readStored(): ViewMode | null {
   try {
     const value = localStorage.getItem(STORAGE_KEY);
@@ -38,8 +41,8 @@ export function useViewMode(urlView: ViewMode | null, restore: (view: ViewMode) 
   useEffect(() => {
     if (urlView) return;
     const saved = readStored();
-    if (saved && saved !== "table") restore(saved);
+    if (saved && saved !== DEFAULT_VIEW) restore(saved);
   }, [urlView, restore]);
 
-  return urlView ?? stored ?? "table";
+  return urlView ?? stored ?? DEFAULT_VIEW;
 }

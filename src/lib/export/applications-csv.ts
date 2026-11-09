@@ -1,4 +1,5 @@
 import { type ApplicationDetails, STATUS_LABELS, WORK_FORMAT_LABELS } from "@/lib/domain";
+import { encodeEvents, encodeHistory, EVENTS_HEADER, HISTORY_HEADER } from "./progress-format";
 
 // One row per application, headers and values in the interface language, all notes in one cell.
 // The headers are among the import synonyms, so an exported file imports back as is.
@@ -26,6 +27,9 @@ const COLUMNS: { header: string; value: (app: ApplicationDetails) => string | nu
         .map((note) => note.body)
         .join("\n") || null,
   },
+  // Progress travels with the backup: the import parses these two cells back into events and history.
+  { header: EVENTS_HEADER, value: (app) => encodeEvents(app.stages) },
+  { header: HISTORY_HEADER, value: (app) => encodeHistory(app.statusChanges) },
 ];
 
 /**
@@ -73,6 +77,43 @@ export async function buildApplicationsXlsx(applications: ApplicationDetails[]):
   sheet["!cols"] = COLUMNS.map((column) => ({ wch: column.header === "Notes" ? 60 : 18 }));
   const book = xlsx.utils.book_new();
   xlsx.utils.book_append_sheet(book, sheet, "Applications");
+  // Two more sheets, one row per event and per status change: easy to filter and pivot.
+  const eventRows = applications.flatMap((app) =>
+    app.stages.map((stage) => [
+      app.id,
+      app.company,
+      stage.type,
+      stage.interviewKind,
+      stage.seq,
+      stage.scheduledAt,
+      stage.state,
+      stage.title,
+    ]),
+  );
+  if (eventRows.length > 0) {
+    const events = xlsx.utils.aoa_to_sheet([
+      ["ID", "Company", "Type", "Kind", "Seq", "Scheduled at", "State", "Title"],
+      ...eventRows,
+    ]);
+    xlsx.utils.book_append_sheet(book, events, "Events");
+  }
+  const historyRows = applications.flatMap((app) =>
+    app.statusChanges.map((change) => [
+      app.id,
+      app.company,
+      change.fromStatus,
+      change.toStatus,
+      change.changedAt,
+      change.reason,
+    ]),
+  );
+  if (historyRows.length > 0) {
+    const history = xlsx.utils.aoa_to_sheet([
+      ["ID", "Company", "From", "To", "Changed at", "Reason"],
+      ...historyRows,
+    ]);
+    xlsx.utils.book_append_sheet(book, history, "Status history");
+  }
   return xlsx.write(book, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
 }
 

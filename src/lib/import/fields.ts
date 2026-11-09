@@ -17,6 +17,8 @@ export const IMPORT_FIELDS = [
   "source",
   "notes",
   "id",
+  "events",
+  "statusHistory",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 
@@ -37,6 +39,8 @@ export const IMPORT_FIELD_LABELS: Record<ImportField, string> = {
   source: "Source",
   notes: "Notes",
   id: "ID",
+  events: "Events",
+  statusHistory: "Status history",
 };
 
 export const REQUIRED_IMPORT_FIELDS: readonly ImportField[] = ["company", "position"];
@@ -77,6 +81,8 @@ const SYNONYMS: Record<ImportField, string[]> = {
     "comments",
   ],
   id: ["id"],
+  events: ["events", "события", "прогресс", "progress"],
+  statusHistory: ["status history", "история статусов", "история"],
 };
 
 export function normalizeHeader(header: string) {

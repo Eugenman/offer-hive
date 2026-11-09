@@ -27,20 +27,14 @@ import {
   type StageType,
 } from "@/lib/domain";
 import { DateTimeInput, isDateTime } from "@/components/date-picker";
-import { formatDateTime, toDateTimeLocal } from "@/lib/format";
+import { formatDateTime, isFutureDay, toDateTimeLocal } from "@/lib/format";
 import { useRepository } from "@/lib/repository/provider";
 import { stageTitle } from "@/lib/stage-title";
+import { STATE_BADGE_CLASSES } from "@/lib/stage-state";
 import { DetailCard } from "./detail-card";
 import { AddNoteInline, NoteItem } from "./note-item";
 import { RepeatEventDialog } from "./repeat-event-dialog";
 import { trySave } from "./save-error";
-
-const STATE_CLASSES: Record<StageState, string> = {
-  planned: "bg-status-sent-bg text-status-sent",
-  done: "bg-status-offer-bg text-status-offer",
-  failed: "bg-status-rejected-bg text-status-rejected",
-  cancelled: "bg-status-withdrawn-bg text-status-withdrawn",
-};
 
 /** Stage date: click to edit; Enter or leaving the field saves, Esc cancels. */
 function StageDate({ stage, min }: { stage: Stage; min?: string | null }) {
@@ -146,12 +140,19 @@ function StageCard({ stage, notes, min }: { stage: Stage; notes: Note[]; min?: s
           />
           <StageDate stage={stage} min={min} />
         </div>
-        {readOnly ? (
+        {readOnly || isFutureDay(stage.scheduledAt) ? (
+          // A future event keeps its state until its day comes: marking it done or failed early
+          // would be a guess. Time of day is ignored on purpose.
           <span
             className={cn(
               "inline-flex h-6 items-center rounded-md px-2 text-xs font-medium",
-              STATE_CLASSES[stage.state],
+              STATE_BADGE_CLASSES[stage.state],
             )}
+            title={
+              isFutureDay(stage.scheduledAt)
+                ? `The state can change on ${formatDateTime(stage.scheduledAt)}`
+                : undefined
+            }
           >
             {STAGE_STATE_LABELS[stage.state]}
           </span>
@@ -164,7 +165,7 @@ function StageCard({ stage, notes, min }: { stage: Stage; notes: Note[]; min?: s
                 onPointerLeave={leave}
                 className={cn(
                   "inline-flex h-6 cursor-pointer items-center rounded-md px-2 text-xs font-medium ring-1 ring-transparent transition-colors hover:ring-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                  STATE_CLASSES[stage.state],
+                  STATE_BADGE_CLASSES[stage.state],
                 )}
                 aria-label={`State: ${STAGE_STATE_LABELS[stage.state]}. Change`}
               >
@@ -180,7 +181,11 @@ function StageCard({ stage, notes, min }: { stage: Stage; notes: Note[]; min?: s
               >
                 {STAGE_STATES.map((state) => (
                   <DropdownMenuRadioItem key={state} value={state}>
-                    {STAGE_STATE_LABELS[state]}
+                    <span
+                      className={cn("rounded px-1.5 py-0.5 text-xs font-medium", STATE_BADGE_CLASSES[state])}
+                    >
+                      {STAGE_STATE_LABELS[state]}
+                    </span>
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
@@ -274,11 +279,14 @@ export function StagesSection({ app }: { app: ApplicationDetails }) {
       {app.stages.length > 0 || mapped ? (
         <DetailCard title="Progress">
           <div className="grid gap-4">
+            {sections.length === 0 ? <p className="text-sm text-muted-foreground">No events yet</p> : null}
             {sections.map((section) => (
               <section key={section.key} className="grid gap-1 rounded-lg px-1 py-2 ring-1 ring-border">
                 <p className="flex items-baseline gap-1.5 px-2 text-xs font-medium text-muted-foreground">
                   {section.label}
-                  <span className="tabular-nums">{section.stages.length}</span>
+                  {section.stages.length > 0 ? (
+                    <span className="tabular-nums">{section.stages.length}</span>
+                  ) : null}
                 </p>
                 {section.stages.map((stage) => (
                   <StageCard

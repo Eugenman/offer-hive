@@ -164,7 +164,8 @@ function Zone({
       {paired ? (
         <p aria-hidden className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
           {label}
-          <span className="tabular-nums">{items.length}</span>
+          {/* A zero says nothing: the empty zone is clear on its own. */}
+          {items.length > 0 ? <span className="tabular-nums">{items.length}</span> : null}
         </p>
       ) : null}
       {items.map((app) => (
@@ -196,7 +197,8 @@ function Column({
       aria-label={`${title}: ${total}`}
       className="flex w-64 shrink-0 flex-col gap-2 rounded-xl bg-muted/60 p-2"
     >
-      <header className="flex items-center gap-2 px-1 pt-1 pb-1">
+      {/* Pinned to the top of the board: the column keeps its name and count in view. */}
+      <header className="sticky top-0 z-10 -mx-2 flex items-center gap-2 rounded-t-xl bg-muted px-3 pt-2 pb-2">
         <StatusBadge status={zones[0]} label={title} count={total} />
         <Button
           variant="ghost"
@@ -311,22 +313,22 @@ export function KanbanBoard({
       <span id={hintId} className="sr-only">
         Enter to open, Delete to move to the archive
       </span>
-      <div
-        ref={boardRef}
-        tabIndex={-1}
-        className="flex min-h-[calc(100vh-11rem)] items-stretch gap-3 overflow-x-auto px-6 pt-1 pb-6 outline-none"
-      >
-        {COLUMNS.map((column) => (
-          <Column
-            key={column.title}
-            title={column.title}
-            zones={column.zones}
-            applications={applications}
-            cardProps={cardProps}
-            zoneState={zoneState}
-            onArchive={onArchiveColumn}
-          />
-        ))}
+      {/* The board scrolls itself, so the columns can pin their headers. The inner row is at least
+          the height of the board and grows with the tallest column, keeping every column equal. */}
+      <div ref={boardRef} tabIndex={-1} className="h-[calc(100vh-11rem)] overflow-auto outline-none">
+        <div className="flex min-h-full items-stretch gap-3 px-6 pt-1 pb-6">
+          {COLUMNS.map((column) => (
+            <Column
+              key={column.title}
+              title={column.title}
+              zones={column.zones}
+              applications={applications}
+              cardProps={cardProps}
+              zoneState={zoneState}
+              onArchive={onArchiveColumn}
+            />
+          ))}
+        </div>
       </div>
       <DragOverlay dropAnimation={null}>
         {active ? <ApplicationCard app={active} className="w-60 rotate-1 cursor-grabbing shadow-lg" /> : null}

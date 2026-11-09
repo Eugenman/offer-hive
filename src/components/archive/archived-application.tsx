@@ -1,10 +1,8 @@
 "use client";
 
 import { useLayoutEffect, useState } from "react";
-import Link from "next/link";
-import { MenuButton } from "@/components/app-shell/nav-menu";
 import { useRouter } from "next/navigation";
-import { Archive, ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -22,12 +20,10 @@ import { plural } from "@/lib/plural";
 import { useRepository } from "@/lib/repository/provider";
 import type { ArchivedApplicationDetails } from "@/lib/repository/types";
 import { ApplicationFields } from "../applications/detail/application-fields";
+import { ApplicationHeader } from "../applications/detail/application-header";
 import { InlineEditingProvider } from "../applications/detail/inline-field";
 import { StagesSection } from "../applications/detail/stages-section";
 import { NotesCard } from "../applications/detail/notes-card";
-import { DetailCard } from "../applications/detail/detail-card";
-import { StatusHistory } from "../applications/detail/status-log";
-import { StatusBadge } from "../applications/status-badge";
 
 const DAY_MS = 86_400_000;
 
@@ -46,9 +42,10 @@ export function ArchivedApplication({ app, now }: { app: ArchivedApplicationDeta
 
   async function restore() {
     try {
-      // The page stays open and turns into the regular, editable application page.
       await repository.restore([app.id]);
       toast.success(`Restored ${app.company}`);
+      // Back to the Applications list, the same way archiving leaves the live page for the list.
+      router.push("/dashboard");
     } catch {
       toast.error("Couldn’t restore");
     }
@@ -66,64 +63,44 @@ export function ArchivedApplication({ app, now }: { app: ArchivedApplicationDeta
 
   return (
     <>
-      <header className="border-b px-6 pt-4 pb-4">
-        <div className="flex items-center gap-2">
-          <MenuButton />
-          <Link
-            href="/archive"
-            className="-ml-1 inline-flex items-center gap-1 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-          >
-            <ArrowLeft className="size-4" aria-hidden />
-            Archive
-          </Link>
-        </div>
-        <div className="mt-2 flex flex-wrap items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-xl font-semibold">{app.company}</h1>
-            <p className="truncate text-sm text-muted-foreground">{app.position}</p>
-            <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-              Status: <StatusBadge status={app.status} />
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => void restore()}>
-              <RotateCcw aria-hidden />
-              Restore
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setConfirmErase(true)}
-              aria-label="Delete forever"
-              title="Delete forever"
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 aria-hidden />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <p
-        role="status"
-        className="mx-6 mt-6 flex items-center gap-3 rounded-lg border bg-muted/40 px-4 py-3 text-sm"
-      >
-        <Archive className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        <span>
-          In the archive since {formatDate(app.deletedAt.slice(0, 10))}. It will be erased in {daysLeft}{" "}
-          {plural(daysLeft, "day", "days")}. Restore it to make changes.
-        </span>
-      </p>
-
-      {/* Read-only: values as plain text, no edit or add controls. */}
       <InlineEditingProvider readOnly>
+        <ApplicationHeader
+          app={app}
+          mode="archived"
+          actions={
+            <>
+              <Button onClick={() => void restore()}>
+                <RotateCcw aria-hidden />
+                Restore
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setConfirmErase(true)}
+                aria-label="Delete forever"
+                title="Delete forever"
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 aria-hidden />
+              </Button>
+            </>
+          }
+        />
+        <p
+          role="status"
+          className="mx-6 mt-6 flex items-center gap-3 rounded-lg border bg-muted/40 px-4 py-3 text-sm"
+        >
+          <Archive className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <span>
+            In the archive since {formatDate(app.deletedAt.slice(0, 10))}. It will be erased in {daysLeft}{" "}
+            {plural(daysLeft, "day", "days")}. Restore it to make changes.
+          </span>
+        </p>
+
+        {/* Read-only: values as plain text, no edit or add controls. */}
         <div className="grid gap-4 px-6 py-6 desktop:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
           <div className="grid content-start gap-4">
             <ApplicationFields app={app} />
-            {/* The archive has no header popover, so the history stays a card here. */}
-            <DetailCard title="Status history">
-              <StatusHistory app={app} />
-            </DetailCard>
             <NotesCard app={app} />
           </div>
           <StagesSection app={app} />

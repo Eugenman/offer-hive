@@ -28,6 +28,20 @@ describe("status rules", () => {
     }
   });
 
+  test("the two statuses of one stage move into each other", () => {
+    // Interview and Technical share a column, Offer and Negotiation too.
+    expect(canChangeStatus("technical", "interview")).toBe(true);
+    expect(canChangeStatus("interview", "technical")).toBe(true);
+    expect(canChangeStatus("offer_discussion", "offer")).toBe(true);
+    expect(canChangeStatus("offer", "offer_discussion")).toBe(true);
+  });
+
+  test("a stage switch does not open the rest of the pipeline backwards", () => {
+    // From Technical only Interview comes back, not Screening or Applied.
+    expect(canChangeStatus("technical", "screening")).toBe(false);
+    expect(canChangeStatus("technical", "sent")).toBe(false);
+  });
+
   test("negotiation only follows an offer", () => {
     expect(canChangeStatus("sent", "offer_discussion")).toBe(false);
     expect(canChangeStatus("test_task", "offer_discussion")).toBe(false);
@@ -90,7 +104,7 @@ describe("next statuses, step by step", () => {
     expect(nextStatuses("offer")).toEqual(["offer_discussion", "rejected", "withdrawn"]);
   });
 
-  test("negotiation is the last step before an outcome", () => {
-    expect(nextStatuses("offer_discussion")).toEqual(["rejected", "withdrawn"]);
+  test("negotiation leads to an outcome or back to the offer it belongs to", () => {
+    expect(nextStatuses("offer_discussion")).toEqual(["offer", "rejected", "withdrawn"]);
   });
 });

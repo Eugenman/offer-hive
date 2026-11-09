@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState, useSyncExternalStore } from "react";
+import { type ReactNode, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { MenuButton } from "@/components/app-shell/nav-menu";
 import { useRouter } from "next/navigation";
@@ -35,7 +35,20 @@ import { trySave } from "./save-error";
 
 const noop = () => () => {};
 
-export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
+/**
+ * The header of an application page. The archive reuses it: the same title, status and clock,
+ * with its own actions and a way back to the archive.
+ */
+export function ApplicationHeader({
+  app,
+  mode = "live",
+  actions: customActions,
+}: {
+  app: ApplicationDetails;
+  mode?: "live" | "archived";
+  /** Replaces the live actions (Change status, archive) — the archive passes Restore and Delete. */
+  actions?: ReactNode;
+}) {
   const repository = useRepository();
   const actions = useApplicationActions();
   const router = useRouter();
@@ -43,7 +56,9 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
   const choices = nextStatuses(app.status);
 
   // sessionStorage exists only in the browser; the server renders the plain list URL.
-  const backHref = useSyncExternalStore(noop, listUrl, () => "/dashboard");
+  const listHref = useSyncExternalStore(noop, listUrl, () => "/dashboard");
+  const backHref = mode === "archived" ? "/archive" : listHref;
+  const backLabel = mode === "archived" ? "Archive" : "Applications";
 
   // Transient dialogs close when Next.js hides this page (<Activity>), so they are not open on return.
   useLayoutEffect(
@@ -54,8 +69,9 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
   );
 
   async function remove() {
-    await actions.remove([app.id], app.company);
+    // Back to the list first: the page must not follow the application into the archive.
     router.push(backHref);
+    await actions.remove([app.id], app.company);
   }
 
   return (
@@ -67,7 +83,7 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
           className="-ml-1 inline-flex items-center gap-1 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           <ArrowLeft className="size-4" aria-hidden />
-          Applications
+          {backLabel}
         </Link>
       </div>
       <div className="mt-2 flex flex-wrap items-start gap-3">
@@ -106,44 +122,55 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
                   <Clock className="size-4" aria-hidden />
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="start" className="w-auto p-3">
-                <p className="mb-2 text-sm font-semibold">Status history</p>
-                <StatusHistory app={app} />
+              <PopoverContent align="start" className="w-auto gap-0 p-0">
+                <p className="border-b px-3 py-2 text-sm font-semibold">Status history</p>
+                <div className="p-3">
+                  <StatusHistory app={app} />
+                </div>
               </PopoverContent>
             </Popover>
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {choices.length > 0 ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button>
-                  Change status
-                  <ChevronDown aria-hidden />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-auto min-w-0">
-                {choices.map((status) => (
-                  <DropdownMenuItem key={status} onSelect={() => void actions.changeStatus([app.id], status)}>
-                    <StatusBadge status={status} />
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : app.previousStatus ? (
-            <Button variant="outline" onClick={() => void actions.revertStatus(app.id, app.previousStatus!)}>
-              Back to {STATUS_LABELS[app.previousStatus]}
+          {customActions ??
+            (choices.length > 0 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>
+                    Change status
+                    <ChevronDown aria-hidden />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-auto min-w-0">
+                  {choices.map((status) => (
+                    <DropdownMenuItem
+                      key={status}
+                      onSelect={() => void actions.changeStatus([app.id], status)}
+                    >
+                      <StatusBadge status={status} />
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : app.previousStatus ? (
+              <Button
+                variant="outline"
+                onClick={() => void actions.revertStatus(app.id, app.previousStatus!)}
+              >
+                Back to {STATUS_LABELS[app.previousStatus]}
+              </Button>
+            ) : null)}
+          {customActions ? null : (
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Move to archive"
+              title="Move to archive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Archive aria-hidden />
             </Button>
-          ) : null}
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Move to archive"
-            title="Move to archive"
-            onClick={() => setConfirmDelete(true)}
-          >
-            <Archive aria-hidden />
-          </Button>
+          )}
         </div>
       </div>
 

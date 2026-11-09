@@ -228,6 +228,8 @@ describe("matching an import against what is already stored", () => {
       contactInfo: null,
       source: null,
       notes: null,
+      events: [],
+      history: [],
       ...over,
     };
   }
@@ -357,6 +359,8 @@ describe("resolving a conflict", () => {
       contactInfo: null,
       source: null,
       notes: null,
+      events: [],
+      history: [],
     },
     fields: ["salaryMin", "location"],
     changed: ["salaryMin", "location"],

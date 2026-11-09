@@ -499,7 +499,9 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
 
     async changeStatus(ids, input, options = {}) {
       await ensureReady();
-      const { status, reason } = statusChangeInputSchema.parse(input);
+      const { status, reason, changedAt } = statusChangeInputSchema.parse(input);
+      // An import may bring its own timestamps; a live change is always now.
+      const timestamp = options.ignoreRules && changedAt ? changedAt : now();
       // Check every record first, so a bulk change is all or nothing.
       for (const id of ids) {
         const app = live(id);
@@ -507,7 +509,6 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
           throw statusTransitionError(app.status, status);
         }
       }
-      const timestamp = now();
       let changed = false;
       for (const id of ids) {
         const app = live(id);

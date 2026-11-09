@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/app-shell/page-header";
@@ -35,9 +35,14 @@ export function ApplicationPage({
   });
   const data = found?.app ?? (found === null ? null : undefined);
   const misplaced = found ? found.archived !== (section === "archive") : false;
+  // The address is corrected once, when the page opens: archiving from here must not drag the
+  // reader into the archived copy of the same application.
+  const corrected = useRef(false);
 
   useEffect(() => {
-    if (found && misplaced) router.replace(`/${found.archived ? "archive" : "applications"}/${id}`);
+    if (!found || corrected.current) return;
+    corrected.current = true;
+    if (misplaced) router.replace(`/${found.archived ? "archive" : "applications"}/${id}`);
   }, [found, misplaced, id, router]);
   useDocumentTitle(
     data === undefined ? null : data ? `${data.company} · Offerhive` : "Application not found · Offerhive",

@@ -4,10 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ArrowUpDown, Eye } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { nextEvent } from "@/lib/next-event";
+import { STATE_BORDER_CLASSES } from "@/lib/stage-state";
+import { shortStageTitle, stageTitle } from "@/lib/stage-title";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { ApplicationStatus, ApplicationSummary } from "@/lib/domain";
-import { formatDate, formatSalary } from "@/lib/format";
+import { STAGE_STATE_LABELS, type ApplicationStatus, type ApplicationSummary } from "@/lib/domain";
+import { formatDate, formatDateTime, formatSalary, toDateTimeLocal } from "@/lib/format";
 import type { SortDirection, SortField } from "@/lib/repository/types";
 import { CompanyAvatar } from "./company-avatar";
 import { rememberListPosition } from "./detail/return-to-list";
@@ -24,6 +28,38 @@ function nextSort(current: TableSort, field: SortField): TableSort {
   if (current?.field !== field) return { field, direction: "asc" };
   if (current.direction === "asc") return { field, direction: "desc" };
   return null;
+}
+
+/**
+ * The event that comes next, marked with a dashed outline: it is the same event the card and the
+ * application page show, only brought up to the row. Past and cancelled events do not count.
+ */
+function NextEvent({ events }: { events: ApplicationSummary["events"] }) {
+  const event = nextEvent(events);
+  if (!event) return <span className="text-muted-foreground">{EMPTY}</span>;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "inline-flex max-w-full cursor-default items-center gap-1.5 rounded-lg border-2 border-dashed px-2 py-1 text-xs whitespace-nowrap",
+            STATE_BORDER_CLASSES[event.state],
+          )}
+        >
+          <span className="tabular-nums">
+            {formatDate(toDateTimeLocal(event.scheduledAt).slice(0, 10))?.replace(/, \d{4}/, "")}
+          </span>
+          <span className="truncate text-muted-foreground">· {shortStageTitle(event)}</span>
+        </span>
+      </TooltipTrigger>
+      {/* More about the event without opening the application. */}
+      <TooltipContent className="gap-1 px-3 py-2">
+        <p className="font-medium">{stageTitle(event)}</p>
+        <p className="text-background/70">{formatDateTime(event.scheduledAt)}</p>
+        <p className="text-background/70">{STAGE_STATE_LABELS[event.state]}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 function SortableHead({
@@ -123,6 +159,7 @@ export function ApplicationsTable({
         <col className="w-36" />
         <col className="w-48" />
         <col className="w-36" />
+        <col className="w-44" />
         <col />
         <col className="w-16" />
       </colgroup>
@@ -155,6 +192,7 @@ export function ApplicationsTable({
           <SortableHead field="source" sort={sort} onSort={onSort}>
             Source
           </SortableHead>
+          <TableHead>Next event</TableHead>
           <TableHead>Notes</TableHead>
           {/* Pinned to the right edge: the action stays in view while the table scrolls. */}
           <TableHead className="pinned-cell right-0 pr-6">
@@ -209,6 +247,9 @@ export function ApplicationsTable({
             </TableCell>
             <TableCell className="truncate">
               {app.source ? <span className="text-muted-foreground">{app.source}</span> : EMPTY}
+            </TableCell>
+            <TableCell>
+              <NextEvent events={app.events} />
             </TableCell>
             <TableCell className="relative max-w-0">
               <NoteCell notes={app.notes} />

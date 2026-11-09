@@ -1,5 +1,11 @@
 import { type ApplicationStatus, type WorkFormat } from "@/lib/domain";
 import { applicationInputSchema } from "@/lib/schemas";
+import {
+  decodeEvents,
+  decodeHistory,
+  type ExportedChange,
+  type ExportedEvent,
+} from "@/lib/export/progress-format";
 import { type ImportField, normalizeHeader } from "./fields";
 
 export type RawRow = string[];
@@ -21,6 +27,9 @@ export type ImportedApplication = {
   contactInfo: string | null;
   source: string | null;
   notes: string | null;
+  /** Progress from a backup: restored after the application itself is created. */
+  events: ExportedEvent[];
+  history: ExportedChange[];
 };
 
 export type RowResult =
@@ -145,6 +154,8 @@ export function normalizeRow(cells: RawRow, mapping: (ImportField | null)[], row
     contactInfo: null,
     source: null,
     notes: null,
+    events: [],
+    history: [],
   };
   const mapped = new Set<ImportField>();
 
@@ -172,6 +183,12 @@ export function normalizeRow(cells: RawRow, mapping: (ImportField | null)[], row
         break;
       case "currency":
         value.currency = cell.toUpperCase().slice(0, 5);
+        break;
+      case "events":
+        value.events = decodeEvents(cell);
+        break;
+      case "statusHistory":
+        value.history = decodeHistory(cell);
         break;
       default:
         value[field] = cell;

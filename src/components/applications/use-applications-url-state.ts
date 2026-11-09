@@ -12,7 +12,8 @@ import {
 import { APPLICATION_STATUSES } from "@/lib/domain";
 import { SORT_FIELDS, type ApplicationsQuery } from "@/lib/repository/types";
 
-export const VIEWS = ["table", "kanban", "timeline"] as const;
+// Kanban first: it is the default view, so the menu reads in the order people meet them.
+export const VIEWS = ["kanban", "table", "timeline"] as const;
 export type ViewMode = (typeof VIEWS)[number];
 
 export const PAGE_SIZES = [10, 25, 50] as const;

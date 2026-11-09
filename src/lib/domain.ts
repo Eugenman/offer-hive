@@ -40,19 +40,33 @@ export const OUTCOME_STATUSES = ["rejected", "withdrawn"] as const satisfies rea
 const isOutcome = (status: ApplicationStatus) => (OUTCOME_STATUSES as readonly string[]).includes(status);
 
 /**
- * Where an application may move from `from`: forward to any later step (optional steps may be skipped)
- * or to an outcome. "Negotiation" only follows "Offer", which cannot be skipped.
- * Going back is not a transition: it is undoing the last change (see `revertStatus`).
+ * Two statuses that share one kanban column: Interview with Technical, Offer with Negotiation.
+ * They are variants of one stage, so switching between them is not a step backwards.
+ */
+const STAGE_SIBLING: Partial<Record<ApplicationStatus, ApplicationStatus>> = {
+  interview: "technical",
+  technical: "interview",
+  offer: "offer_discussion",
+  offer_discussion: "offer",
+};
+
+/**
+ * Where an application may move from `from`: forward to any later step (optional steps may be skipped),
+ * to the other status of the same stage, or to an outcome. "Negotiation" only follows "Offer",
+ * which cannot be skipped. Going back to an earlier stage is not a transition: it is undoing the
+ * last change (see `revertStatus`).
  */
 export function nextStatuses(from: ApplicationStatus): ApplicationStatus[] {
   if (isOutcome(from)) return [];
   const later = PIPELINE_STATUSES.slice(
     PIPELINE_STATUSES.indexOf(from as (typeof PIPELINE_STATUSES)[number]) + 1,
   );
-  return [
-    ...later.filter((status) => status !== "offer_discussion" || from === "offer"),
-    ...OUTCOME_STATUSES,
-  ];
+  const sibling = STAGE_SIBLING[from];
+  const targets: ApplicationStatus[] = later.filter(
+    (status) => status !== "offer_discussion" || from === "offer",
+  );
+  if (sibling && !targets.includes(sibling)) targets.push(sibling);
+  return [...targets, ...OUTCOME_STATUSES];
 }
 
 export function canChangeStatus(from: ApplicationStatus, to: ApplicationStatus) {
@@ -99,16 +113,18 @@ export const INTERVIEW_KIND_LABELS: Record<InterviewKind, string> = {
 };
 
 /**
- * The event a status schedules. Applied and both outcomes have none yet, so the "+" action
- * only appears on the statuses that can carry a dated event.
+ * The event a status schedules. Interview, Technical and Take-home have their own kind; every other
+ * status — Applied, Screening, Offer, even the outcomes — carries free-form events: a call with a
+ * recruiter, a follow-up, anything dated.
  */
-export function stageForStatus(
-  status: ApplicationStatus,
-): { type: StageType; interviewKind: InterviewKind | null } | null {
+export function stageForStatus(status: ApplicationStatus): {
+  type: StageType;
+  interviewKind: InterviewKind | null;
+} {
   if (status === "interview") return { type: "interview", interviewKind: null };
   if (status === "technical") return { type: "interview", interviewKind: "technical" };
   if (status === "test_task") return { type: "test_task", interviewKind: null };
-  return null;
+  return { type: "other", interviewKind: null };
 }
 
 export const STAGE_STATES = ["planned", "done", "failed", "cancelled"] as const;

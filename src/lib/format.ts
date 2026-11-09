@@ -53,3 +53,14 @@ export function parseAmount(value: string): number | null | "invalid" {
   if (!digits) return null;
   return /^\d+$/.test(digits) ? Number(digits) : "invalid";
 }
+
+/** True when the value falls on a later day than today, in the viewer's time zone. Time is ignored. */
+export function isFutureDay(value: string | null, now: Date = new Date()) {
+  if (!value) return false;
+  const day = new Date(value);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const startOfDay = new Date(day);
+  startOfDay.setHours(0, 0, 0, 0);
+  return startOfDay.getTime() > today.getTime();
+}

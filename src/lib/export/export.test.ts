@@ -59,7 +59,7 @@ describe("CSV", () => {
 
   test("the header names every column", () => {
     expect(lines[0]).toBe(
-      "ID,Company,Position,Status,Date applied,Link,Salary from,Salary to,Currency,Work format,Location,Contact,Contact info,Source,Notes",
+      "ID,Company,Position,Status,Date applied,Link,Salary from,Salary to,Currency,Work format,Location,Contact,Contact info,Source,Notes,Events,Status history",
     );
   });
 

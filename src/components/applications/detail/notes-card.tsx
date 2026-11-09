@@ -11,7 +11,7 @@ export function NotesCard({ app }: { app: ApplicationDetails }) {
   const notes = app.notes.filter((note) => note.stageId === null);
 
   return (
-    <DetailCard title="Notes" className="rounded-b-none">
+    <DetailCard title="Notes">
       {notes.length ? (
         <ul className="mb-2 divide-y border-y">
           {notes.map((note) => (

@@ -77,10 +77,13 @@ export const statusChangeInputSchema = z
   .object({
     status: z.enum(APPLICATION_STATUSES),
     reason: optionalText(500).optional(),
+    /** A past moment, for restoring a backup: live changes always use the current time. */
+    changedAt: z.iso.datetime({ offset: true }).optional(),
   })
-  .transform(({ status, reason }) => ({
+  .transform(({ status, reason, changedAt }) => ({
     status,
     reason: STATUSES_WITH_REASON.includes(status) ? (reason ?? null) : null,
+    changedAt: changedAt ?? null,
   }));
 export type StatusChangeInput = z.input<typeof statusChangeInputSchema>;
 

@@ -20,6 +20,8 @@ export function StatusBadge({
   count,
   checked,
   chevron,
+  slot,
+  sub,
   className,
 }: {
   status: ApplicationStatus;
@@ -38,10 +40,14 @@ export function StatusBadge({
    * (a badge that opens the status menu). Fills its parent like `checked`.
    */
   chevron?: boolean;
+  /** Anything shown in the chip slot instead of a count: e.g. the time of a change. */
+  slot?: React.ReactNode;
+  /** A second line inside the badge, under the name: e.g. when the status started. */
+  sub?: React.ReactNode;
   className?: string;
 }) {
   const text = label ?? STATUS_LABELS[status];
-  const withSlot = count !== undefined || checked !== undefined || chevron;
+  const withSlot = count !== undefined || checked !== undefined || chevron || slot !== undefined;
   const chip =
     count !== undefined ? (
       count
@@ -49,7 +55,9 @@ export function StatusBadge({
       <Check className="size-3" aria-hidden />
     ) : chevron ? (
       <ChevronDown className="size-3" aria-hidden />
-    ) : null;
+    ) : (
+      (slot ?? null)
+    );
 
   // One minimum width for every badge (fits the longest label), so they line up in the table,
   // menus and kanban; a longer label added later grows the badge instead of overflowing it.
@@ -57,6 +65,24 @@ export function StatusBadge({
     "h-6 min-w-28 items-center rounded-md px-2 text-xs font-medium whitespace-nowrap",
     STATUS_CLASSES[status],
   );
+
+  if (sub !== undefined) {
+    // A two-line badge: the name, then the moment it started.
+    return (
+      <span
+        className={cn(
+          base,
+          "inline-flex h-auto flex-col justify-center gap-0 px-2 py-0.5 leading-tight",
+          className,
+        )}
+      >
+        <span>{text}</span>
+        <span className="mt-0.5 rounded-sm bg-background px-0.5 py-0.5 text-[10px] leading-none font-normal tabular-nums">
+          {sub}
+        </span>
+      </span>
+    );
+  }
 
   if (!withSlot) {
     return <span className={cn(base, "inline-flex justify-center", className)}>{text}</span>;
@@ -79,7 +105,7 @@ export function StatusBadge({
         {chip !== null ? (
           <span
             className={cn(
-              "flex h-4 min-w-4 items-center justify-center rounded bg-background px-1 text-[11px] leading-none tabular-nums",
+              "flex h-4 min-w-4 items-center justify-center rounded bg-background px-1 text-[11px] leading-none whitespace-nowrap tabular-nums",
               chevron &&
                 "opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 group-data-[state=open]:opacity-100",
             )}

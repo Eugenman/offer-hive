@@ -315,10 +315,22 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
 
   function summary(app: StoredApplication): ApplicationSummary {
     const appNotes = notesOf(app.id);
+    const appStages = newestFirst(
+      stages.values().filter((stage) => stage.applicationId === app.id),
+      (stage) => stage.createdAt,
+    );
     return {
       ...toPublic(app),
       previousStatus: lastChange(app.id)?.fromStatus ?? null,
       notes: copy(appNotes),
+      events: appStages.map((stage) => ({
+        type: stage.type,
+        interviewKind: stage.interviewKind,
+        title: stage.title,
+        seq: stage.seq,
+        scheduledAt: stage.scheduledAt,
+        state: stage.state,
+      })),
     };
   }
 

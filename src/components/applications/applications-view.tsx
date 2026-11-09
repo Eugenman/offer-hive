@@ -6,14 +6,18 @@ import {
   type ApplicationDetails,
   type ApplicationStatus,
   type ApplicationSummary,
+  type InterviewKind,
+  type StageType,
   commonNextStatuses,
+  stageForStatus,
 } from "@/lib/domain";
-import { useRepositoryQuery } from "@/lib/repository/provider";
+import { useRepository, useRepositoryQuery } from "@/lib/repository/provider";
 import type { ApplicationsPage, ApplicationsRepository } from "@/lib/repository/types";
 import { AddApplicationDialog } from "./add/add-application-dialog";
 import { useAddDialog } from "./add/use-add-dialog";
 import { rememberListPosition, takeReturnFocus } from "./detail/return-to-list";
 import { useFileDrop } from "@/hooks/use-file-drop";
+import { RepeatEventDialog } from "./detail/repeat-event-dialog";
 import { ApplicationsTable, type TableSort } from "./applications-table";
 import { ApplicationsToolbar } from "./applications-toolbar";
 import { BulkActionsBar } from "./bulk-actions-bar";
@@ -158,6 +162,32 @@ export function ApplicationsView() {
 
   // On an empty list a dropped spreadsheet replaces the empty state and opens the import with it.
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  // Which status gets another dated event, prefilled from its current one.
+  const [repeat, setRepeat] = useState<{
+    app: ApplicationSummary;
+    type: StageType;
+    interviewKind: InterviewKind | null;
+    after: string | null;
+    notBefore: string;
+  } | null>(null);
+  const repository = useRepository();
+  async function scheduleRepeat(app: ApplicationSummary) {
+    const mapped = stageForStatus(app.status);
+    if (!mapped) return;
+    const details = await repository.get(app.id);
+    const same =
+      details?.stages.filter(
+        (stage) => stage.type === mapped.type && stage.interviewKind === mapped.interviewKind,
+      ) ?? [];
+    const latest = same.at(-1);
+    setRepeat({
+      app,
+      type: mapped.type,
+      interviewKind: mapped.interviewKind,
+      after: latest?.scheduledAt ?? null,
+      notBefore: app.appliedAt ?? app.createdAt,
+    });
+  }
   const draggingFile = useFileDrop(addDialog.tab === null, (file) => {
     setPendingFile(file);
     addDialog.open("import");
@@ -217,6 +247,7 @@ export function ApplicationsView() {
         onRevertStatus={revertStatus}
         onDelete={deleteOne}
         onArchiveColumn={(ids) => requestArchive(ids)}
+        onRepeat={(app) => void scheduleRepeat(app)}
       />
     );
   }
@@ -285,6 +316,19 @@ export function ApplicationsView() {
         </div>
       ) : null}
       <AddApplicationDialog initialFile={pendingFile} onFileConsumed={() => setPendingFile(null)} />
+      {repeat ? (
+        <RepeatEventDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setRepeat(null);
+          }}
+          app={repeat.app}
+          type={repeat.type}
+          interviewKind={repeat.interviewKind}
+          after={repeat.after}
+          notBefore={repeat.notBefore}
+        />
+      ) : null}
 
       <AlertDialog
         open={pendingArchive !== null}

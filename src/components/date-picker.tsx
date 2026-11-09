@@ -58,6 +58,8 @@ type DateInputProps = {
   onCancel?: () => void;
   /** Open the calendar right away, keeping focus in the text field (inline editing). */
   defaultOpen?: boolean;
+  /** Earliest day that can be picked in the calendar, "YYYY-MM-DD". */
+  min?: string | null;
   autoFocus?: boolean;
   id?: string;
   size?: "default" | "sm";
@@ -77,6 +79,7 @@ export function DateInput({
   onCommit,
   onCancel,
   defaultOpen = false,
+  min,
   autoFocus,
   id,
   size = "default",
@@ -206,6 +209,8 @@ export function DateInput({
           onSelect={pick}
           weekStartsOn={1}
           autoFocus={focusCalendar}
+          // Days before the limit are not selectable at all.
+          disabled={min ? { before: new Date(`${min}T00:00:00`) } : undefined}
         />
       </PopoverContent>
     </Popover>
@@ -223,6 +228,7 @@ export function DateTimeInput({
   onValueChange,
   onCommit,
   onCancel,
+  min,
   autoFocus,
   id,
   size = "default",
@@ -258,6 +264,7 @@ export function DateTimeInput({
       <DateInput
         id={id}
         autoFocus={autoFocus}
+        min={min}
         size={size}
         value={datePart}
         onValueChange={(date) => onValueChange(combine(date, time))}

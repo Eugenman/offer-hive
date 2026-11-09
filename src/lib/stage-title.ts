@@ -1,8 +1,7 @@
-import { INTERVIEW_KIND_LABELS, STAGE_TYPE_LABELS, type Stage } from "./domain";
+import { STAGE_TYPE_LABELS, type Stage } from "./domain";
 
-/** "Interview · technical #2", or the user's own title with its number. */
-export function stageTitle(stage: Pick<Stage, "title" | "type" | "interviewKind" | "seq">) {
+/** "Interview #2", or the user's own title with its number: "Техническое интервью #1". */
+export function stageTitle(stage: Pick<Stage, "title" | "type" | "seq">) {
   const base = stage.title ?? STAGE_TYPE_LABELS[stage.type];
-  const kind = stage.interviewKind ? ` · ${INTERVIEW_KIND_LABELS[stage.interviewKind]}` : "";
-  return `${base}${kind} #${stage.seq}`;
+  return `${base} #${stage.seq}`;
 }

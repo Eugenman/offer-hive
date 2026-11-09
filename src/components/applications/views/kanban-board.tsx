@@ -16,7 +16,13 @@ import {
 import { Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { type ApplicationStatus, type ApplicationSummary, STATUS_LABELS, nextStatuses } from "@/lib/domain";
+import {
+  type ApplicationStatus,
+  type ApplicationSummary,
+  STATUS_LABELS,
+  nextStatuses,
+  stageForStatus,
+} from "@/lib/domain";
 import { rememberListPosition } from "../detail/return-to-list";
 import { StatusBadge } from "../status-badge";
 import { ApplicationCard } from "./application-card";
@@ -28,6 +34,8 @@ type KanbanBoardProps = {
   onDelete: (app: ApplicationSummary) => void;
   /** Archives every card of one column. */
   onArchiveColumn: (ids: string[]) => void;
+  /** Schedules another event of the current status' kind. */
+  onRepeat: (app: ApplicationSummary) => void;
 };
 
 /** Columns a card may be dropped on: allowed next statuses, plus the previous one (undo). */
@@ -46,6 +54,8 @@ type CardHandlers = {
   onOpen: () => void;
   onRequestDelete: () => void;
   onDeselect: () => void;
+  /** Scheduling another dated event; absent when the status cannot carry one. */
+  onRepeat?: () => void;
 };
 
 function DraggableCard({
@@ -56,6 +66,7 @@ function DraggableCard({
   onOpen,
   onRequestDelete,
   onDeselect,
+  onRepeat,
 }: { app: ApplicationSummary } & CardHandlers) {
   const { setNodeRef, listeners, isDragging } = useDraggable({ id: app.id, data: { status: app.status } });
   // Mouse-only drag (agreed): pointer listeners, no keyboard drag. Without a mouse the status is changed
@@ -95,7 +106,7 @@ function DraggableCard({
         isDragging && "opacity-40",
       )}
     >
-      <ApplicationCard app={app} />
+      <ApplicationCard app={app} onRepeat={onRepeat} />
     </div>
   );
 }
@@ -142,8 +153,9 @@ function Zone({
       aria-label={paired ? `${label}: ${items.length}` : undefined}
       className={cn(
         "flex flex-col gap-2 rounded-lg border border-dashed border-transparent p-1 transition-[opacity,border-color,background-color]",
-        // A lone zone takes the whole column; paired zones fit their cards (one card's height when empty).
-        paired ? "min-h-24" : "flex-1",
+        // A lone zone takes the whole column; a paired one is at least as tall as a card with
+        // three events, so there is always room to drop above or below the cards.
+        paired ? "min-h-60" : "flex-1",
         divider && state !== "accepts" && "border-t-border",
         state === "accepts" && (isOver ? "border-primary/60 bg-primary/5" : "border-foreground/30"),
         state === "refuses" && "opacity-40",
@@ -221,6 +233,7 @@ export function KanbanBoard({
   onRevertStatus,
   onDelete,
   onArchiveColumn,
+  onRepeat,
 }: KanbanBoardProps) {
   const router = useRouter();
   const hintId = useId();
@@ -282,6 +295,8 @@ export function KanbanBoard({
     },
     // The page confirms the move, so every archive comes from one dialog.
     onRequestDelete: () => onDelete(app),
+    // Only statuses that can carry a dated event get the "+".
+    onRepeat: stageForStatus(app.status) ? () => onRepeat(app) : undefined,
     onDeselect: () => setSelectedId(null),
   });
 

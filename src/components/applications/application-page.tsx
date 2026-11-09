@@ -10,8 +10,8 @@ import { ArchivedApplication } from "../archive/archived-application";
 import { ApplicationFields } from "./detail/application-fields";
 import { ApplicationHeader } from "./detail/application-header";
 import { InlineEditingProvider } from "./detail/inline-field";
+import { NotesCard } from "./detail/notes-card";
 import { StagesSection } from "./detail/stages-section";
-import { StatusLog } from "./detail/status-log";
 
 /**
  * A live application lives at /applications/[id], an archived one at /archive/[id] (read-only), so
@@ -69,7 +69,7 @@ export function ApplicationPage({
       <div className="grid gap-4 px-6 py-6 desktop:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <div className="grid content-start gap-4">
           <ApplicationFields app={data} />
-          <StatusLog app={data} />
+          <NotesCard app={data} />
         </div>
         <StagesSection app={data} />
       </div>

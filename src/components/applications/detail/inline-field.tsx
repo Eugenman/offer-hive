@@ -11,7 +11,6 @@ import {
   type ReactNode,
 } from "react";
 import { Check, Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/date-picker";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -52,6 +51,10 @@ export function useReadOnly() {
 export type SaveResult = Promise<string | null>;
 
 const SAVED_FLASH_MS = 1200;
+
+/** True when focus moved outside the element (or to nothing, e.g. a click on the page). */
+const leftTheGroup = (container: HTMLElement | null, next: EventTarget | null) =>
+  !container || !next || !(next instanceof Node) || !container.contains(next);
 
 function useInlineState(fieldKey: string) {
   const { openKey, setOpenKey } = useContext(EditingContext);
@@ -127,10 +130,14 @@ function Display({ label, display, ariaValue, emptyText, saved, onStart, trigger
     );
   }
   const editLabel = `${label}: ${empty ? "not set" : ariaValue}. Edit`;
+  // A circled check, no text: the field itself already shows the saved value.
   const savedMark = saved ? (
-    <span role="status" className="inline-flex shrink-0 items-center gap-1 text-xs text-status-offer">
-      <Check className="size-3.5" aria-hidden />
-      Saved
+    <span
+      role="status"
+      aria-label="Saved"
+      className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-status-offer-bg text-status-offer"
+    >
+      <Check className="size-3" aria-hidden />
     </span>
   ) : null;
 
@@ -276,7 +283,7 @@ export function InlineField({
   };
 
   return (
-    <div className={className}>
+    <div className={cn("text-sm", className)}>
       {kind === "select" ? (
         <select
           {...common}
@@ -299,7 +306,6 @@ export function InlineField({
         <DateInput
           autoFocus
           defaultOpen
-          size="sm"
           aria-label={label}
           aria-invalid={state.error ? true : undefined}
           aria-describedby={state.error ? errorId : undefined}
@@ -326,7 +332,8 @@ export function InlineField({
             if (state.error) state.setError(null);
           }}
           onBlur={() => void save(draft)}
-          className="h-8"
+          // The font comes from the wrapper, so the editor matches the value it replaces.
+          className="h-8 px-2 [font-size:inherit] leading-5 font-normal"
         />
       )}
       <ErrorText id={errorId} error={state.error} />
@@ -370,6 +377,7 @@ export function InlineGroupField({
   const state = useInlineState(fieldKey);
   const [draft, setDraft] = useState(values);
   const errorId = useId();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   if (!state.open) {
     return (
@@ -397,15 +405,21 @@ export function InlineGroupField({
 
   return (
     <div
+      ref={containerRef}
       role="group"
       aria-label={label}
+      // Like every other field: Enter saves, leaving the group saves, Esc cancels. No buttons.
+      onBlur={(event) => {
+        if (leftTheGroup(containerRef.current, event.relatedTarget)) void save();
+      }}
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           event.preventDefault();
           state.close();
         }
       }}
-      className="grid gap-2 rounded-lg bg-muted/50 p-2"
+      // No box or padding: the editor keeps the height of the line it replaces.
+      className="grid gap-1"
     >
       <div className="flex flex-wrap gap-2">
         {parts.map((part, index) => (
@@ -434,14 +448,6 @@ export function InlineGroupField({
         ))}
       </div>
       <ErrorText id={errorId} error={state.error} />
-      <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" onClick={state.close}>
-          Cancel
-        </Button>
-        <Button size="sm" onClick={() => void save()}>
-          Save
-        </Button>
-      </div>
     </div>
   );
 }

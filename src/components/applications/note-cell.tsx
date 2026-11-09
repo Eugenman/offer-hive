@@ -88,7 +88,8 @@ export function NoteCell({ notes }: { notes: Note[] }) {
           onClick={() => setOpen((value) => !value)}
           // On a kanban card a double click opens the application; here it only toggles the card.
           onDoubleClick={(event) => event.stopPropagation()}
-          // The ::after layer stretches the button over the whole cell, so hovering anywhere opens the card.
+          // The ::after layer stretches the button over the row, but stops before the "+" button
+          // in the corner: hovering that corner must schedule an event, not open the notes card.
           className="flex items-center gap-1.5 rounded-md text-muted-foreground after:absolute after:inset-0 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           <MessageSquareText className="size-3.5 shrink-0" aria-hidden />
@@ -108,7 +109,13 @@ export function NoteCell({ notes }: { notes: Note[] }) {
           <ol className="overflow-y-auto">
             {notes.map((note) => (
               <li key={note.id} className="border-b px-3.5 py-2.5 last:border-0">
-                <p className="mb-1 text-xs text-muted-foreground">{noteDay(note)}</p>
+                <p className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+                  {/* A note of an event, or a plain note of the application itself. */}
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-wide uppercase">
+                    {note.stageId ? "Event" : "Note"}
+                  </span>
+                  {noteDay(note)}
+                </p>
                 <NoteText body={note.body} />
               </li>
             ))}

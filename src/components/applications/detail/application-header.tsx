@@ -4,7 +4,7 @@ import { useLayoutEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { MenuButton } from "@/components/app-shell/nav-menu";
 import { useRouter } from "next/navigation";
-import { Archive, ArrowLeft, ChevronDown, Plus } from "lucide-react";
+import { Archive, ArrowLeft, ChevronDown, Clock } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,20 +16,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { type ApplicationDetails, STAGE_TYPES, STAGE_TYPE_LABELS } from "@/lib/domain";
+
+import { type ApplicationDetails, STATUS_LABELS, nextStatuses } from "@/lib/domain";
 import { useRepository } from "@/lib/repository/provider";
 import { StatusBadge } from "../status-badge";
 import { useApplicationActions } from "../use-application-actions";
-import { AddEventDialog, type EventKind } from "./add-event-dialog";
 import { InlineField } from "./inline-field";
+import { StatusHistory } from "./status-log";
 import { listUrl } from "./return-to-list";
 import { trySave } from "./save-error";
 
@@ -39,15 +39,15 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
   const repository = useRepository();
   const actions = useApplicationActions();
   const router = useRouter();
-  const [event, setEvent] = useState<EventKind | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const choices = nextStatuses(app.status);
+
   // sessionStorage exists only in the browser; the server renders the plain list URL.
   const backHref = useSyncExternalStore(noop, listUrl, () => "/dashboard");
 
   // Transient dialogs close when Next.js hides this page (<Activity>), so they are not open on return.
   useLayoutEffect(
     () => () => {
-      setEvent(null);
       setConfirmDelete(false);
     },
     [],
@@ -59,7 +59,7 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
   }
 
   return (
-    <header className="border-b px-6 pt-4 pb-4">
+    <header className="sticky top-0 z-20 border-b bg-background px-6 pt-4 pb-4 desktop:rounded-t-xl">
       <div className="flex items-center gap-2">
         <MenuButton />
         <Link
@@ -79,7 +79,7 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
               value={app.company}
               emptyText="Add company"
               onSave={(value) => trySave(() => repository.update(app.id, { company: value ?? "" }))}
-              className="[&_button]:text-xl [&_input]:h-9 [&_input]:text-lg"
+              className="[&_[role=status]]:absolute [&_[role=status]]:top-1/2 [&_[role=status]]:left-full [&_[role=status]]:ml-2 [&_[role=status]]:-translate-y-1/2 [&_button]:relative [&_button]:w-fit [&_button]:text-xl [&_input]:[field-sizing:content] [&_input]:h-8 [&_input]:w-fit [&_input]:border-0 [&_input]:px-2 [&_input]:pr-[1.875rem] [&_input]:text-xl [&_input]:font-semibold [&_input]:ring-1 [&_input]:ring-border"
             />
           </h1>
           <div className="-ml-2 text-muted-foreground">
@@ -89,34 +89,52 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
               value={app.position}
               emptyText="Add position"
               onSave={(value) => trySave(() => repository.update(app.id, { position: value ?? "" }))}
+              // The hover area follows the text instead of the whole width of the header.
+              className="[&_[role=status]]:absolute [&_[role=status]]:top-1/2 [&_[role=status]]:left-full [&_[role=status]]:ml-2 [&_[role=status]]:-translate-y-1/2 [&_button]:relative [&_button]:w-fit [&_input]:[field-sizing:content] [&_input]:w-fit [&_input]:border-0 [&_input]:px-2 [&_input]:pr-[1.875rem] [&_input]:ring-1 [&_input]:ring-border"
             />
           </div>
           <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
             Status: <StatusBadge status={app.status} />
+            {/* The history moved here: an icon, no text, shown on click. */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Status history"
+                  className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
+                  <Clock className="size-4" aria-hidden />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-3">
+                <p className="mb-2 text-sm font-semibold">Status history</p>
+                <StatusHistory app={app} />
+              </PopoverContent>
+            </Popover>
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button>
-                <Plus aria-hidden />
-                Add event
-                <ChevronDown aria-hidden />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel>Progress</DropdownMenuLabel>
-              {STAGE_TYPES.map((type) => (
-                <DropdownMenuItem key={type} onSelect={() => setEvent({ kind: "stage", type })}>
-                  {STAGE_TYPE_LABELS[type]}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setEvent({ kind: "note" })}>Note</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setEvent({ kind: "status" })}>Change status</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {choices.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button>
+                  Change status
+                  <ChevronDown aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-auto min-w-0">
+                {choices.map((status) => (
+                  <DropdownMenuItem key={status} onSelect={() => void actions.changeStatus([app.id], status)}>
+                    <StatusBadge status={status} />
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : app.previousStatus ? (
+            <Button variant="outline" onClick={() => void actions.revertStatus(app.id, app.previousStatus!)}>
+              Back to {STATUS_LABELS[app.previousStatus]}
+            </Button>
+          ) : null}
           <Button
             variant="outline"
             size="icon"
@@ -128,8 +146,6 @@ export function ApplicationHeader({ app }: { app: ApplicationDetails }) {
           </Button>
         </div>
       </div>
-
-      <AddEventDialog app={app} event={event} onClose={() => setEvent(null)} />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>

@@ -1,190 +1,49 @@
 "use client";
 
-import { useState } from "react";
-import { Ellipsis, Plus } from "lucide-react";
-import { useReadOnly } from "./inline-field";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
+import { InlineField, useReadOnly } from "./inline-field";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   type ApplicationDetails,
   type Note,
+  type InterviewKind,
+  INTERVIEW_KIND_LABELS,
+  STAGE_TYPE_LABELS,
+  stageForStatus,
   STAGE_STATES,
   STAGE_STATE_LABELS,
   type Stage,
   type StageState,
+  type StageType,
 } from "@/lib/domain";
 import { DateTimeInput, isDateTime } from "@/components/date-picker";
 import { formatDateTime, toDateTimeLocal } from "@/lib/format";
 import { useRepository } from "@/lib/repository/provider";
 import { stageTitle } from "@/lib/stage-title";
 import { DetailCard } from "./detail-card";
-import { saveErrorMessage } from "./save-error";
+import { AddNoteInline, NoteItem } from "./note-item";
+import { RepeatEventDialog } from "./repeat-event-dialog";
+import { trySave } from "./save-error";
 
 const STATE_CLASSES: Record<StageState, string> = {
   planned: "bg-status-sent-bg text-status-sent",
   done: "bg-status-offer-bg text-status-offer",
+  failed: "bg-status-rejected-bg text-status-rejected",
   cancelled: "bg-status-withdrawn-bg text-status-withdrawn",
 };
 
-/** Inline textarea for adding or editing a note: "Save / Cancel", Esc cancels. */
-function NoteEditor({
-  initial,
-  label,
-  submitLabel,
-  onSubmit,
-  onCancel,
-}: {
-  initial: string;
-  label: string;
-  submitLabel: string;
-  onSubmit: (body: string) => Promise<string | null>;
-  onCancel: () => void;
-}) {
-  const [body, setBody] = useState(initial);
-  const [error, setError] = useState<string | null>(null);
-  return (
-    <div className="grid gap-2" onKeyDown={(event) => event.key === "Escape" && onCancel()}>
-      <Textarea
-        autoFocus
-        aria-label={label}
-        aria-invalid={error ? true : undefined}
-        value={body}
-        rows={3}
-        onChange={(event) => {
-          setBody(event.target.value);
-          setError(null);
-        }}
-      />
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
-      <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button size="sm" onClick={async () => setError(await onSubmit(body))}>
-          {submitLabel}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function NoteItem({ note }: { note: Note }) {
-  const repository = useRepository();
-  const readOnly = useReadOnly();
-  const [editing, setEditing] = useState(false);
-
-  if (editing) {
-    return (
-      <li>
-        <NoteEditor
-          initial={note.body}
-          label="Note text"
-          submitLabel="Save"
-          onCancel={() => setEditing(false)}
-          onSubmit={async (body) => {
-            try {
-              await repository.updateNote(note.id, { body });
-              setEditing(false);
-              return null;
-            } catch (error) {
-              return saveErrorMessage(error);
-            }
-          }}
-        />
-      </li>
-    );
-  }
-
-  return (
-    <li className="group flex gap-2 rounded-md py-1.5">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm whitespace-pre-line">{note.body}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{formatDateTime(note.createdAt)}</p>
-      </div>
-      {readOnly ? null : (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label="Note actions">
-              <Ellipsis aria-hidden />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => setEditing(true)}>Edit</DropdownMenuItem>
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={async () => {
-                await repository.removeNote(note.id);
-                toast("Note deleted");
-              }}
-            >
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </li>
-  );
-}
-
-function AddNoteInline({
-  applicationId,
-  stageId,
-  label,
-}: {
-  applicationId: string;
-  stageId: string | null;
-  label: string;
-}) {
-  const repository = useRepository();
-  const readOnly = useReadOnly();
-  const [open, setOpen] = useState(false);
-  if (readOnly) return null;
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 rounded-md text-sm text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-      >
-        <Plus className="size-4" aria-hidden />
-        {label}
-      </button>
-    );
-  }
-  return (
-    <NoteEditor
-      initial=""
-      label={label}
-      submitLabel="Add"
-      onCancel={() => setOpen(false)}
-      onSubmit={async (body) => {
-        try {
-          await repository.addNote(applicationId, { body, stageId });
-          setOpen(false);
-          return null;
-        } catch (error) {
-          return saveErrorMessage(error);
-        }
-      }}
-    />
-  );
-}
-
 /** Stage date: click to edit; Enter or leaving the field saves, Esc cancels. */
-function StageDate({ stage }: { stage: Stage }) {
+function StageDate({ stage, min }: { stage: Stage; min?: string | null }) {
   const repository = useRepository();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -207,6 +66,7 @@ function StageDate({ stage }: { stage: Stage }) {
       <DateTimeInput
         autoFocus
         size="sm"
+        min={min}
         aria-label={`Date: ${stageTitle(stage)}`}
         value={draft}
         onValueChange={setDraft}
@@ -225,7 +85,7 @@ function StageDate({ stage }: { stage: Stage }) {
       }}
       aria-label={`Date: ${label ?? "not set"}. Edit`}
       className={cn(
-        "-ml-1 rounded-md px-1 text-xs hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+        "rounded-md px-2 text-xs hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
         label ? "text-muted-foreground" : "text-muted-foreground/70",
       )}
     >
@@ -234,47 +94,84 @@ function StageDate({ stage }: { stage: Stage }) {
   );
 }
 
-function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
+function StageCard({ stage, notes, min }: { stage: Stage; notes: Note[]; min?: string | null }) {
   const repository = useRepository();
   const readOnly = useReadOnly();
   const title = stageTitle(stage);
-  const [renaming, setRenaming] = useState(false);
-  const [draft, setDraft] = useState(stage.title ?? "");
-
-  async function rename() {
-    const next = draft.trim();
-    try {
-      await repository.updateStage(stage.id, { title: next === "" ? null : next });
-      setRenaming(false);
-      toast(next ? "Stage renamed" : "Stage title reset");
-    } catch (error) {
-      toast.error(saveErrorMessage(error));
-    }
-  }
+  // The state menu opens on hover: a short delay lets the pointer travel into the menu.
+  const [stateOpen, setStateOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const keepOpen = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  };
+  // After closing, keep the menu shut for a moment: the pointer is still over the badge, and
+  // the element under it changes when the menu unmounts — which fires pointerenter again.
+  const cooldown = useRef(0);
+  const inside = useRef(false);
+  // Opening the menu sets pointer-events: none on <body>, so the badge gets a pointerleave
+  // although the pointer has not moved. Ignore leaves for a moment after opening.
+  const openedAt = useRef(0);
+  const enter = () => {
+    inside.current = true;
+    if (Date.now() < cooldown.current) return;
+    openedAt.current = Date.now();
+    keepOpen();
+    setStateOpen(true);
+  };
+  const leave = () => {
+    inside.current = false;
+    keepOpen();
+    if (Date.now() - openedAt.current < 300) return;
+    closeTimer.current = setTimeout(() => {
+      if (inside.current) return;
+      cooldown.current = Date.now() + 400;
+      setStateOpen(false);
+    }, 300);
+  };
+  useEffect(() => keepOpen, []);
 
   return (
     <article className="border-t pt-3 first:border-0 first:pt-0" aria-label={title}>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="font-medium">{title}</h3>
-          <StageDate stage={stage} />
+          <InlineField
+            fieldKey={`stage-title-${stage.id}`}
+            label="Event title"
+            value={stage.title}
+            display={title}
+            emptyText={title}
+            maxLength={120}
+            onSave={(next) => trySave(() => repository.updateStage(stage.id, { title: next }))}
+          />
+          <StageDate stage={stage} min={min} />
         </div>
-        <span
-          className={cn(
-            "inline-flex h-6 items-center rounded-md px-2 text-xs font-medium",
-            STATE_CLASSES[stage.state],
-          )}
-        >
-          {STAGE_STATE_LABELS[stage.state]}
-        </span>
-        {readOnly ? null : (
-          <DropdownMenu>
+        {readOnly ? (
+          <span
+            className={cn(
+              "inline-flex h-6 items-center rounded-md px-2 text-xs font-medium",
+              STATE_CLASSES[stage.state],
+            )}
+          >
+            {STAGE_STATE_LABELS[stage.state]}
+          </span>
+        ) : (
+          <DropdownMenu open={stateOpen} onOpenChange={setStateOpen} modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label={`Actions: ${title}`}>
-                <Ellipsis aria-hidden />
-              </Button>
+              <button
+                type="button"
+                onPointerEnter={enter}
+                onPointerLeave={leave}
+                className={cn(
+                  "inline-flex h-6 cursor-pointer items-center rounded-md px-2 text-xs font-medium ring-1 ring-transparent transition-colors hover:ring-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                  STATE_CLASSES[stage.state],
+                )}
+                aria-label={`State: ${STAGE_STATE_LABELS[stage.state]}. Change`}
+              >
+                {STAGE_STATE_LABELS[stage.state]}
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-40" onPointerEnter={enter} onPointerLeave={leave}>
               <DropdownMenuRadioGroup
                 value={stage.state}
                 onValueChange={(value) =>
@@ -287,66 +184,29 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => {
-                  setDraft(stage.title ?? "");
-                  setRenaming(true);
-                }}
-              >
-                Rename…
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onSelect={async () => {
-                  await repository.removeStage(stage.id);
-                  toast(`${title} removed from progress`, {
-                    description: notes.length ? "Its notes moved to the application notes" : undefined,
-                  });
-                }}
-              >
-                Remove from progress
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
         {readOnly ? null : (
-          <Dialog open={renaming} onOpenChange={setRenaming}>
-            <DialogContent className="sm:max-w-sm">
-              <DialogHeader>
-                <DialogTitle>Rename the stage</DialogTitle>
-              </DialogHeader>
-              <form
-                className="grid gap-4"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void rename();
-                }}
-              >
-                <div className="grid gap-1.5">
-                  <Input
-                    autoFocus
-                    maxLength={120}
-                    value={draft}
-                    onChange={(event) => setDraft(event.target.value)}
-                    placeholder="Interview · technical"
-                    aria-label="Stage title"
-                  />
-                  <p className="text-xs text-muted-foreground">Leave it empty to use the type name.</p>
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setRenaming(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">Save</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Remove ${title} from progress`}
+            title="Remove from progress"
+            onClick={async () => {
+              await repository.removeStage(stage.id);
+              toast(`${title} removed from progress`, {
+                description: notes.length ? "Its notes moved to the application notes" : undefined,
+              });
+            }}
+          >
+            <Trash2 aria-hidden />
+          </Button>
         )}
       </div>
       {notes.length ? (
-        <ul className="mt-2 divide-y border-t">
+        // Nested under the event: it is a comment on it, not a record of its own.
+        <ul className="mt-2 ml-2 grid gap-1 border-l pl-2">
           {notes.map((note) => (
             <NoteItem key={note.id} note={note} />
           ))}
@@ -361,34 +221,110 @@ function StageCard({ stage, notes }: { stage: Stage; notes: Note[] }) {
 
 export function StagesSection({ app }: { app: ApplicationDetails }) {
   const readOnly = useReadOnly();
-  const looseNotes = app.notes.filter((note) => note.stageId === null);
+  const [adding, setAdding] = useState(false);
+  const mapped = stageForStatus(app.status);
+  // "Interview progress": the card is about the event this status schedules.
+  // The same rule as on the kanban board: no event before the application, none before the
+  // previous event of its kind. Both limits are local days.
+  const floor = app.appliedAt ?? app.createdAt;
+  const localDay = (value: string | null) =>
+    value ? (value.length === 10 ? value : toDateTimeLocal(value).slice(0, 10)) : null;
+  const minDayFor = (stage: Stage) => {
+    const previous =
+      app.stages
+        .filter(
+          (other) =>
+            other.type === stage.type &&
+            (other.interviewKind ?? null) === (stage.interviewKind ?? null) &&
+            other.seq < stage.seq &&
+            other.scheduledAt,
+        )
+        .map((other) => other.scheduledAt!)
+        .sort()
+        .at(-1) ?? null;
+    return (
+      [localDay(floor), localDay(previous)]
+        .filter((day): day is string => day !== null)
+        .sort()
+        .at(-1) ?? null
+    );
+  };
+  // Sections mirror the kanban zones: Interview first, then Technical, then anything else.
+  const order: { type: StageType; kind: InterviewKind | null }[] = [
+    { type: "interview", kind: null },
+    { type: "interview", kind: "technical" },
+    { type: "interview", kind: "team" },
+    { type: "interview", kind: "manager" },
+    { type: "interview", kind: "final" },
+    { type: "test_task", kind: null },
+    { type: "other", kind: null },
+  ];
+  const sections = order
+    .map(({ type, kind }) => ({
+      key: `${type}:${kind ?? ""}`,
+      label: kind
+        ? INTERVIEW_KIND_LABELS[kind].replace(/^./, (letter) => letter.toUpperCase())
+        : STAGE_TYPE_LABELS[type],
+      stages: app.stages.filter((stage) => stage.type === type && (stage.interviewKind ?? null) === kind),
+    }))
+    // Only the sections that actually have events.
+    .filter((section) => section.stages.length > 0);
   return (
     <div className="grid content-start gap-4">
-      {app.stages.length > 0 ? (
+      {app.stages.length > 0 || mapped ? (
         <DetailCard title="Progress">
-          <div className="grid gap-3">
-            {app.stages.map((stage) => (
-              <StageCard
-                key={stage.id}
-                stage={stage}
-                notes={app.notes.filter((note) => note.stageId === stage.id)}
-              />
+          <div className="grid gap-4">
+            {sections.map((section) => (
+              <section key={section.key} className="grid gap-1 rounded-lg px-1 py-2 ring-1 ring-border">
+                <p className="flex items-baseline gap-1.5 px-2 text-xs font-medium text-muted-foreground">
+                  {section.label}
+                  <span className="tabular-nums">{section.stages.length}</span>
+                </p>
+                {section.stages.map((stage) => (
+                  <StageCard
+                    key={stage.id}
+                    stage={stage}
+                    min={minDayFor(stage)}
+                    notes={app.notes.filter((note) => note.stageId === stage.id)}
+                  />
+                ))}
+              </section>
             ))}
           </div>
+          {readOnly || !mapped ? null : (
+            <div className="mt-2">
+              <Button variant="ghost" size="sm" onClick={() => setAdding(true)}>
+                <Plus aria-hidden />
+                Add event
+              </Button>
+            </div>
+          )}
         </DetailCard>
       ) : null}
-      <DetailCard title="Notes">
-        {looseNotes.length ? (
-          <ul className="mb-2 divide-y border-y">
-            {looseNotes.map((note) => (
-              <NoteItem key={note.id} note={note} />
-            ))}
-          </ul>
-        ) : readOnly ? (
-          <p className="text-sm text-muted-foreground">No notes</p>
-        ) : null}
-        <AddNoteInline applicationId={app.id} stageId={null} label="Add note" />
-      </DetailCard>
+      {mapped && adding ? (
+        <RepeatEventDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setAdding(false);
+          }}
+          app={app}
+          type={mapped.type}
+          interviewKind={mapped.interviewKind}
+          notBefore={app.appliedAt ?? app.createdAt}
+          after={
+            app.stages
+              .filter(
+                (stage) =>
+                  stage.type === mapped.type &&
+                  (stage.interviewKind ?? null) === mapped.interviewKind &&
+                  stage.scheduledAt,
+              )
+              .map((stage) => stage.scheduledAt!)
+              .sort()
+              .at(-1) ?? null
+          }
+        />
+      ) : null}
     </div>
   );
 }

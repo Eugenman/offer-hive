@@ -24,7 +24,9 @@ import type { ArchivedApplicationDetails } from "@/lib/repository/types";
 import { ApplicationFields } from "../applications/detail/application-fields";
 import { InlineEditingProvider } from "../applications/detail/inline-field";
 import { StagesSection } from "../applications/detail/stages-section";
-import { StatusLog } from "../applications/detail/status-log";
+import { NotesCard } from "../applications/detail/notes-card";
+import { DetailCard } from "../applications/detail/detail-card";
+import { StatusHistory } from "../applications/detail/status-log";
 import { StatusBadge } from "../applications/status-badge";
 
 const DAY_MS = 86_400_000;
@@ -118,7 +120,11 @@ export function ArchivedApplication({ app, now }: { app: ArchivedApplicationDeta
         <div className="grid gap-4 px-6 py-6 desktop:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
           <div className="grid content-start gap-4">
             <ApplicationFields app={app} />
-            <StatusLog app={{ ...app, previousStatus: null }} />
+            {/* The archive has no header popover, so the history stays a card here. */}
+            <DetailCard title="Status history">
+              <StatusHistory app={app} />
+            </DetailCard>
+            <NotesCard app={app} />
           </div>
           <StagesSection app={app} />
         </div>

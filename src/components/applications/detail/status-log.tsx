@@ -1,54 +1,54 @@
 "use client";
 
-import { ArrowRight, Undo2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { type ApplicationDetails, STATUS_LABELS } from "@/lib/domain";
-import { formatDateTime } from "@/lib/format";
+import { type ApplicationDetails, type ApplicationStatus } from "@/lib/domain";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { StatusBadge } from "../status-badge";
-import { useApplicationActions } from "../use-application-actions";
-import { DetailCard } from "./detail-card";
+
+/** "Nov 9, 7:16 PM": the day and the time, without the year. */
+function shortDateTime(value: string) {
+  return formatDateTime(value)?.replace(/, \d{4}/, "") ?? value;
+}
+
+type Entry = { status: ApplicationStatus; at: string; day: string; reason: string | null };
 
 /**
- * Every status change with its system time and, for "Rejected / Withdrawn", the reason.
- * The newest change can be undone: going back is only allowed to fix a mistake.
+ * The history as a timeline: one point per status, oldest first. The first date is the
+ * application's own "Date applied", not the moment the record was created.
  */
-export function StatusLog({ app }: { app: ApplicationDetails }) {
-  const actions = useApplicationActions();
-  const previous = app.previousStatus;
+export function StatusHistory({ app }: { app: ApplicationDetails }) {
+  // Newest first in the store; walk it backwards to get the story in order.
+  const entries: Entry[] = [];
+  for (const change of [...app.statusChanges].reverse()) {
+    const initial = change.fromStatus === null;
+    const at = initial ? (app.appliedAt ?? change.changedAt) : change.changedAt;
+    entries.push({
+      status: change.toStatus,
+      at,
+      day: initial && app.appliedAt ? (formatDate(at) ?? at) : shortDateTime(at),
+      reason: change.reason,
+    });
+  }
+
   return (
-    <DetailCard title="Status history">
-      <ol className="grid gap-2">
-        {app.statusChanges.map((change, index) => (
-          <li key={change.id} className="text-sm">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {change.fromStatus ? (
-                <>
-                  <StatusBadge status={change.fromStatus} />
-                  <ArrowRight className="size-3.5 text-muted-foreground" aria-label="to" />
-                </>
-              ) : (
-                <span className="text-muted-foreground">Created as</span>
-              )}
-              <StatusBadge status={change.toStatus} />
-              {index === 0 && previous ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto h-7 text-muted-foreground"
-                  onClick={() => void actions.revertStatus(app.id, previous)}
-                >
-                  <Undo2 aria-hidden />
-                  Back to {STATUS_LABELS[previous]}
-                </Button>
-              ) : null}
-            </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              <time dateTime={change.changedAt}>{formatDateTime(change.changedAt)}</time>
-            </p>
-            {change.reason ? <p className="mt-0.5 text-sm">Reason: {change.reason}</p> : null}
-          </li>
-        ))}
-      </ol>
-    </DetailCard>
+    // One rail for the whole list: a single line, dots on top of it.
+    <ol className="grid">
+      {entries.map((entry, index) => (
+        <li key={`${entry.status}-${entry.at}`} className="relative grid gap-1 py-1.5 pl-5">
+          {/* The dot, and a segment that reaches the next dot exactly. */}
+          <span aria-hidden className="absolute top-5 left-0 size-[7px] rounded-full bg-muted-foreground" />
+          {index < entries.length - 1 ? (
+            <span aria-hidden className="absolute top-8 -bottom-[15px] left-[3px] w-px bg-border" />
+          ) : null}
+          {/* One length for every badge: wide enough for the longest label and the longest date
+                ("Nov 30, 11:59 PM"), so nothing wraps and nothing stretches. */}
+          <StatusBadge
+            status={entry.status}
+            className="w-fit min-w-[6.375rem]"
+            sub={<time dateTime={entry.at}>{entry.day}</time>}
+          />
+          {entry.reason ? <p className="text-sm text-muted-foreground">Reason: {entry.reason}</p> : null}
+        </li>
+      ))}
+    </ol>
   );
 }

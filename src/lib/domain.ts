@@ -98,12 +98,26 @@ export const INTERVIEW_KIND_LABELS: Record<InterviewKind, string> = {
   final: "final",
 };
 
-export const STAGE_STATES = ["planned", "done", "cancelled"] as const;
+/**
+ * The event a status schedules. Applied and both outcomes have none yet, so the "+" action
+ * only appears on the statuses that can carry a dated event.
+ */
+export function stageForStatus(
+  status: ApplicationStatus,
+): { type: StageType; interviewKind: InterviewKind | null } | null {
+  if (status === "interview") return { type: "interview", interviewKind: null };
+  if (status === "technical") return { type: "interview", interviewKind: "technical" };
+  if (status === "test_task") return { type: "test_task", interviewKind: null };
+  return null;
+}
+
+export const STAGE_STATES = ["planned", "done", "failed", "cancelled"] as const;
 export type StageState = (typeof STAGE_STATES)[number];
 
 export const STAGE_STATE_LABELS: Record<StageState, string> = {
   planned: "Planned",
   done: "Done",
+  failed: "Failed",
   cancelled: "Cancelled",
 };
 
@@ -183,11 +197,23 @@ export type StatisticsEntry = {
 };
 
 /** A row in table / kanban / list views. */
+/** The light form of an event shown on a card: its title, kind, number and date. */
+export type SummaryStage = {
+  type: StageType;
+  interviewKind: InterviewKind | null;
+  title: string | null;
+  seq: number;
+  scheduledAt: IsoDateTime | null;
+  state: StageState;
+};
+
 export type ApplicationSummary = Application & {
   /** Status before the last change: the one "undo" returns to. null when nothing to undo. */
   previousStatus: ApplicationStatus | null;
   /** Newest first. */
   notes: Note[];
+  /** Every event, so a card can list the progress without loading the whole application. */
+  events: SummaryStage[];
 };
 
 /** Everything shown on the application page. */

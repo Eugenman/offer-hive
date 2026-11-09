@@ -137,6 +137,7 @@ export function ApplicationsTimeline({
                             "absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-background focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                             stage.state === "done" && "bg-foreground",
                             stage.state === "planned" && "border-2 border-foreground bg-background",
+                            stage.state === "failed" && "bg-status-rejected",
                             stage.state === "cancelled" && "bg-muted-foreground/40",
                           )}
                           style={{ left: left(dayOf(stage.scheduledAt)) }}

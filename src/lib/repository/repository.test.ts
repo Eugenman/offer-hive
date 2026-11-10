@@ -203,6 +203,34 @@ describe("changing status", () => {
   });
 });
 
+describe("reopening a closed application", () => {
+  test("a drag cannot bring a closed application back, the action can", async () => {
+    const repository = createApplicationsRepository();
+    const app = await repository.create({ company: "Acme", position: "Developer" });
+    await repository.changeStatus([app.id], { status: "interview" });
+    await repository.changeStatus([app.id], { status: "rejected", reason: "Frozen budget" });
+
+    // The board's rules still refuse the way back.
+    await expect(repository.changeStatus([app.id], { status: "interview" })).rejects.toMatchObject({
+      kind: "status_transition",
+    });
+
+    await repository.reopen(app.id, "interview");
+    const reopened = await repository.get(app.id);
+    expect(reopened?.status).toBe("interview");
+    // The refusal stays in the log: the process really was closed.
+    expect(reopened?.statusChanges.some((change) => change.toStatus === "rejected")).toBe(true);
+  });
+
+  test("a live application cannot be reopened", async () => {
+    const repository = createApplicationsRepository();
+    const app = await repository.create({ company: "Acme", position: "Developer" });
+    await expect(repository.reopen(app.id, "interview")).rejects.toMatchObject({
+      kind: "status_transition",
+    });
+  });
+});
+
 describe("undoing a status change", () => {
   test("undo walks the log back one step at a time, then stops", async () => {
     const repository = createApplicationsRepository();

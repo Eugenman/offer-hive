@@ -175,6 +175,42 @@ describe("a backup keeps the progress", () => {
     ]);
   });
 
+  test("the new statuses survive the round-trip column by column", async () => {
+    const apps = [
+      details({ id: "w1", status: "wishlist", appliedAt: null, statusChanges: [], stages: [] }),
+      details({
+        id: "f1",
+        status: "fit",
+        statusChanges: [
+          change({ id: "c3", fromStatus: null, toStatus: "sent", changedAt: "2026-10-12T08:00:00.000Z" }),
+          change({ id: "c4", fromStatus: "sent", toStatus: "fit", changedAt: "2026-11-09T10:04:00.000Z" }),
+        ],
+        stages: [],
+      }),
+      details({ id: "a2", status: "accepted", appliedAt: "2026-10-01", stages: [] }),
+    ];
+    const csv = buildApplicationsCsv(apps);
+    expect(cellOf(csv, "Status", 0)).toBe("Wishlist");
+    expect(cellOf(csv, "Status", 1)).toBe("Fit");
+    expect(cellOf(csv, "Status", 2)).toBe("Accepted");
+
+    const file = new File([csv], "offerhive-statuses.csv", { type: "text/csv" });
+    const read = await readSpreadsheet(file);
+    expect(read.ok).toBe(true);
+    if (!read.ok) return;
+
+    const rows = read.table.rows.map((cells, index) =>
+      normalizeRow(cells, autoMap(read.table.headers), index + 2),
+    );
+    expect(rows.map((row) => (row.ok ? row.value.status : "failed"))).toEqual([
+      "wishlist",
+      "fit",
+      "accepted",
+    ]);
+    // A wish keeps no date applied: the card shows the day it was added instead.
+    expect(rows[0].ok && rows[0].value.appliedAt).toBeNull();
+  });
+
   test("the import reads the same progress out of an Excel backup", async () => {
     const book = await buildApplicationsXlsx([details()]);
     const file = new File([book], "offerhive-backup.xlsx", {

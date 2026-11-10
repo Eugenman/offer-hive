@@ -1,76 +1,145 @@
 export const APPLICATION_STATUSES = [
+  "wishlist",
   "sent",
   "screening",
   "interview",
   "technical",
   "test_task",
+  "fit",
   "offer",
   "offer_discussion",
+  "accepted",
   "rejected",
   "withdrawn",
 ] as const;
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 
 export const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  wishlist: "Wishlist",
   sent: "Applied",
   screening: "Screening",
   interview: "Interview",
   technical: "Technical",
   test_task: "Take-home",
+  fit: "Fit",
   offer: "Offer",
   offer_discussion: "Negotiation",
+  accepted: "Accepted",
   rejected: "Rejected",
   withdrawn: "Withdrawn",
 };
 
-/** Hiring steps in order. Every new application starts at "sent". */
+/**
+ * The board: a few stable columns, each with one or more statuses inside. The column is the
+ * stage; the statuses in it are equal variants ("screening" and "technical" are both the same
+ * process, only at a different point), so moving between them is not a step backwards.
+ */
+export const BOARD_COLUMNS: readonly {
+  key: string;
+  title: string;
+  zones: readonly ApplicationStatus[];
+}[] = [
+  { key: "wishlist", title: "Wishlist", zones: ["wishlist"] },
+  { key: "applied", title: "Applied", zones: ["sent"] },
+  {
+    key: "in_process",
+    title: "In process",
+    zones: ["screening", "interview", "technical", "test_task", "fit"],
+  },
+  { key: "offer", title: "Offers", zones: ["offer", "offer_discussion"] },
+  { key: "accepted", title: "Accepted", zones: ["accepted"] },
+  { key: "closed", title: "Closed", zones: ["rejected", "withdrawn"] },
+];
+
+/** The statuses a live application can stand in, in board order. Used for sorting and reports. */
 export const PIPELINE_STATUSES = [
+  "wishlist",
   "sent",
   "screening",
   "interview",
   "technical",
   "test_task",
+  "fit",
   "offer",
   "offer_discussion",
 ] as const satisfies readonly ApplicationStatus[];
 
-/** Final outcomes, reachable from any step. Leaving them is only possible by undoing the change. */
+/** Final outcomes that close an application. Leaving them is only possible by undoing the change. */
 export const OUTCOME_STATUSES = ["rejected", "withdrawn"] as const satisfies readonly ApplicationStatus[];
 
-const isOutcome = (status: ApplicationStatus) => (OUTCOME_STATUSES as readonly string[]).includes(status);
+/** The application is finished: accepted, rejected or withdrawn. */
+export const TERMINAL_STATUSES = [
+  "accepted",
+  "rejected",
+  "withdrawn",
+] as const satisfies readonly ApplicationStatus[];
+
+const isTerminal = (status: ApplicationStatus) => (TERMINAL_STATUSES as readonly string[]).includes(status);
+
+/** The column a status belongs to, and its place in the board. */
+export function columnFor(status: ApplicationStatus): readonly ApplicationStatus[] {
+  return BOARD_COLUMNS.find((column) => column.zones.includes(status))!.zones;
+}
+
+function columnIndex(status: ApplicationStatus): number {
+  return BOARD_COLUMNS.findIndex((column) => column.zones.includes(status));
+}
 
 /**
- * Two statuses that share one kanban column: Interview with Technical, Offer with Negotiation.
- * They are variants of one stage, so switching between them is not a step backwards.
+ * Where an application may move from `from`: any status of a later column (optional steps may be
+ * skipped), any other status of its own column, and an outcome. Accepted is the finish line of an
+ * offer: only the Offer column can reach it. Going back to an earlier column is not a transition:
+ * it is undoing the last change (see `revertStatus`).
  */
-const STAGE_SIBLING: Partial<Record<ApplicationStatus, ApplicationStatus>> = {
-  interview: "technical",
-  technical: "interview",
-  offer: "offer_discussion",
-  offer_discussion: "offer",
+export function nextStatuses(from: ApplicationStatus): ApplicationStatus[] {
+  if (isTerminal(from)) return [];
+  const own = columnFor(from);
+  const later = BOARD_COLUMNS.slice(columnIndex(from) + 1).flatMap((column) => column.zones);
+  // Accepted and Negotiation belong to the offer stage: only an offer leads there.
+  const reachable = later.filter(
+    (status) =>
+      (status !== "accepted" || own.includes("offer")) &&
+      (status !== "offer_discussion" || own.includes("offer")),
+  );
+  return [...own.filter((status) => status !== from), ...(RETURN_TARGETS[from] ?? []), ...reachable];
+}
+
+/**
+ * A real step back: after an offer the company may ask for another round, and that is not a
+ * misclick to undo — it is a new change with its own date in the history.
+ */
+const RETURN_TARGETS: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
+  offer: ["screening", "interview", "technical", "test_task", "fit"],
+  offer_discussion: ["screening", "interview", "technical", "test_task", "fit"],
 };
 
 /**
- * Where an application may move from `from`: forward to any later step (optional steps may be skipped),
- * to the other status of the same stage, or to an outcome. "Negotiation" only follows "Offer",
- * which cannot be skipped. Going back to an earlier stage is not a transition: it is undoing the
- * last change (see `revertStatus`).
+ * Where a closed application may come back to. Reopening is a deliberate action on the card, never
+ * a drag on the board: a closed process that starts again is a decision, not a misclick.
  */
-export function nextStatuses(from: ApplicationStatus): ApplicationStatus[] {
-  if (isOutcome(from)) return [];
-  const later = PIPELINE_STATUSES.slice(
-    PIPELINE_STATUSES.indexOf(from as (typeof PIPELINE_STATUSES)[number]) + 1,
-  );
-  const sibling = STAGE_SIBLING[from];
-  const targets: ApplicationStatus[] = later.filter(
-    (status) => status !== "offer_discussion" || from === "offer",
-  );
-  if (sibling && !targets.includes(sibling)) targets.push(sibling);
-  return [...targets, ...OUTCOME_STATUSES];
+export function reopenTargets(from: ApplicationStatus): ApplicationStatus[] {
+  const closed = columnFor(from);
+  if (closed[0] !== "rejected") return [];
+  return ["screening", "interview", "technical", "test_task", "fit"];
+}
+
+/** True when the move goes to an earlier column: the board asks before logging it. */
+export function isReturn(from: ApplicationStatus, to: ApplicationStatus) {
+  return columnIndex(to) < columnIndex(from);
+}
+
+/**
+ * Where a card may go: the same as `nextStatuses`, plus the other statuses of its own column for a
+ * finished application — Rejected and Withdrawn share the Closed column, so a drag between them is
+ * a switch, not a way back.
+ */
+export function statusTargets(from: ApplicationStatus): ApplicationStatus[] {
+  if (isTerminal(from)) return columnFor(from).filter((status) => status !== from);
+  return nextStatuses(from);
 }
 
 export function canChangeStatus(from: ApplicationStatus, to: ApplicationStatus) {
-  return nextStatuses(from).includes(to);
+  return statusTargets(from).includes(to);
 }
 
 /** Statuses every one of `current` may move to (bulk change). */
@@ -120,10 +189,13 @@ export const INTERVIEW_KIND_LABELS: Record<InterviewKind, string> = {
 export function stageForStatus(status: ApplicationStatus): {
   type: StageType;
   interviewKind: InterviewKind | null;
-} {
+} | null {
+  // A wish is a link with a note: nothing has happened yet, so there is nothing to schedule.
+  if (status === "wishlist") return null;
   if (status === "interview") return { type: "interview", interviewKind: null };
   if (status === "technical") return { type: "interview", interviewKind: "technical" };
   if (status === "test_task") return { type: "test_task", interviewKind: null };
+  if (status === "fit") return { type: "interview", interviewKind: "team" };
   return { type: "other", interviewKind: null };
 }
 
@@ -209,6 +281,10 @@ export type StatisticsEntry = {
   status: ApplicationStatus;
   /** Every status the application ever had. */
   reached: ApplicationStatus[];
+  /** When the current status started: the reports use it for "how long in this step". */
+  statusChangedAt?: IsoDateTime;
+  /** Why the application was refused or withdrawn, if the reason was written down. */
+  reasons?: { status: ApplicationStatus; reason: string }[];
   state: "active" | "archived" | "deleted";
 };
 

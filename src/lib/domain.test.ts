@@ -3,6 +3,7 @@ import {
   APPLICATION_STATUSES,
   canChangeStatus,
   commonNextStatuses,
+  isReturn,
   nextStatuses,
   OUTCOME_STATUSES,
   PIPELINE_STATUSES,
@@ -28,18 +29,28 @@ describe("status rules", () => {
     }
   });
 
-  test("the two statuses of one stage move into each other", () => {
-    // Interview and Technical share a column, Offer and Negotiation too.
-    expect(canChangeStatus("technical", "interview")).toBe(true);
-    expect(canChangeStatus("interview", "technical")).toBe(true);
+  test("the statuses of one column move into each other", () => {
+    // The whole of In process is one stage: any order the company happens to use.
+    expect(canChangeStatus("screening", "technical")).toBe(true);
+    expect(canChangeStatus("technical", "test_task")).toBe(true);
+    expect(canChangeStatus("test_task", "fit")).toBe(true);
+    expect(canChangeStatus("fit", "screening")).toBe(true);
     expect(canChangeStatus("offer_discussion", "offer")).toBe(true);
     expect(canChangeStatus("offer", "offer_discussion")).toBe(true);
   });
 
-  test("a stage switch does not open the rest of the pipeline backwards", () => {
-    // From Technical only Interview comes back, not Screening or Applied.
-    expect(canChangeStatus("technical", "screening")).toBe(false);
+  test("the two outcomes switch into each other and nowhere else", () => {
+    expect(canChangeStatus("rejected", "withdrawn")).toBe(true);
+    expect(canChangeStatus("withdrawn", "rejected")).toBe(true);
+    expect(canChangeStatus("rejected", "sent")).toBe(false);
+    expect(canChangeStatus("rejected", "interview")).toBe(false);
+  });
+
+  test("a column switch does not open the rest of the board backwards", () => {
+    // Inside In process everything is reachable, earlier columns are not.
+    expect(canChangeStatus("technical", "screening")).toBe(true);
     expect(canChangeStatus("technical", "sent")).toBe(false);
+    expect(canChangeStatus("interview", "wishlist")).toBe(false);
   });
 
   test("negotiation only follows an offer", () => {
@@ -48,9 +59,16 @@ describe("status rules", () => {
     expect(canChangeStatus("offer", "offer_discussion")).toBe(true);
   });
 
-  test("going back is not a transition", () => {
-    expect(canChangeStatus("interview", "screening")).toBe(false);
+  test("going back a column is not a transition", () => {
     expect(canChangeStatus("screening", "sent")).toBe(false);
+    expect(canChangeStatus("sent", "wishlist")).toBe(false);
+  });
+
+  test("only an offer is accepted", () => {
+    expect(canChangeStatus("offer", "accepted")).toBe(true);
+    expect(canChangeStatus("offer_discussion", "accepted")).toBe(true);
+    expect(canChangeStatus("interview", "accepted")).toBe(false);
+    expect(canChangeStatus("sent", "accepted")).toBe(false);
   });
 
   test("an outcome is reachable from any step", () => {
@@ -64,13 +82,15 @@ describe("status rules", () => {
     expect(common).toContain("screening");
     expect(common).toContain("interview");
     expect(common).toContain("rejected");
-    // No going back, and negotiation needs an offer first.
+    // No going back, and neither the offer stage nor its finish line is reachable from Applied.
     expect(common).not.toContain("sent");
     expect(common).not.toContain("offer_discussion");
+    expect(common).not.toContain("accepted");
   });
 
-  test("a finished row leaves only its own outcome for the whole selection", () => {
-    expect(commonNextStatuses(["rejected", "sent"])).toEqual(["rejected"]);
+  test("a finished row can still switch to the other outcome", () => {
+    // The closed application may move between Rejected and Withdrawn, the live one to either.
+    expect(commonNextStatuses(["rejected", "sent"])).toEqual(["rejected", "withdrawn"]);
   });
 
   test("an empty selection offers nothing", () => {
@@ -84,12 +104,27 @@ describe("status rules", () => {
 });
 
 describe("next statuses, step by step", () => {
-  test("an application starts by offering every later step and both outcomes", () => {
+  test("wishlist leads to the whole board", () => {
+    expect(nextStatuses("wishlist")).toEqual([
+      "sent",
+      "screening",
+      "interview",
+      "technical",
+      "test_task",
+      "fit",
+      "offer",
+      "rejected",
+      "withdrawn",
+    ]);
+  });
+
+  test("applied opens the interview stage and the outcomes", () => {
     expect(nextStatuses("sent")).toEqual([
       "screening",
       "interview",
       "technical",
       "test_task",
+      "fit",
       "offer",
       "rejected",
       "withdrawn",
@@ -97,14 +132,54 @@ describe("next statuses, step by step", () => {
   });
 
   test("a take-home step leads to the offer, not to negotiation", () => {
-    expect(nextStatuses("test_task")).toEqual(["offer", "rejected", "withdrawn"]);
+    expect(nextStatuses("test_task")).toEqual([
+      "screening",
+      "interview",
+      "technical",
+      "fit",
+      "offer",
+      "rejected",
+      "withdrawn",
+    ]);
   });
 
-  test("an offer adds negotiation", () => {
-    expect(nextStatuses("offer")).toEqual(["offer_discussion", "rejected", "withdrawn"]);
+  test("an offer adds negotiation, acceptance and another round", () => {
+    expect(nextStatuses("offer")).toEqual([
+      "offer_discussion",
+      // A real step back: the company asked for one more interview after the offer.
+      "screening",
+      "interview",
+      "technical",
+      "test_task",
+      "fit",
+      "accepted",
+      "rejected",
+      "withdrawn",
+    ]);
   });
 
-  test("negotiation leads to an outcome or back to the offer it belongs to", () => {
-    expect(nextStatuses("offer_discussion")).toEqual(["offer", "rejected", "withdrawn"]);
+  test("negotiation leads to acceptance, an outcome, or back to the offer it belongs to", () => {
+    expect(nextStatuses("offer_discussion")).toEqual([
+      "offer",
+      "screening",
+      "interview",
+      "technical",
+      "test_task",
+      "fit",
+      "accepted",
+      "rejected",
+      "withdrawn",
+    ]);
+  });
+
+  test("only an offer looks back, and the board asks first", () => {
+    expect(isReturn("offer", "fit")).toBe(true);
+    expect(isReturn("sent", "interview")).toBe(false);
+    expect(canChangeStatus("offer", "fit")).toBe(true);
+  });
+
+  test("accepted is the end of the road", () => {
+    expect(nextStatuses("accepted")).toEqual([]);
+    expect(canChangeStatus("accepted", "offer")).toBe(false);
   });
 });

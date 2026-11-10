@@ -217,17 +217,22 @@ export function ApplicationsView() {
     content = <NoResults onReset={url.resetFilters} />;
   } else if (data.kind === "page") {
     const sort: TableSort = url.query.sort ?? null;
+    // Only the rows scroll: the toolbar above and the pager below stay put.
     content = (
-      <>
-        <ApplicationsTable
-          applications={data.page.items}
-          sort={sort}
-          onSort={(next) => url.setSort(next?.field ?? null, next?.direction ?? "asc")}
-          selected={selected}
-          onSelectionChange={setSelected}
-          onChangeStatus={changeStatus}
-          onRevertStatus={revertStatus}
-        />
+      <div className="flex h-[calc(100vh-9rem)] flex-col">
+        {/* The table component brings its own overflow wrapper; inside this scroller it would be a
+            second one, and the sticky header would bind to it instead. */}
+        <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+          <ApplicationsTable
+            applications={data.page.items}
+            sort={sort}
+            onSort={(next) => url.setSort(next?.field ?? null, next?.direction ?? "asc")}
+            selected={selected}
+            onSelectionChange={setSelected}
+            onChangeStatus={changeStatus}
+            onRevertStatus={revertStatus}
+          />
+        </div>
         <TableFooter
           page={data.page.page}
           pageSize={url.state.size}
@@ -235,7 +240,7 @@ export function ApplicationsView() {
           onPageChange={url.setPage}
           onPageSizeChange={url.setPageSize}
         />
-      </>
+      </div>
     );
   } else if (data.kind === "details") {
     content = <ApplicationsTimeline applications={data.items} now={data.now} />;

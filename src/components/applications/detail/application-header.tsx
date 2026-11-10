@@ -15,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -24,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { type ApplicationDetails, STATUS_LABELS, nextStatuses } from "@/lib/domain";
+import { type ApplicationDetails, STATUS_LABELS, nextStatuses, reopenTargets } from "@/lib/domain";
 import { useRepository } from "@/lib/repository/provider";
 import { StatusBadge } from "../status-badge";
 import { useApplicationActions } from "../use-application-actions";
@@ -53,7 +54,11 @@ export function ApplicationHeader({
   const actions = useApplicationActions();
   const router = useRouter();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmReopen, setConfirmReopen] = useState(false);
   const choices = nextStatuses(app.status);
+  // A closed process can come back to life, but only on purpose: the button, never a drag.
+  const reopenTo = reopenTargets(app.status);
+  const closed = reopenTo.length > 0;
 
   // sessionStorage exists only in the browser; the server renders the plain list URL.
   const listHref = useSyncExternalStore(noop, listUrl, () => "/dashboard");
@@ -64,6 +69,7 @@ export function ApplicationHeader({
   useLayoutEffect(
     () => () => {
       setConfirmDelete(false);
+      setConfirmReopen(false);
     },
     [],
   );
@@ -72,6 +78,45 @@ export function ApplicationHeader({
     // Back to the list first: the page must not follow the application into the archive.
     router.push(backHref);
     await actions.remove([app.id], app.company);
+  }
+
+  /** The company came back: a new process, with the old one left closed for the statistics. */
+  async function startNew() {
+    setConfirmReopen(false);
+    try {
+      const copy = await repository.create({
+        company: app.company,
+        position: app.position,
+        status: "sent",
+        appliedAt: new Date().toLocaleDateString("sv-SE"),
+        url: app.url,
+        location: app.location,
+        workFormat: app.workFormat,
+        salaryMin: app.salaryMin,
+        salaryMax: app.salaryMax,
+        currency: app.currency,
+        contactName: app.contactName,
+        contactInfo: app.contactInfo,
+        source: app.source,
+      });
+      toast.success(`Started a new application at ${copy.company}`);
+      router.push(`/applications/${copy.id}`);
+    } catch {
+      toast.error("Couldn’t start a new application");
+    }
+  }
+
+  /** The same process resumes: the move is logged, the closed one is not deleted. */
+  async function continueCurrent() {
+    setConfirmReopen(false);
+    const target =
+      app.previousStatus && reopenTo.includes(app.previousStatus) ? app.previousStatus : reopenTo[0];
+    try {
+      await repository.reopen(app.id, target);
+      toast.success(`Reopened ${app.company}`);
+    } catch {
+      toast.error("Couldn’t reopen");
+    }
   }
 
   return (
@@ -160,6 +205,11 @@ export function ApplicationHeader({
                 Back to {STATUS_LABELS[app.previousStatus]}
               </Button>
             ) : null)}
+          {customActions || !closed ? null : (
+            <Button variant="outline" onClick={() => setConfirmReopen(true)}>
+              Reopen
+            </Button>
+          )}
           {customActions ? null : (
             <Button
               variant="outline"
@@ -174,6 +224,22 @@ export function ApplicationHeader({
         </div>
       </div>
 
+      <AlertDialog open={confirmReopen} onOpenChange={setConfirmReopen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reopen the process?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A company coming back after a refusal is usually a new process: a different role, another
+              recruiter. The old one stays closed and keeps its history.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void continueCurrent()}>Continue this one</AlertDialogAction>
+            <AlertDialogAction onClick={() => void startNew()}>Start a new one</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>

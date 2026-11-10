@@ -3,6 +3,16 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DndContext,
   DragOverlay,
   PointerSensor,
@@ -13,18 +23,37 @@ import {
   type Announcements,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { Archive } from "lucide-react";
+import { Archive, ChevronDown, ListFilter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
   type ApplicationStatus,
   type ApplicationSummary,
+  BOARD_COLUMNS,
   STATUS_LABELS,
-  nextStatuses,
+  TERMINAL_STATUSES,
+  isReturn,
   stageForStatus,
+  statusTargets,
 } from "@/lib/domain";
+import { COLUMN_BG, COLUMN_TEXT, zoneBarClass } from "@/lib/column-colors";
+import { formatDate, toDateTimeLocal } from "@/lib/format";
+import { STATE_BADGE_CLASSES } from "@/lib/stage-state";
+import {
+  setZonePrefs,
+  showZone,
+  toggleZoneCollapsed,
+  toggleZoneHidden,
+  useZonePrefs,
+} from "@/lib/zone-prefs";
+import { nextEvent, sortByNextEvent } from "@/lib/next-event";
 import { rememberListPosition } from "../detail/return-to-list";
-import { StatusBadge } from "../status-badge";
 import { ApplicationCard } from "./application-card";
 
 type KanbanBoardProps = {
@@ -40,7 +69,8 @@ type KanbanBoardProps = {
 
 /** Columns a card may be dropped on: allowed next statuses, plus the previous one (undo). */
 function dropTargets(app: ApplicationSummary): ApplicationStatus[] {
-  return app.previousStatus ? [...nextStatuses(app.status), app.previousStatus] : nextStatuses(app.status);
+  const targets = statusTargets(app.status);
+  return app.previousStatus ? [...targets, app.previousStatus] : targets;
 }
 
 // Browsers report the Windows/Linux Delete key and Fn+⌫ on a Mac as "Delete",
@@ -60,6 +90,7 @@ type CardHandlers = {
 
 function DraggableCard({
   app,
+  highlightNext,
   hintId,
   selected,
   onSelect,
@@ -67,7 +98,7 @@ function DraggableCard({
   onRequestDelete,
   onDeselect,
   onRepeat,
-}: { app: ApplicationSummary } & CardHandlers) {
+}: { app: ApplicationSummary; highlightNext?: boolean } & CardHandlers) {
   const { setNodeRef, listeners, isDragging } = useDraggable({ id: app.id, data: { status: app.status } });
   // Mouse-only drag (agreed): pointer listeners, no keyboard drag. Without a mouse the status is changed
   // in the table or on the application page.
@@ -106,21 +137,17 @@ function DraggableCard({
         isDragging && "opacity-40",
       )}
     >
-      <ApplicationCard app={app} onRepeat={onRepeat} />
+      <ApplicationCard app={app} onRepeat={onRepeat} highlightNext={highlightNext} />
     </div>
   );
 }
 
-// Six columns; three of them hold two related statuses, one zone each.
-const COLUMNS: { title: string; zones: ApplicationStatus[] }[] = [
-  { title: "Applied", zones: ["sent"] },
-  { title: "Screening", zones: ["screening"] },
-  { title: "Interview", zones: ["interview", "technical"] },
-  { title: "Take-home", zones: ["test_task"] },
-  { title: "Offer", zones: ["offer", "offer_discussion"] },
-  { title: "Closed", zones: ["rejected", "withdrawn"] },
-];
+// The board comes from the model: a few stable columns, each with one or more statuses inside.
+const COLUMNS = BOARD_COLUMNS;
 
+// A column has its own colour, separate from the statuses inside: the board reads left to right,
+// from a quiet backlog to a loud finish. The palette lives in one place for the whole app.
+const columnBadge = (key: string) => `${COLUMN_BG[key]} ${COLUMN_TEXT[key]}`;
 // Zone labels can differ from status names when that reads better inside a column.
 const ZONE_LABELS: Partial<Record<ApplicationStatus, string>> = {};
 
@@ -134,6 +161,9 @@ function Zone({
   state,
   paired,
   divider,
+  collapsed,
+  onToggleCollapsed,
+  focusId,
 }: {
   status: ApplicationStatus;
   items: ApplicationSummary[];
@@ -143,9 +173,20 @@ function Zone({
   paired: boolean;
   /** Thin line above the second zone of a pair. */
   divider: boolean;
+  /** Folded by the user: the header stays, the cards hide. */
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
+  /** The card that wears NEXT: only one per column, across all its zones. */
+  focusId: string | null;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status, disabled: state === "refuses" });
   const label = ZONE_LABELS[status] ?? STATUS_LABELS[status];
+  const zoneBar = zoneBarClass(status);
+  // The zone is a queue: the nearest event on top. The NEXT badge is decided one level up, so a
+  // column never shows two of them.
+  const ordered = sortByNextEvent(items, nextEventOf);
+  const focus = items.find((app) => app.id === focusId);
+  const focusInside = focus ? nextEventOf(focus) : null;
   return (
     <div
       ref={setNodeRef}
@@ -156,54 +197,152 @@ function Zone({
         // A lone zone takes the whole column; a paired one is at least as tall as a card with
         // three events, so there is always room to drop above or below the cards.
         paired ? "min-h-60" : "flex-1",
+        collapsed && "min-h-0",
         divider && state !== "accepts" && "border-t-border",
         state === "accepts" && (isOver ? "border-primary/60 bg-primary/5" : "border-foreground/30"),
         state === "refuses" && "opacity-40",
       )}
     >
       {paired ? (
-        <p aria-hidden className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          aria-expanded={!collapsed}
+          className={cn(
+            "flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+            // An empty zone is shown only as a drop target: faded, so it does not read as content.
+            items.length === 0 && "opacity-40",
+          )}
+        >
+          <ChevronDown
+            aria-hidden
+            className={cn("size-3 shrink-0 transition-transform", collapsed && "-rotate-90")}
+          />
+          {/* A thin bar carries the stage colour; the label itself stays quiet. */}
+          {zoneBar ? <span className={cn("h-3 w-[3px] shrink-0 rounded-full", zoneBar)} /> : null}
           {label}
           {/* A zero says nothing: the empty zone is clear on its own. */}
-          {items.length > 0 ? <span className="tabular-nums">{items.length}</span> : null}
-        </p>
+          {/* A zero is shown while the zone is revealed for a drop, so the row never looks broken. */}
+          <span className="tabular-nums">{items.length}</span>
+          {collapsed && focusInside ? (
+            <span
+              className={cn(
+                "ml-auto shrink-0 rounded px-1 py-0.5 text-[10px] leading-none font-semibold tracking-wide uppercase",
+                STATE_BADGE_CLASSES.planned,
+              )}
+              title={`The nearest event of the column is inside: ${formatDate(toDateTimeLocal(focusInside.scheduledAt!).slice(0, 10))}`}
+            >
+              Next
+            </span>
+          ) : null}
+        </button>
       ) : null}
-      {items.map((app) => (
-        <DraggableCard key={app.id} app={app} {...cardProps(app)} />
-      ))}
+      {collapsed
+        ? null
+        : ordered.map((app) => (
+            <DraggableCard key={app.id} app={app} highlightNext={app.id === focusId} {...cardProps(app)} />
+          ))}
     </div>
   );
 }
 
 function Column({
+  columnKey,
   title,
   zones,
   applications,
   cardProps,
   zoneState,
   onArchive,
+  dragging,
 }: {
+  columnKey: string;
   title: string;
-  zones: ApplicationStatus[];
+  zones: readonly ApplicationStatus[];
   applications: ApplicationSummary[];
   cardProps: (app: ApplicationSummary) => CardHandlers;
   zoneState: (status: ApplicationStatus) => ZoneState;
   onArchive: (ids: string[]) => void;
+  dragging: boolean;
 }) {
+  const prefs = useZonePrefs();
   const inColumn = applications.filter((app) => zones.includes(app.status));
   const total = inColumn.length;
+  // An empty zone has nothing to show: it appears only as a drop target while a card is dragged.
+  const isVisible = (status: ApplicationStatus) =>
+    !prefs.hidden.includes(status) &&
+    (applications.some((app) => app.status === status) || (dragging && zoneState(status) !== "refuses"));
+  const shown = zones.filter(isVisible);
+  // One NEXT per column: the card with the earliest future event among all zones of this column.
+  // Exact time decides; on a full tie the zone order does, then the id, so the pick never flickers.
+  const focusId =
+    shown
+      .flatMap((status, zoneIndex) =>
+        applications
+          .filter((app) => app.status === status)
+          .map((app) => ({ id: app.id, at: nextEventOf(app)?.scheduledAt ?? null, zoneIndex })),
+      )
+      .filter((entry): entry is { id: string; at: string; zoneIndex: number } => entry.at !== null)
+      .sort((a, b) => a.at.localeCompare(b.at) || a.zoneIndex - b.zoneIndex || a.id.localeCompare(b.id))[0]
+      ?.id ?? null;
   return (
     <section
       aria-label={`${title}: ${total}`}
       className="flex w-64 shrink-0 flex-col gap-2 rounded-xl bg-muted/60 p-2"
     >
       {/* Pinned to the top of the board: the column keeps its name and count in view. */}
-      <header className="sticky top-0 z-10 -mx-2 flex items-center gap-2 rounded-t-xl bg-muted px-3 pt-2 pb-2">
-        <StatusBadge status={zones[0]} label={title} count={total} />
+      {/* Flush with the top of the column and rounded on every side, so the column keeps its shape
+          while the board scrolls under it. */}
+      <header className="sticky top-0 z-10 -mx-2 -mt-2 flex items-center gap-2 rounded-xl bg-muted px-3 pt-2.5 pb-2.5">
+        {/* The column has its own colour, not the colour of its first status: the badge is built
+            here so the palette never depends on overriding another component. */}
+        <span
+          className={cn(
+            "inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-xs font-medium whitespace-nowrap",
+            columnBadge(columnKey),
+          )}
+        >
+          {title}
+          {/* The count is always there: a column without it looks broken next to the others. */}
+          <span className="rounded bg-background px-1 text-[11px] leading-none tabular-nums">{total}</span>
+        </span>
+        {zones.length > 1 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="ml-auto"
+                aria-label={`Choose the zones of ${title}`}
+                title="Choose the zones"
+              >
+                <ListFilter aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {zones.map((status) => (
+                <DropdownMenuCheckboxItem
+                  key={status}
+                  checked={!prefs.hidden.includes(status)}
+                  onSelect={(event) => event.preventDefault()}
+                  onCheckedChange={() =>
+                    setZonePrefs(
+                      prefs.hidden.includes(status)
+                        ? showZone(prefs, status)
+                        : toggleZoneHidden(prefs, status),
+                    )
+                  }
+                >
+                  {STATUS_LABELS[status]}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
         <Button
           variant="ghost"
           size="icon-sm"
-          className="ml-auto"
+          className={zones.length > 1 ? undefined : "ml-auto"}
           disabled={total === 0}
           onClick={() => onArchive(inColumn.map((app) => app.id))}
           aria-label={`Archive all in ${title}: ${total}`}
@@ -212,7 +351,7 @@ function Column({
           <Archive aria-hidden />
         </Button>
       </header>
-      {zones.map((status, index) => (
+      {shown.map((status, index) => (
         <Zone
           key={status}
           status={status}
@@ -221,10 +360,24 @@ function Column({
           state={zoneState(status)}
           paired={zones.length > 1}
           divider={index > 0}
+          // A folded zone opens up while a card hovers it: you can see where it will land.
+          collapsed={prefs.collapsed.includes(status) && !(dragging && zoneState(status) === "accepts")}
+          focusId={focusId}
+          onToggleCollapsed={() => setZonePrefs(toggleZoneCollapsed(prefs, status))}
         />
       ))}
     </section>
   );
+}
+
+/** The nearest planned event of the kind this status schedules, as the card shows it. */
+function nextEventOf(app: ApplicationSummary) {
+  const mapped = stageForStatus(app.status);
+  if (!mapped) return null;
+  const matching = app.events.filter(
+    (event) => event.type === mapped.type && event.interviewKind === mapped.interviewKind,
+  );
+  return nextEvent(matching);
 }
 
 const quoted = (summary: ApplicationSummary | undefined) => (summary ? summary.company : "Application");
@@ -244,6 +397,11 @@ export function KanbanBoard({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // A step back that the user has to confirm: no silent rewinds in the history.
+  const [pendingReturn, setPendingReturn] = useState<{
+    app: ApplicationSummary;
+    status: ApplicationStatus;
+  } | null>(null);
 
   const byId = new Map(applications.map((app) => [app.id, app]));
   const active = activeId ? byId.get(activeId) : undefined;
@@ -278,6 +436,8 @@ export function KanbanBoard({
     if (!app || app.status === status) return;
     // Dropping back on the previous column undoes the last change instead of logging a new one.
     if (status === app.previousStatus) onRevertStatus(app);
+    // A step back is a real change (another round after an offer): ask before writing it down.
+    else if (isReturn(app.status, status)) setPendingReturn({ app, status });
     else onChangeStatus(app.id, status);
   }
 
@@ -297,8 +457,11 @@ export function KanbanBoard({
     },
     // The page confirms the move, so every archive comes from one dialog.
     onRequestDelete: () => onDelete(app),
-    // Only statuses that can carry a dated event get the "+".
-    onRepeat: stageForStatus(app.status) ? () => onRepeat(app) : undefined,
+    // Only live statuses that can carry a dated event get the "+": a closed process plans nothing.
+    onRepeat:
+      stageForStatus(app.status) && !(TERMINAL_STATUSES as readonly string[]).includes(app.status)
+        ? () => onRepeat(app)
+        : undefined,
     onDeselect: () => setSelectedId(null),
   });
 
@@ -320,16 +483,49 @@ export function KanbanBoard({
           {COLUMNS.map((column) => (
             <Column
               key={column.title}
+              columnKey={column.key}
               title={column.title}
               zones={column.zones}
               applications={applications}
               cardProps={cardProps}
               zoneState={zoneState}
               onArchive={onArchiveColumn}
+              dragging={active !== null}
             />
           ))}
         </div>
       </div>
+      <AlertDialog
+        open={pendingReturn !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingReturn(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Back to {pendingReturn ? STATUS_LABELS[pendingReturn.status] : ""}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingReturn
+                ? `${pendingReturn.app.company} goes back from ${STATUS_LABELS[pendingReturn.app.status]} to ${STATUS_LABELS[pendingReturn.status]}. This is logged as a new change, not as an undo.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const pending = pendingReturn;
+                setPendingReturn(null);
+                if (pending) onChangeStatus(pending.app.id, pending.status);
+              }}
+            >
+              Move back
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <DragOverlay dropAnimation={null}>
         {active ? <ApplicationCard app={active} className="w-60 rotate-1 cursor-grabbing shadow-lg" /> : null}
       </DragOverlay>

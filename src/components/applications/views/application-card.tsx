@@ -4,9 +4,9 @@ import Link from "next/link";
 import { Eye, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import type { ApplicationSummary } from "@/lib/domain";
-import { formatDate, formatDateTime, formatSalary } from "@/lib/format";
-import { stageForStatus } from "@/lib/domain";
+import { type ApplicationSummary, TERMINAL_STATUSES, stageForStatus } from "@/lib/domain";
+import { formatDate, formatDateTime, formatSalary, toDateTimeLocal } from "@/lib/format";
+import { waitingDays } from "@/lib/waiting";
 import { nextEvent } from "@/lib/next-event";
 import { STATE_BADGE_CLASSES, STATE_BORDER_CLASSES } from "@/lib/stage-state";
 import { stageLabel } from "@/lib/stage-title";
@@ -18,12 +18,25 @@ type ApplicationCardProps = {
   className?: string;
   /** Shown on statuses that can carry a dated event: schedules the next one of the same kind. */
   onRepeat?: () => void;
+  /**
+   * Marks the nearest event of its zone with the NEXT chip. The board turns it on for one card per
+   * zone, so the chip keeps meaning "the first thing to prepare for".
+   */
+  highlightNext?: boolean;
 };
 
 /** Compact card used by the kanban board. Open via the eye button (the board adds double-click / Enter). */
-export function ApplicationCard({ app, className, onRepeat }: ApplicationCardProps) {
+export function ApplicationCard({ app, className, onRepeat, highlightNext = true }: ApplicationCardProps) {
   const salary = formatSalary(app.salaryMin, app.salaryMax, app.currency);
-  const applied = formatDate(app.appliedAt);
+  // The zone header already names the status, so the card only speaks up about a silence.
+  const waiting = waitingDays(app);
+  // A finished process has no plans: on the board it shows the day it ended, not its events.
+  const finished = (TERMINAL_STATUSES as readonly string[]).includes(app.status);
+  const finishedOn = finished
+    ? formatDate(toDateTimeLocal(app.statusChangedAt).slice(0, 10))?.replace(/, \d{4}/, "")
+    : null;
+  // A wish has no date applied yet: show when it was added instead.
+  const applied = formatDate(app.appliedAt ?? toDateTimeLocal(app.createdAt).slice(0, 10));
   // The progress of this status, newest first — the same events the application page shows.
   const mapped = stageForStatus(app.status);
   const matching =
@@ -39,7 +52,8 @@ export function ApplicationCard({ app, className, onRepeat }: ApplicationCardPro
     label: stageLabel(event),
     seq: event.seq,
     date: formatDateTime(event.scheduledAt)?.replace(/, \d{4}/, "") ?? "No date",
-    next: upcoming !== null && upcoming.seq === event.seq && upcoming.type === event.type,
+    // The frame and the chip belong to the one nearest event of the zone.
+    next: highlightNext && upcoming !== null && upcoming.seq === event.seq && upcoming.type === event.type,
     state: event.state,
   }));
   // Never more than three: a card with ten interviews would stretch the whole board.
@@ -47,7 +61,12 @@ export function ApplicationCard({ app, className, onRepeat }: ApplicationCardPro
   const hidden = allEvents.length - events.length;
   return (
     <article
-      className={cn("relative rounded-lg bg-card p-3 text-sm shadow-xs ring-1 ring-border", className)}
+      className={cn(
+        "relative rounded-lg bg-card p-3 text-sm shadow-xs ring-1 ring-border",
+        // A silence longer than a week gets a warm frame: time to write the recruiter.
+        waiting !== null && "ring-2 ring-amber-500/45",
+        className,
+      )}
     >
       <div className="flex items-start gap-2.5 pr-8">
         <CompanyAvatar name={app.company} className="size-7 text-xs" />
@@ -56,6 +75,16 @@ export function ApplicationCard({ app, className, onRepeat }: ApplicationCardPro
           <p className="truncate text-muted-foreground">{app.position}</p>
         </div>
       </div>
+      {waiting !== null ? (
+        <p className="mt-1.5">
+          <span
+            className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 tabular-nums dark:text-amber-400"
+            title={`Nothing planned and no answer for ${waiting} days`}
+          >
+            No reply · {waiting} d
+          </span>
+        </p>
+      ) : null}
       <Link
         href={`/applications/${app.id}`}
         aria-label={`Open ${app.company}`}
@@ -90,7 +119,12 @@ export function ApplicationCard({ app, className, onRepeat }: ApplicationCardPro
           {salary ? <span>{salary}</span> : null}
         </p>
       ) : null}
-      {events.length > 0 ? (
+      {finished && finishedOn ? (
+        <p className="mt-2 text-xs text-muted-foreground tabular-nums">
+          {app.status === "accepted" ? "Accepted" : "Closed"} · {finishedOn}
+        </p>
+      ) : null}
+      {!finished && events.length > 0 ? (
         <ul className="mt-2 divide-y border-t text-xs">
           {events.map((event) => (
             <li key={event.key} className="py-1.5">
@@ -107,6 +141,10 @@ export function ApplicationCard({ app, className, onRepeat }: ApplicationCardPro
                   {/* The title is cut with an ellipsis, the number is always visible. */}
                   <span className="min-w-0 flex-1 truncate">{event.label}</span>
                   <span className="shrink-0 text-muted-foreground tabular-nums">#{event.seq}</span>
+                </span>
+                {/* The moment has its own line: a long title never fights the clock for room. */}
+                <span className="flex w-full min-w-0 items-center gap-1.5 text-muted-foreground">
+                  <span className="min-w-0 flex-1 truncate tabular-nums">{event.date}</span>
                   {/* The same word the table uses in its column, at the end of the row. */}
                   {event.next ? (
                     <span
@@ -119,7 +157,6 @@ export function ApplicationCard({ app, className, onRepeat }: ApplicationCardPro
                     </span>
                   ) : null}
                 </span>
-                <span className="text-muted-foreground tabular-nums">{event.date}</span>
               </span>
             </li>
           ))}

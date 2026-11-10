@@ -72,6 +72,8 @@ export interface ApplicationsRepository {
    * Only moves allowed by `canChangeStatus`; `ignoreRules` is for imports, which take statuses as they are.
    */
   changeStatus(ids: string[], input: StatusChangeInput, options?: { ignoreRules?: boolean }): Promise<void>;
+  /** Brings a closed application back to work, logging the move. Never used by a drag. */
+  reopen(id: string, status: ApplicationStatus, reason?: string): Promise<void>;
   /** Undoes the last status change: the previous status comes back and the log entry is removed. */
   revertStatus(ids: string[]): Promise<void>;
   /** Moves to the archive; `restore` brings the records back (the "Undo" toast, the Archive page). */

@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DateInput } from "@/components/date-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,6 +58,8 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [values, setValues] = useState<Values>(initialValues);
+  // A card can start before anything is sent: the wishlist keeps the link and the notes.
+  const [applied, setApplied] = useState(true);
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
 
@@ -94,9 +97,9 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
     const parsed = applicationInputSchema.safeParse({
       company: values.company,
       position: values.position,
-      // Every new application starts as "Applied"; it moves on from there.
-      status: "sent",
-      appliedAt: values.appliedAt || null,
+      // Already sent: the card starts in Applied. Still deciding: it goes to the wishlist.
+      status: applied ? "sent" : "wishlist",
+      appliedAt: applied ? values.appliedAt || null : null,
       url: values.url,
       salaryMin: salaryMin === "invalid" ? null : salaryMin,
       salaryMax: salaryMax === "invalid" ? null : salaryMax,
@@ -127,6 +130,7 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
         action: { label: "Open", onClick: () => router.push(`/applications/${app.id}`) },
       });
       setValues(initialValues());
+      setApplied(true);
       onDone();
     } catch {
       toast.error("Couldn’t add the application");
@@ -143,11 +147,29 @@ export function ManualForm({ onDone }: { onDone: () => void }) {
       <Field label="Position" required error={errors.position}>
         <Input {...bind("position")} autoComplete="organization-title" placeholder="Frontend Developer" />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Date applied" error={errors.appliedAt}>
-          <DateInput value={values.appliedAt} onValueChange={(value) => setField("appliedAt", value)} />
-        </Field>
-      </div>
+      <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border p-3">
+        <Checkbox
+          checked={applied}
+          onCheckedChange={(checked) => setApplied(checked === true)}
+          className="mt-0.5"
+        />
+        <span className="grid gap-0.5">
+          <span className="text-sm font-medium">Already applied</span>
+          <span className="text-xs text-muted-foreground">
+            {applied
+              ? "The card starts in Applied."
+              : "The card starts in Wishlist — the link and notes are kept."}
+          </span>
+        </span>
+      </label>
+
+      {applied ? (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Date applied" error={errors.appliedAt}>
+            <DateInput value={values.appliedAt} onValueChange={(value) => setField("appliedAt", value)} />
+          </Field>
+        </div>
+      ) : null}
 
       <div className="grid gap-4">
         <Field label="Job posting link" error={errors.url}>

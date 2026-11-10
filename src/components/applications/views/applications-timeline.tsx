@@ -8,26 +8,28 @@ import {
   type ApplicationStatus,
   STAGE_STATE_LABELS,
   STATUS_LABELS,
+  APPLICATION_STATUSES,
 } from "@/lib/domain";
+import { COLUMN_BG, COLUMN_RING, columnKeyOf } from "@/lib/column-colors";
 import { stageTitle } from "@/lib/stage-title";
 import { formatDate } from "@/lib/format";
 import { CompanyAvatar } from "../company-avatar";
 
 const DAY = 86_400_000;
-const FINAL: readonly ApplicationStatus[] = ["offer", "offer_discussion", "rejected", "withdrawn"];
+const FINAL: readonly ApplicationStatus[] = [
+  "offer",
+  "offer_discussion",
+  "accepted",
+  "rejected",
+  "withdrawn",
+];
 
-const BAR_CLASSES: Record<ApplicationStatus, string> = {
-  sent: "bg-status-sent-bg ring-status-sent/30",
-  screening: "bg-status-screening-bg ring-status-screening/30",
-  interview: "bg-status-interview-bg ring-status-interview/30",
-  technical: "bg-status-technical-bg ring-status-technical/30",
-  test_task: "bg-status-test-bg ring-status-test/30",
-  offer: "bg-status-offer-bg ring-status-offer/30",
-  offer_discussion: "bg-status-discussion-bg ring-status-discussion/30",
-  rejected: "bg-status-rejected-bg ring-status-rejected/30",
-  withdrawn: "bg-status-withdrawn-bg ring-status-withdrawn/30",
-};
-
+const BAR_CLASSES: Record<ApplicationStatus, string> = Object.fromEntries(
+  APPLICATION_STATUSES.map((status) => {
+    const key = columnKeyOf(status);
+    return [status, `${COLUMN_BG[key]} ${COLUMN_RING[key]}`];
+  }),
+) as Record<ApplicationStatus, string>;
 const dayOf = (iso: string) => Date.parse(iso.length === 10 ? `${iso}T00:00:00Z` : iso);
 const isoDay = (time: number) => new Date(time).toISOString().slice(0, 10);
 
@@ -137,7 +139,7 @@ export function ApplicationsTimeline({
                             "absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-background focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                             stage.state === "done" && "bg-foreground",
                             stage.state === "planned" && "border-2 border-foreground bg-background",
-                            stage.state === "failed" && "bg-status-rejected",
+                            stage.state === "failed" && COLUMN_BG.closed,
                             stage.state === "cancelled" && "bg-muted-foreground/40",
                           )}
                           style={{ left: left(dayOf(stage.scheduledAt)) }}
@@ -158,7 +160,7 @@ export function ApplicationsTimeline({
           <span className="inline-flex items-center gap-1.5">
             <span
               aria-hidden
-              className="h-2.5 w-6 rounded-full bg-status-sent-bg ring-1 ring-status-sent/30"
+              className={cn("h-2.5 w-6 rounded-full", COLUMN_BG.applied, COLUMN_RING.applied)}
             />
             from applying to the last status change, or to today
           </span>

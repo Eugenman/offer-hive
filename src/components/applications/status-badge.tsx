@@ -1,18 +1,11 @@
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { type ApplicationStatus, STATUS_LABELS } from "@/lib/domain";
+import { APPLICATION_STATUSES, type ApplicationStatus, STATUS_LABELS } from "@/lib/domain";
+import { statusColors } from "@/lib/column-colors";
 
-const STATUS_CLASSES: Record<ApplicationStatus, string> = {
-  sent: "bg-status-sent-bg text-status-sent",
-  screening: "bg-status-screening-bg text-status-screening",
-  interview: "bg-status-interview-bg text-status-interview",
-  technical: "bg-status-technical-bg text-status-technical",
-  test_task: "bg-status-test-bg text-status-test",
-  offer: "bg-status-offer-bg text-status-offer",
-  offer_discussion: "bg-status-discussion-bg text-status-discussion",
-  rejected: "bg-status-rejected-bg text-status-rejected",
-  withdrawn: "bg-status-withdrawn-bg text-status-withdrawn",
-};
+const STATUS_CLASSES: Record<ApplicationStatus, string> = Object.fromEntries(
+  APPLICATION_STATUSES.map((status) => [status, statusColors(status)]),
+) as Record<ApplicationStatus, string>;
 
 export function StatusBadge({
   status,

@@ -1,4 +1,4 @@
-import { APPLICATION_STATUSES, canChangeStatus } from "@/lib/domain";
+import { APPLICATION_STATUSES, canChangeStatus, reopenTargets } from "@/lib/domain";
 import type {
   Application,
   ApplicationDetails,
@@ -309,6 +309,12 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
       appliedAt: app.appliedAt,
       status: app.status,
       reached: [...reached],
+      statusChangedAt: app.statusChangedAt,
+      reasons: changesOf(app.id)
+        .filter(
+          (change) => change.reason && (change.toStatus === "rejected" || change.toStatus === "withdrawn"),
+        )
+        .map((change) => ({ status: change.toStatus, reason: change.reason! })),
       state: app.deletedAt ? "archived" : "active",
     };
   }
@@ -524,6 +530,14 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
         changed = true;
       }
       if (changed) await commit();
+    },
+
+    async reopen(id, status, reason) {
+      await ensureReady();
+      const app = live(id);
+      if (!reopenTargets(app.status).includes(status)) throw statusTransitionError(app.status, status);
+      // A reopen is a normal change: it goes to the history with the current time.
+      return this.changeStatus([id], { status, reason }, { ignoreRules: true });
     },
 
     async revertStatus(ids) {

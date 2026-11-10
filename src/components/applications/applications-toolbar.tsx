@@ -49,7 +49,7 @@ export function ApplicationsToolbar({
   exportDisabled,
 }: ApplicationsToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2 px-6 py-4">
+    <div className="flex flex-wrap items-center gap-2 border-b bg-background px-6 py-4">
       {/* Actions first, where the eye starts; then search and how to show the results. */}
       <div className="flex items-center gap-2">
         <Button onClick={onAdd}>

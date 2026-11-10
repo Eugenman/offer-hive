@@ -46,6 +46,31 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* Column colours: the board reads left to right, the mood changes with it. */
+  /* Sub-statuses of In process: a colour hint for the stage inside the column. */
+  --color-zone-screening: var(--zone-screening);
+  --color-zone-interview: var(--zone-interview);
+  --color-zone-technical: var(--zone-technical);
+  --color-zone-test: var(--zone-test);
+  --color-zone-fit: var(--zone-fit);
+  --color-zone-offer: var(--zone-offer);
+  --color-zone-negotiation: var(--zone-negotiation);
+  --color-zone-rejected: var(--zone-rejected);
+  --color-zone-withdrawn: var(--zone-withdrawn);
+  --color-column-wishlist: var(--column-wishlist);
+  --color-column-wishlist-fg: var(--column-wishlist-fg);
+  --color-column-applied: var(--column-applied);
+  --color-column-applied-fg: var(--column-applied-fg);
+  --color-column-process: var(--column-process);
+  --color-column-process-fg: var(--column-process-fg);
+  --color-column-offer: var(--column-offer);
+  --color-column-offer-fg: var(--column-offer-fg);
+  --color-column-accepted: var(--column-accepted);
+  --color-column-accepted-fg: var(--column-accepted-fg);
+  --color-column-closed: var(--column-closed);
+  --color-column-closed-fg: var(--column-closed-fg);
+  --color-status-wishlist: var(--status-wishlist);
+  --color-status-wishlist-bg: var(--status-wishlist-bg);
   --color-status-sent: var(--status-sent);
   --color-status-sent-bg: var(--status-sent-bg);
   --color-status-screening: var(--status-screening);
@@ -58,8 +83,12 @@
   --color-status-interview-bg: var(--status-interview-bg);
   --color-status-test: var(--status-test);
   --color-status-test-bg: var(--status-test-bg);
+  --color-status-fit: var(--status-fit);
+  --color-status-fit-bg: var(--status-fit-bg);
   --color-status-offer: var(--status-offer);
   --color-status-offer-bg: var(--status-offer-bg);
+  --color-status-accepted: var(--status-accepted);
+  --color-status-accepted-bg: var(--status-accepted-bg);
   --color-status-rejected: var(--status-rejected);
   --color-status-rejected-bg: var(--status-rejected-bg);
   --color-status-withdrawn: var(--status-withdrawn);
@@ -110,6 +139,29 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --canvas: oklch(0.967 0.003 264);
+  --zone-screening: oklch(0.588 0.158 241.966); /* #0284C7 sky */
+  --zone-interview: oklch(0.511 0.262 276.966); /* #4F46E5 indigo */
+  --zone-technical: oklch(0.558 0.288 302.321); /* #9333EA purple */
+  --zone-test: oklch(0.666 0.179 58.318); /* #D97706 amber */
+  --zone-fit: oklch(0.6 0.118 184.704); /* #0D9488 teal */
+  --zone-offer: oklch(0.627 0.194 149.214); /* #16A34A green */
+  --zone-negotiation: oklch(0.685 0.169 237.323); /* #0EA5E9 sky */
+  --zone-rejected: oklch(0.586 0.222 17.585); /* #E11D48 rose */
+  --zone-withdrawn: oklch(0.554 0.041 257.417); /* #64748B slate */
+  --column-wishlist: oklch(0.93 0.015 255);
+  --column-wishlist-fg: oklch(0.55 0.03 255);
+  --column-applied: oklch(0.93 0.045 255);
+  --column-applied-fg: oklch(0.55 0.2 260);
+  --column-process: oklch(0.95 0.05 60);
+  --column-process-fg: oklch(0.62 0.19 45);
+  --column-offer: oklch(0.96 0.045 150);
+  --column-offer-fg: oklch(0.62 0.17 148);
+  --column-accepted: oklch(0.96 0.03 185);
+  --column-accepted-fg: oklch(0.6 0.11 185);
+  --column-closed: oklch(0.94 0.035 25);
+  --column-closed-fg: oklch(0.58 0.2 27);
+  --status-wishlist: oklch(0.5 0.09 300);
+  --status-wishlist-bg: oklch(0.96 0.02 300);
   --status-sent: oklch(0.45 0.13 255);
   --status-sent-bg: oklch(0.95 0.03 255);
   --status-screening: oklch(0.47 0.1 70);
@@ -122,8 +174,12 @@
   --status-interview-bg: oklch(0.95 0.03 295);
   --status-test: oklch(0.45 0.09 200);
   --status-test-bg: oklch(0.95 0.03 200);
+  --status-fit: oklch(0.45 0.16 275);
+  --status-fit-bg: oklch(0.95 0.04 275);
   --status-offer: oklch(0.45 0.12 150);
   --status-offer-bg: oklch(0.95 0.04 150);
+  --status-accepted: oklch(0.45 0.13 155);
+  --status-accepted-bg: oklch(0.95 0.05 155);
   --status-rejected: oklch(0.5 0.17 25);
   --status-rejected-bg: oklch(0.95 0.03 25);
   --status-withdrawn: oklch(0.45 0.01 264);
@@ -164,6 +220,29 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
   --canvas: oklch(0.12 0 0);
+  --zone-screening: oklch(0.746 0.16 232.661);
+  --zone-interview: oklch(0.673 0.182 276.935);
+  --zone-technical: oklch(0.714 0.203 305.504);
+  --zone-test: oklch(0.828 0.189 84.429);
+  --zone-fit: oklch(0.777 0.152 181.912);
+  --zone-offer: oklch(0.792 0.209 151.711);
+  --zone-negotiation: oklch(0.746 0.16 232.661);
+  --zone-rejected: oklch(0.712 0.194 13.428);
+  --zone-withdrawn: oklch(0.711 0.035 256.788);
+  --column-wishlist: oklch(0.32 0.02 255);
+  --column-wishlist-fg: oklch(0.8 0.03 255);
+  --column-applied: oklch(0.3 0.07 260);
+  --column-applied-fg: oklch(0.83 0.11 260);
+  --column-process: oklch(0.33 0.08 50);
+  --column-process-fg: oklch(0.85 0.12 55);
+  --column-offer: oklch(0.3 0.07 150);
+  --column-offer-fg: oklch(0.85 0.12 150);
+  --column-accepted: oklch(0.3 0.06 185);
+  --column-accepted-fg: oklch(0.85 0.09 185);
+  --column-closed: oklch(0.3 0.08 25);
+  --column-closed-fg: oklch(0.83 0.1 25);
+  --status-wishlist: oklch(0.84 0.06 300);
+  --status-wishlist-bg: oklch(0.3 0.04 300);
   --status-sent: oklch(0.82 0.08 255);
   --status-sent-bg: oklch(0.3 0.06 255);
   --status-screening: oklch(0.84 0.09 80);
@@ -176,8 +255,12 @@
   --status-interview-bg: oklch(0.3 0.07 295);
   --status-test: oklch(0.82 0.07 200);
   --status-test-bg: oklch(0.3 0.05 200);
+  --status-fit: oklch(0.84 0.08 275);
+  --status-fit-bg: oklch(0.3 0.06 275);
   --status-offer: oklch(0.82 0.1 150);
   --status-offer-bg: oklch(0.3 0.06 150);
+  --status-accepted: oklch(0.84 0.1 155);
+  --status-accepted-bg: oklch(0.3 0.06 155);
   --status-rejected: oklch(0.8 0.1 25);
   --status-rejected-bg: oklch(0.3 0.08 25);
   --status-withdrawn: oklch(0.8 0.01 264);

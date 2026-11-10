@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ArrowUpDown, Eye } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { nextEvent } from "@/lib/next-event";
+import { waitingDays } from "@/lib/waiting";
 import { STATE_BORDER_CLASSES } from "@/lib/stage-state";
 import { shortStageTitle, stageTitle } from "@/lib/stage-title";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -34,9 +35,21 @@ function nextSort(current: TableSort, field: SortField): TableSort {
  * The event that comes next, marked with a dashed outline: it is the same event the card and the
  * application page show, only brought up to the row. Past and cancelled events do not count.
  */
-function NextEvent({ events }: { events: ApplicationSummary["events"] }) {
-  const event = nextEvent(events);
-  if (!event) return <span className="text-muted-foreground">{EMPTY}</span>;
+function NextEvent({ app }: { app: ApplicationSummary }) {
+  const event = nextEvent(app.events);
+  if (!event) {
+    // Nothing scheduled for a week or more: the silence itself is the signal.
+    const waiting = waitingDays(app);
+    if (waiting === null) return <span className="text-muted-foreground">{EMPTY}</span>;
+    return (
+      <span
+        className="inline-flex items-center rounded-lg bg-amber-500/15 px-2 py-1 text-xs font-medium whitespace-nowrap text-amber-700 tabular-nums dark:text-amber-400"
+        title={`Nothing planned and no answer for ${waiting} days`}
+      >
+        No reply · {waiting} d
+      </span>
+    );
+  }
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -80,7 +93,7 @@ function SortableHead({
   return (
     <TableHead
       aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : "none"}
-      className={className}
+      className={cn("sticky top-0 z-[2] bg-background", className)}
     >
       <button
         type="button"
@@ -165,7 +178,7 @@ export function ApplicationsTable({
       </colgroup>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead className="pinned-cell left-0 pl-6">
+          <TableHead className="pinned-cell sticky top-0 left-0 z-[2] bg-background pl-6">
             <Checkbox
               checked={allChecked}
               onCheckedChange={toggleAll}
@@ -192,10 +205,10 @@ export function ApplicationsTable({
           <SortableHead field="source" sort={sort} onSort={onSort}>
             Source
           </SortableHead>
-          <TableHead>Next event</TableHead>
-          <TableHead>Notes</TableHead>
+          <TableHead className="sticky top-0 z-[2] bg-background">Next event</TableHead>
+          <TableHead className="sticky top-0 z-[2] bg-background">Notes</TableHead>
           {/* Pinned to the right edge: the action stays in view while the table scrolls. */}
-          <TableHead className="pinned-cell right-0 pr-6">
+          <TableHead className="pinned-cell sticky top-0 right-0 z-[2] bg-background pr-6">
             <span className="sr-only">Actions</span>
           </TableHead>
         </TableRow>
@@ -241,7 +254,10 @@ export function ApplicationsTable({
                 onRevertStatus={() => onRevertStatus(app)}
               />
             </TableCell>
-            <TableCell>{formatDate(app.appliedAt) ?? EMPTY}</TableCell>
+            {/* A wish has no date applied yet: show when it was added. */}
+            <TableCell>
+              {formatDate(app.appliedAt ?? toDateTimeLocal(app.createdAt).slice(0, 10)) ?? EMPTY}
+            </TableCell>
             <TableCell className="truncate tabular-nums">
               {formatSalary(app.salaryMin, app.salaryMax, app.currency) ?? EMPTY}
             </TableCell>
@@ -249,7 +265,7 @@ export function ApplicationsTable({
               {app.source ? <span className="text-muted-foreground">{app.source}</span> : EMPTY}
             </TableCell>
             <TableCell>
-              <NextEvent events={app.events} />
+              <NextEvent app={app} />
             </TableCell>
             <TableCell className="relative max-w-0">
               <NoteCell notes={app.notes} />

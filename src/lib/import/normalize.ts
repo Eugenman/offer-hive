@@ -37,6 +37,7 @@ export type RowResult =
   | { ok: false; row: number; reason: string };
 
 const STATUS_SYNONYMS: Record<ApplicationStatus, string[]> = {
+  wishlist: ["хочу откликнуться", "вишлист", "wishlist", "want to apply", "saved"],
   sent: [
     "отправлен",
     "отправлено",
@@ -61,8 +62,10 @@ const STATUS_SYNONYMS: Record<ApplicationStatus, string[]> = {
     "test task",
     "assignment",
   ],
+  fit: ["фит", "знакомство с командой", "fit", "fit interview", "team", "team call", "hr"],
   offer: ["оффер", "предложение", "offer"],
   offer_discussion: ["обсуждение оффера", "переговоры", "negotiation", "negotiations"],
+  accepted: ["принял оффер", "оффер принят", "accepted", "offer accepted"],
   rejected: ["отказ", "отказали", "rejected", "rejection", "declined by company"],
   withdrawn: ["отказался", "отозван", "withdrawn", "withdrew"],
 };

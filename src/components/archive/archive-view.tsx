@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BOARD_COLUMNS, type ApplicationStatus } from "@/lib/domain";
 import { formatDate } from "@/lib/format";
 import { countApplications, plural } from "@/lib/plural";
 import { useRepository, useRepositoryQuery } from "@/lib/repository/provider";
@@ -32,9 +33,27 @@ const DAY_MS = 86_400_000;
 
 const normalize = (value: string) => value.toLocaleLowerCase("ru").replaceAll("ё", "е").trim();
 
+/** The board column a status belongs to: it tells where the card stood when it was archived. */
+function columnTitleOf(status: ApplicationStatus) {
+  return BOARD_COLUMNS.find((column) => column.zones.includes(status))?.title ?? "";
+}
+
+/** Days until the automatic erase, with the tone of an approaching deadline. */
 function daysLeft(erasedAt: string, now: number) {
-  const days = Math.max(1, Math.ceil((Date.parse(erasedAt) - now) / DAY_MS));
-  return `${days} ${plural(days, "day", "days")}`;
+  const days = Math.max(0, Math.ceil((Date.parse(erasedAt) - now) / DAY_MS));
+  const text =
+    days === 0
+      ? "today"
+      : days <= 7
+        ? `${days} ${plural(days, "day", "days")} left`
+        : `${days} ${plural(days, "day", "days")}`;
+  const tone =
+    days <= 3
+      ? "font-medium text-destructive"
+      : days <= 7
+        ? "font-medium text-amber-700 dark:text-amber-400"
+        : "text-muted-foreground";
+  return { text, tone };
 }
 
 /** What "Delete forever" is about to erase: the checked rows, or one row from its own button. */
@@ -236,10 +255,16 @@ export function ArchiveView() {
                 </Link>
               </TableCell>
               <TableCell>
-                <StatusBadge status={app.status} />
+                {/* The exact sub-status, with its board column next to it: "Interview · In process". */}
+                <span className="flex items-center gap-2">
+                  <StatusBadge status={app.status} />
+                  <span className="text-xs text-muted-foreground">{columnTitleOf(app.status)}</span>
+                </span>
               </TableCell>
               <TableCell>{formatDate(app.deletedAt.slice(0, 10))}</TableCell>
-              <TableCell className="text-muted-foreground">{daysLeft(app.erasedAt, data.now)}</TableCell>
+              <TableCell className={daysLeft(app.erasedAt, data.now).tone}>
+                {daysLeft(app.erasedAt, data.now).text}
+              </TableCell>
               <TableCell className="pr-6">
                 <span className="flex items-center justify-end gap-1">
                   <Button

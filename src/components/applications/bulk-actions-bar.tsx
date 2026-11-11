@@ -2,17 +2,12 @@
 
 import { ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { ApplicationStatus } from "@/lib/domain";
 import { countApplications } from "@/lib/plural";
 import type { ExportFormat } from "@/lib/export/applications-csv";
 import { ExportMenu } from "./export-menu";
-import { StatusBadge } from "./status-badge";
+import { StatusMenuGroups } from "./status-menu-groups";
 
 type BulkActionsBarProps = {
   count: number;
@@ -41,12 +36,8 @@ export function BulkActionsBar({ count, statuses, onChangeStatus, onExport, onCl
             <ChevronDown aria-hidden />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="center" className="w-48">
-          {statuses.map((status) => (
-            <DropdownMenuItem key={status} onSelect={() => onChangeStatus(status)}>
-              <StatusBadge status={status} />
-            </DropdownMenuItem>
-          ))}
+        <DropdownMenuContent side="top" align="center" className="w-52">
+          <StatusMenuGroups statuses={statuses} onSelect={onChangeStatus} />
         </DropdownMenuContent>
       </DropdownMenu>
       <ExportMenu onExport={onExport} variant="ghost" size="sm" side="top" />

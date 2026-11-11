@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, Plus } from "lucide-react";
+import { Eye, MoreHorizontal, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { type ApplicationSummary, TERMINAL_STATUSES, stageForStatus } from "@/lib/domain";
@@ -18,6 +18,8 @@ type ApplicationCardProps = {
   className?: string;
   /** Shown on statuses that can carry a dated event: schedules the next one of the same kind. */
   onRepeat?: () => void;
+  /** Phones: opens the status sheet. Replaces the "+" (another event), which stays on the page. */
+  onOpenStatus?: () => void;
   /**
    * Marks the nearest event of its zone with the NEXT chip. The board turns it on for one card per
    * zone, so the chip keeps meaning "the first thing to prepare for".
@@ -26,7 +28,13 @@ type ApplicationCardProps = {
 };
 
 /** Compact card used by the kanban board. Open via the eye button (the board adds double-click / Enter). */
-export function ApplicationCard({ app, className, onRepeat, highlightNext = true }: ApplicationCardProps) {
+export function ApplicationCard({
+  app,
+  className,
+  onRepeat,
+  onOpenStatus,
+  highlightNext = true,
+}: ApplicationCardProps) {
   const salary = formatSalary(app.salaryMin, app.salaryMax, app.currency);
   // The zone header already names the status, so the card only speaks up about a silence.
   const waiting = waitingDays(app);
@@ -96,7 +104,23 @@ export function ApplicationCard({ app, className, onRepeat, highlightNext = true
       >
         <Eye className="size-4" aria-hidden />
       </Link>
-      {onRepeat ? (
+      {onOpenStatus ? (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="absolute right-1.5 bottom-1.5"
+          aria-label={`Change status of ${app.company}`}
+          title="Change status"
+          onPointerDown={(event) => event.stopPropagation()}
+          onDoubleClick={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenStatus();
+          }}
+        >
+          <MoreHorizontal className="size-4" aria-hidden />
+        </Button>
+      ) : onRepeat ? (
         <Button
           variant="ghost"
           size="icon-sm"

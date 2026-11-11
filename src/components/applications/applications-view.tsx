@@ -245,7 +245,9 @@ export function ApplicationsView() {
     content = <ApplicationsTimeline applications={data.items} now={data.now} />;
   } else {
     content = (
-      <div className="flex h-[calc(100vh-9rem)] flex-col">
+      // The page is already exactly one screen tall: the board takes what is left, so the toolbar
+      // above it never scrolls away.
+      <div className="flex h-full min-h-0 flex-col">
         <KanbanBoard
           applications={data.items}
           onChangeStatus={changeStatus}

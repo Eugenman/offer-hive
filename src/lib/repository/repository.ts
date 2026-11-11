@@ -1,4 +1,5 @@
 import { APPLICATION_STATUSES, canChangeStatus, reopenTargets } from "@/lib/domain";
+import { newId } from "@/lib/id";
 import type {
   Application,
   ApplicationDetails,
@@ -64,7 +65,6 @@ const DAY_MS = 86_400_000;
 const DEFAULT_PAGE_SIZE = 25;
 
 const now = () => new Date().toISOString();
-const newId = () => crypto.randomUUID();
 const copy = <T>(value: T): T => structuredClone(value);
 
 function normalize(value: string) {

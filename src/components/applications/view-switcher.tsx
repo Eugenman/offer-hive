@@ -44,15 +44,31 @@ export function ViewSwitcher({ value, onChange }: { value: ViewMode; onChange: (
         <Button
           variant="outline"
           aria-label={`View: ${label}`}
-          onPointerEnter={openNow}
-          onPointerLeave={closeSoon}
+          className="max-[480px]:min-w-0"
+          onPointerEnter={(event) => {
+            if (event.pointerType === "mouse") openNow();
+          }}
+          onPointerLeave={(event) => {
+            if (event.pointerType === "mouse") closeSoon();
+          }}
         >
           <Icon aria-hidden />
-          {label}
+          <span className="max-[480px]:truncate">{label}</span>
           <ChevronDown className="text-muted-foreground" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-44" onPointerEnter={openNow} onPointerLeave={closeSoon}>
+      <DropdownMenuContent
+        align="start"
+        // Keeps the menu off the screen edge when the button sits near it, as on a phone.
+        collisionPadding={8}
+        className="w-44"
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") openNow();
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType === "mouse") closeSoon();
+        }}
+      >
         <DropdownMenuRadioGroup value={value} onValueChange={(next) => onChange(next as ViewMode)}>
           {VIEWS.map((view) => {
             const { label: optionLabel, icon: OptionIcon } = OPTIONS[view];

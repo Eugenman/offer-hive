@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type SearchInputProps = {
   value: string;
   onChange: (value: string) => void;
   label: string;
   placeholder?: string;
+  /** Layout only: the field itself keeps its width and behaviour. */
+  className?: string;
 };
 
 /** Search field with an icon and a clear button. Shared by Applications and Archive. */
@@ -17,6 +20,7 @@ export function SearchInput({
   onChange,
   label,
   placeholder = "Company or position",
+  className,
 }: SearchInputProps) {
   // Local value keeps typing instant while the URL updates with a short debounce.
   const [value, setValue] = useState(search);
@@ -33,7 +37,7 @@ export function SearchInput({
   }
 
   return (
-    <div className="relative w-full max-w-64">
+    <div className={cn("relative w-full max-w-64", className)}>
       <Search
         className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
         aria-hidden

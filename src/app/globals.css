@@ -3,6 +3,9 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+/* Phones. `max-[480px]:` compiles to `width < 480px` and misses a 480px-wide window, which is
+   exactly the largest phone width; this variant is inclusive. */
+@custom-variant phone (@media (max-width: 480px));
 /* The sidebar collapsed to a rail of icons. Scoped to the sidebar itself, so the drawer keeps its labels. */
 @custom-variant sidebar-collapsed (&:where([data-sidebar="collapsed"] [data-rail], [data-sidebar="collapsed"] [data-rail] *));
 

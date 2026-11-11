@@ -49,9 +49,11 @@ export function ApplicationsToolbar({
   exportDisabled,
 }: ApplicationsToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b bg-background px-6 py-4">
+    <div className="flex flex-wrap items-center gap-2 border-b bg-background px-6 py-4 max-[480px]:gap-y-2 max-[480px]:px-4 max-[480px]:py-3">
       {/* Actions first, where the eye starts; then search and how to show the results. */}
-      <div className="flex items-center gap-2">
+      {/* On a phone the toolbar is two rows, not three: `contents` keeps one row on wider screens. */}
+      {/* Row 1 on a max-[480px]: the actions. Row 2: search and the view controls. Both rows never wrap. */}
+      <div className="contents max-[480px]:flex max-[480px]:w-full max-[480px]:flex-nowrap max-[480px]:items-center max-[480px]:justify-between max-[480px]:gap-2">
         <Button onClick={onAdd}>
           <Plus aria-hidden />
           Add application
@@ -64,22 +66,42 @@ export function ApplicationsToolbar({
           onSourcesChange={onSourcesChange}
           onReset={onResetFilters}
         />
+        <ViewSwitcher value={view} onChange={onViewChange} />
+        {onExport ? (
+          // Phones with room (456–480) keep Export in this row, icon-only and pushed to the right
+          // edge; narrower screens put it next to the search, where it fits without a third row.
+          <span className="hidden [@media(min-width:456px)_and_(max-width:480px)]:flex">
+            <ExportMenu label="Export" disabled={exportDisabled} onExport={onExport} iconOnly />
+          </span>
+        ) : null}
       </div>
-      <SearchInput value={search} onChange={onSearchChange} label="Search applications" />
-      <ViewSwitcher value={view} onChange={onViewChange} />
-      {onExport ? <ExportMenu label="Export" disabled={exportDisabled} onExport={onExport} /> : null}
-      {archive ? (
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={archive.onArchive}
-          disabled={archive.count === 0}
-          aria-label={archive.label}
-          title={archive.label}
-        >
-          <Archive aria-hidden />
-        </Button>
-      ) : null}
+      <div className="contents max-[480px]:flex max-[480px]:w-full max-[480px]:flex-nowrap max-[480px]:items-center max-[480px]:gap-2">
+        <SearchInput
+          value={search}
+          onChange={onSearchChange}
+          label="Search applications"
+          className="max-[480px]:max-w-none max-[480px]:min-w-0 max-[480px]:flex-1"
+        />
+        {onExport ? (
+          <span className="[@media(min-width:456px)_and_(max-width:480px)]:hidden">
+            <ExportMenu label="Export" disabled={exportDisabled} onExport={onExport} />
+          </span>
+        ) : null}
+        {archive ? (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={archive.onArchive}
+            disabled={archive.count === 0}
+            aria-label={archive.label}
+            title={archive.label}
+            // The same air as between the buttons of the row above.
+            className="max-[480px]:ml-2"
+          >
+            <Archive aria-hidden />
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

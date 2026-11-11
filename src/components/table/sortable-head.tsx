@@ -55,10 +55,15 @@ export function StickyHead({ children, className }: { children: ReactNode; class
   return <TableHead className={cn("sticky top-0 z-[2] bg-background", className)}>{children}</TableHead>;
 }
 
-/** The area a page table scrolls in: the header and everything around it stay put. */
+/**
+ * The area a page table scrolls in: the header and everything around it stay put.
+ *
+ * The height comes from the page: a flex column bounded by the viewport, with this element as the
+ * `flex-1 min-h-0` child. No viewport math here — that was what let the rows overflow the card.
+ */
 export function TableScroll({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("flex h-[calc(100vh-9rem)] flex-col", className)}>
+    <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
       {/* The table component brings its own overflow wrapper; inside this scroller it would be a
           second one, and the sticky header would bind to it instead. */}
       <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">

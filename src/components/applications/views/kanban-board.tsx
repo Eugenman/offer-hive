@@ -291,10 +291,15 @@ function Column({
   return (
     <section
       aria-label={`${title}: ${total}`}
+      // The same colour for every column, written inline as well: a cached stylesheet must not be
+      // able to make the pinned column look different from its neighbours.
+      style={{ background: "var(--muted)" }}
       className={cn(
-        "flex w-64 shrink-0 flex-col gap-2 rounded-xl bg-muted/60 p-2",
-        // Pinned: an opaque background, or the columns scrolling under it would show through.
-        pinned && "sticky left-0 z-20 bg-muted shadow-[0_0_0_1px_var(--border)]",
+        // Opaque and identical for every column: the pinned one only sticks, and no column looks
+        // like a different shade. A translucent fill would blend with whatever sits behind it.
+        "flex w-64 shrink-0 flex-col gap-2 rounded-xl bg-muted p-2",
+        // The pinned column keeps a hairline edge: it is what tells the eye the board scrolls under it.
+        pinned && "sticky left-0 z-20 ring-1 ring-border",
       )}
     >
       {/* Pinned to the top of the board: the column keeps its name and count in view. */}

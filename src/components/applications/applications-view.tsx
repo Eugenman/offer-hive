@@ -220,8 +220,8 @@ export function ApplicationsView() {
     const sort: TableSort = url.query.sort ?? null;
     // Only the rows scroll: the toolbar above and the pager below stay put.
     content = (
-      <div className="flex h-[calc(100vh-9rem)] flex-col">
-        <TableScroll className="h-auto flex-1">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <TableScroll>
           <ApplicationsTable
             applications={data.page.items}
             sort={sort}
@@ -266,7 +266,12 @@ export function ApplicationsView() {
       : [];
 
   return (
-    <div ref={containerRef} onClickCapture={rememberOpenedApplication} className="relative">
+    <div
+      ref={containerRef}
+      onClickCapture={rememberOpenedApplication}
+      // Full height of the page slot: the toolbar and the pager stay, only the rows scroll.
+      className="relative flex h-full min-h-0 flex-col"
+    >
       {totalAll === 0 ? null : (
         <ApplicationsToolbar
           view={view}

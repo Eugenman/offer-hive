@@ -22,12 +22,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SortableHead, StickyHead, TableScroll, type TableSort } from "@/components/table/sortable-head";
 import { BOARD_COLUMNS, STATUS_LABELS, type ApplicationStatus } from "@/lib/domain";
 import { formatDate } from "@/lib/format";
+import { paginate } from "@/lib/pagination";
 import { countApplications, plural } from "@/lib/plural";
 import { useRepository, useRepositoryQuery } from "@/lib/repository/provider";
 import type { DeletedApplication } from "@/lib/repository/types";
 import { trackHorizontalScroll } from "@/lib/table-scroll";
 import { CompanyAvatar } from "../applications/company-avatar";
 import { SearchInput } from "../applications/search-input";
+import { TableFooter } from "../applications/table-footer";
+import type { PageSize } from "../applications/use-applications-url-state";
 import { StatusBadge } from "../applications/status-badge";
 
 const DAY_MS = 86_400_000;
@@ -84,6 +87,9 @@ export function ArchiveView() {
   const [pendingErase, setPendingErase] = useState<PendingErase>(null);
   // Same idea as the main table: a sorted header sorts the list, the newest archive first by default.
   const [sort, setSort] = useState<TableSort<ArchiveSortField>>({ field: "archived", direction: "desc" });
+  // Same pager as Applications: the archive can run to hundreds of rows.
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState<PageSize>(25);
   const { data, error } = useRepositoryQuery("archive", async (repo) => ({
     items: await repo.listDeleted(),
     now: Date.now(),
@@ -111,17 +117,24 @@ export function ArchiveView() {
     const right = sortValue(b, sort.field);
     return (sort.direction === "asc" ? 1 : -1) * left.localeCompare(right);
   });
+  const paged = paginate(sorted, page, size);
+  const visible = paged.items;
+
   // Rows restored or erased elsewhere drop out of the selection.
   const selectedIds = items.filter((app) => selected.has(app.id)).map((app) => app.id);
+  const visibleIds = visible.map((app) => app.id);
+  const checkedOnPage = visibleIds.filter((id) => selected.has(id)).length;
   const allChecked =
-    selectedIds.length === 0
-      ? false
-      : selectedIds.length === items.length
-        ? true
-        : ("indeterminate" as const);
+    checkedOnPage === 0 ? false : checkedOnPage === visibleIds.length ? true : ("indeterminate" as const);
 
   function toggleAll() {
-    setSelected(allChecked === true ? new Set() : new Set(items.map((app) => app.id)));
+    setSelected((current) => {
+      const next = new Set(current);
+      // Select all acts on the rows you can see, as it does on Applications.
+      if (allChecked === true) visibleIds.forEach((id) => next.delete(id));
+      else visibleIds.forEach((id) => next.add(id));
+      return next;
+    });
   }
 
   function toggleOne(id: string) {
@@ -190,14 +203,16 @@ export function ArchiveView() {
   const selectionLabel = selectedIds.length ? `: ${selectedIds.length}` : "";
 
   return (
-    <div className="flex h-[calc(100vh-9rem)] flex-col">
+    // Full height of the page slot: the toolbar stays, only the rows scroll.
+    <div className="flex h-full min-h-0 flex-col">
       {/* Same toolbar rhythm as Applications: padding above and below, a border under it. */}
-      <div className="flex flex-wrap items-center gap-2 border-b bg-background px-6 py-4">
+      <div className="flex flex-none flex-wrap items-center gap-2 border-b bg-background px-6 py-4">
         <SearchInput
           value={search}
-          onChange={(next) =>
-            void setSearch(next || null, { limitUrlUpdates: next ? debounce(300) : undefined })
-          }
+          onChange={(next) => {
+            setPage(1);
+            void setSearch(next || null, { limitUrlUpdates: next ? debounce(300) : undefined });
+          }}
           label="Search the archive"
         />
         <Button
@@ -223,7 +238,7 @@ export function ArchiveView() {
         </Button>
       </div>
       {/* Same shell as Applications: the rows scroll, the header and the toolbar stay put. */}
-      <TableScroll className="h-auto flex-1">
+      <TableScroll>
         {/* The last column has no width: it takes the leftover space, so the table fills the card
             while every other column keeps the exact width from the colgroup. With a fixed last
             column the extra would be spread over all of them. */}
@@ -255,13 +270,34 @@ export function ArchiveView() {
               >
                 Company and position
               </SortableHead>
-              <SortableHead field="status" sort={sort} onSort={setSort}>
+              <SortableHead
+                field="status"
+                sort={sort}
+                onSort={(next) => {
+                  setSort(next);
+                  setPage(1);
+                }}
+              >
                 Status
               </SortableHead>
-              <SortableHead field="archived" sort={sort} onSort={setSort}>
+              <SortableHead
+                field="archived"
+                sort={sort}
+                onSort={(next) => {
+                  setSort(next);
+                  setPage(1);
+                }}
+              >
                 Archived
               </SortableHead>
-              <SortableHead field="erased" sort={sort} onSort={setSort}>
+              <SortableHead
+                field="erased"
+                sort={sort}
+                onSort={(next) => {
+                  setSort(next);
+                  setPage(1);
+                }}
+              >
                 Erased in
               </SortableHead>
               <StickyHead className="pinned-cell right-0 pr-6">
@@ -270,7 +306,7 @@ export function ArchiveView() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sorted.map((app: DeletedApplication) => (
+            {visible.map((app: DeletedApplication) => (
               <TableRow
                 key={app.id}
                 data-state={selected.has(app.id) ? "selected" : undefined}
@@ -360,6 +396,17 @@ export function ArchiveView() {
           </TableBody>
         </Table>
       </TableScroll>
+
+      <TableFooter
+        page={paged.page}
+        pageSize={size}
+        total={sorted.length}
+        onPageChange={setPage}
+        onPageSizeChange={(value) => {
+          setSize(value);
+          setPage(1);
+        }}
+      />
 
       <AlertDialog open={pendingErase !== null} onOpenChange={(open) => !open && setPendingErase(null)}>
         <AlertDialogContent>

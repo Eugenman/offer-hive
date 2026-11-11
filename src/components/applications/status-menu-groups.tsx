@@ -51,7 +51,12 @@ export function StatusMenuGroups({ statuses, onSelect, current = null }: StatusM
             if (status !== current) onSelect(status);
           }}
         >
-          <StatusBadge status={status} {...(current === null ? {} : { checked: status === current })} />
+          {/* Taller than a label: a status here is a button, and a miss picks the wrong stage. */}
+          <StatusBadge
+            status={status}
+            className="h-9"
+            {...(current === null ? {} : { checked: status === current })}
+          />
         </DropdownMenuItem>
       ))}
     </DropdownMenuGroup>

@@ -44,7 +44,7 @@ export function ViewSwitcher({ value, onChange }: { value: ViewMode; onChange: (
         <Button
           variant="outline"
           aria-label={`View: ${label}`}
-          className="max-[480px]:min-w-0"
+          className="max-[480px]:w-full max-[480px]:min-w-0 max-[480px]:justify-center max-[480px]:px-2"
           onPointerEnter={(event) => {
             if (event.pointerType === "mouse") openNow();
           }}
@@ -54,7 +54,8 @@ export function ViewSwitcher({ value, onChange }: { value: ViewMode; onChange: (
         >
           <Icon aria-hidden />
           <span className="max-[480px]:truncate">{label}</span>
-          <ChevronDown className="text-muted-foreground" aria-hidden />
+          {/* On a phone the caret costs the room the label needs. */}
+          <ChevronDown className="text-muted-foreground max-[480px]:hidden" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

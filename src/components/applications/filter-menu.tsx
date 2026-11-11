@@ -41,7 +41,11 @@ export function FilterMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" aria-label={active ? `Filter, ${active} selected` : "Filter"}>
+        <Button
+          variant="outline"
+          aria-label={active ? `Filter, ${active} selected` : "Filter"}
+          className="max-[480px]:w-full max-[480px]:justify-center"
+        >
           <ListFilter aria-hidden />
           Filter
           {active ? (

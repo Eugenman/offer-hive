@@ -109,7 +109,7 @@ export interface ApplicationsRepository {
 }
 
 /** What went wrong, so the UI can pick a message: a record is gone, or a move breaks the status rules. */
-export type RepositoryErrorKind = "not_found" | "status_transition";
+export type RepositoryErrorKind = "not_found" | "status_transition" | "invalid_stage";
 
 export type RepositoryError = Error & { kind: RepositoryErrorKind };
 
@@ -122,6 +122,10 @@ export const notFound = (what: string, id: string) =>
 
 export const statusTransitionError = (from: string, to: string) =>
   repositoryError("status_transition", `Status change not allowed: ${from} → ${to}`);
+
+/** A finished stage dated in the future: the day has not come yet. */
+export const stageStateError = (state: string, scheduledAt: string) =>
+  repositoryError("invalid_stage", `A stage cannot be ${state} before ${scheduledAt.slice(0, 10)}`);
 
 export function isRepositoryError(error: unknown, kind: RepositoryErrorKind): error is RepositoryError {
   return error instanceof Error && (error as Partial<RepositoryError>).kind === kind;

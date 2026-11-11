@@ -101,7 +101,8 @@ export function StatusSheet({
                       onClick={() => onPick(status)}
                       className="flex w-full items-center rounded-lg px-1 py-1 text-left transition-colors hover:bg-muted disabled:opacity-45"
                     >
-                      <StatusBadge status={status} className="w-full justify-center" />
+                      {/* Taller than a label: this is the main tap target of the sheet. */}
+                      <StatusBadge status={status} className="h-9 w-full justify-center" />
                     </button>
                   </li>
                 ))}

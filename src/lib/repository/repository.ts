@@ -19,6 +19,7 @@ import {
   statusChangeInputSchema,
 } from "@/lib/schemas";
 import { type ApplicationsPage, type ApplicationsRepository, notFound, statusTransitionError } from "./types";
+import { repairedStageState } from "../stage-rules";
 
 export type StoredApplication = Application & { deletedAt: string | null };
 /** `seq` keeps the log order for entries with equal timestamps (e.g. one bulk change). */
@@ -609,6 +610,12 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
               stage.type === data.type &&
               stage.interviewKind === interviewKind,
           ).length + 1;
+      // A finished state dated in the future is really a plan; the form blocks it, this covers
+      // imports and direct calls.
+      const state =
+        repairedStageState({ state: data.state ?? "planned", scheduledAt: data.scheduledAt ?? null }) ??
+        data.state ??
+        "planned";
       const timestamp = now();
       const stage: Stage = {
         id: newId(),
@@ -618,7 +625,7 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
         title: data.title ?? null,
         seq,
         scheduledAt: data.scheduledAt ?? null,
-        state: data.state ?? "planned",
+        state,
         createdAt: timestamp,
         updatedAt: timestamp,
       };
@@ -638,6 +645,10 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
         interviewKind: stage.type === "interview" ? (data.interviewKind ?? stage.interviewKind) : null,
         updatedAt: now(),
       };
+      // Moving the date into the future drops a claim about the outcome: done or failed becomes
+      // planned again, silently, because the date is what the user just changed.
+      const repaired = repairedStageState(next);
+      if (repaired) next.state = repaired;
       stages.set(next);
       await commit();
       return copy(next);

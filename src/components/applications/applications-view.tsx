@@ -92,6 +92,9 @@ export function ApplicationsView() {
 
   // Selection belongs to the current table view: changing view, search, filter, sort or page clears it.
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // The table can fold its first column to the avatar; the mode lives in the URL, so a reload
+  // keeps it and the very first render already knows it — nothing folds after the paint.
+  const namesFolded = url.state.names === "folded";
   const [selectionKey, setSelectionKey] = useState(queryKey);
   if (selectionKey !== queryKey) {
     setSelectionKey(queryKey);
@@ -228,6 +231,7 @@ export function ApplicationsView() {
             onSort={(next) => url.setSort(next?.field ?? null, next?.direction ?? "asc")}
             selected={selected}
             onSelectionChange={setSelected}
+            namesFolded={namesFolded}
             onChangeStatus={changeStatus}
             onRevertStatus={revertStatus}
           />
@@ -238,11 +242,18 @@ export function ApplicationsView() {
           total={data.page.total}
           onPageChange={url.setPage}
           onPageSizeChange={url.setPageSize}
+          namesFolded={namesFolded}
+          onToggleNames={() => url.setNames(namesFolded ? "full" : "folded")}
         />
       </div>
     );
   } else if (data.kind === "details") {
-    content = <ApplicationsTimeline applications={data.items} now={data.now} />;
+    // The timeline scrolls inside itself, so its date axis can stick to the top.
+    content = (
+      <div className="flex h-full min-h-0 flex-col">
+        <ApplicationsTimeline applications={data.items} now={data.now} />
+      </div>
+    );
   } else {
     content = (
       // The page is already exactly one screen tall: the board takes what is left, so the toolbar

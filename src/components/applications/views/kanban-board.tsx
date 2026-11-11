@@ -439,6 +439,10 @@ export function KanbanBoard({
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
   );
   const isPhone = useIsPhone();
+  // The board keeps native scrolling on purpose: `snap-x mandatory` gives the paging between
+  // columns for free, with the compositor's momentum. The axis lock is for single scrollers that
+  // move both ways (the table, the timeline) — here the two axes live in different containers,
+  // and taking them over by hand made the swipe feel rubbery and losing its snap.
   const [activeId, setActiveId] = useState<string | null>(null);
   // Phones change the status from a sheet, not by dragging: a drag of a card is invisible to a finger.
   const [statusSheet, setStatusSheet] = useState<ApplicationSummary | null>(null);

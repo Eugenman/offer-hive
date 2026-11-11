@@ -6,6 +6,7 @@ import { formatDate } from "@/lib/format";
 import { countApplications } from "@/lib/plural";
 import { useRepositoryQuery } from "@/lib/repository/provider";
 import { computeStatistics, stepConversion, weekStart, type Statistics } from "@/lib/stats";
+import { SourceDrawer } from "./source-drawer";
 import { COLUMN_BG } from "@/lib/column-colors";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -265,13 +266,18 @@ function Weeks({ stats }: { stats: Statistics }) {
               return (
                 <li
                   key={week.weekStart}
-                  className="flex h-full min-w-0 flex-1 flex-col"
+                  className={cn(
+                    "flex h-full min-w-0 flex-1 flex-col",
+                    // The running week is dimmed as a whole: its own layers keep their real colors.
+                    current && "opacity-55",
+                  )}
                   aria-label={`Week of ${label}: ${countApplications(week.count)}`}
                 >
                   <div className="relative flex w-full flex-1 flex-col items-center justify-end">
                     <span
                       aria-hidden
-                      className="absolute inset-x-0 text-center text-xs leading-none tabular-nums"
+                      // A fixed dark tone: the number must read over any layer below it.
+                      className="absolute inset-x-0 text-center text-xs leading-none font-medium text-foreground tabular-nums"
                       // Six pixels clear of the rounded top: the number never sits on the fill.
                       style={{ bottom: `calc(${(week.count / max) * 100}% + 6px)` }}
                     >
@@ -284,24 +290,25 @@ function Weeks({ stats }: { stats: Statistics }) {
                           aria-hidden
                           className={cn(
                             "relative w-full max-w-10 shrink-0 overflow-hidden rounded-t-md",
-                            COLUMN_BG.applied,
-                            // The current week is still running: it reads as provisional.
-                            current && "opacity-60",
+                            // Base: a quiet grey — applications alone are not an achievement.
+                            "bg-column-wishlist",
                           )}
                           style={{
                             height: `${(week.count / max) * 100}%`,
                             minHeight: week.count ? 4 : 1,
                           }}
                         >
+                          {/* Filled: the part of that week's applications that got a conversation. */}
                           <span
-                            className="absolute inset-x-0 bottom-0 bg-zone-test"
+                            className="absolute inset-x-0 bottom-0 bg-zone-interview"
                             style={{
                               height: week.count ? `${(week.interviews / week.count) * 100}%` : 0,
                             }}
                           />
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent sideOffset={8} className="flex-col gap-1 px-3 py-2 text-xs">
+                      {/* Clears the number above the bar: 6 px gap plus the 12 px line. */}
+                      <TooltipContent sideOffset={22} className="flex-col gap-1 px-3 py-2 text-xs">
                         <p className="font-medium">
                           Week: {label} – {formatDate(addDays(week.weekStart, 6))?.replace(/,? \d{4}$/, "")}
                           {current ? " · this week" : ""}
@@ -344,10 +351,13 @@ function Weeks({ stats }: { stats: Statistics }) {
   );
 }
 
-function Sources({ stats }: { stats: Statistics }) {
+function Sources({ stats, onOpenSource }: { stats: Statistics; onOpenSource: (source: string) => void }) {
   // Sorted by volume by default; a header click sorts by that column instead.
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "total", desc: true });
   const rows = [...stats.sources].sort((a, b) => {
+    if (sort.key === "source") {
+      return (sort.desc ? -1 : 1) * a.source.localeCompare(b.source, "en");
+    }
     const left = sort.key === "success" ? rateOf(a) : a[sort.key];
     const right = sort.key === "success" ? rateOf(b) : b[sort.key];
     // A tie on the chosen column falls to the success rate, then to the name: the most useful
@@ -381,19 +391,32 @@ function Sources({ stats }: { stats: Statistics }) {
     <div className="overflow-x-auto">
       {/* The table fills the card, but the numeric columns keep fixed shares: the numbers stay
           in a tight block on the right, right under their labels. */}
-      <table className="w-full min-w-[560px] table-fixed text-sm">
-        <colgroup>
-          <col className="w-[34%]" />
-          <col className="w-[11%]" />
-          <col className="w-[11%]" />
-          <col className="w-[11%]" />
-          <col className="w-[13%]" />
-          <col className="w-[9%]" />
-          <col className="w-[11%]" />
-        </colgroup>
+      <table className="w-full min-w-[560px] text-sm">
         <thead className="text-left text-xs text-muted-foreground">
           <tr className="border-b">
-            <th className="py-2 pr-3 text-left font-medium">Source</th>
+            <th className="py-2 pr-3 text-left font-medium whitespace-nowrap">
+              <button
+                type="button"
+                onClick={() =>
+                  setSort((current) => ({
+                    key: "source",
+                    desc: current.key === "source" ? !current.desc : false,
+                  }))
+                }
+                className={cn(
+                  "inline-flex items-center gap-1 rounded py-0.5 transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                  sort.key === "source" && "text-foreground",
+                )}
+                aria-label="Sort by source"
+              >
+                Source
+                {sort.key === "source" ? (
+                  <span aria-hidden className="text-[10px]">
+                    {sort.desc ? "▼" : "▲"}
+                  </span>
+                ) : null}
+              </button>
+            </th>
             {header("total", "Applications")}
             {header("screenings", "Screening")}
             {header("interviews", "Interview")}
@@ -404,7 +427,20 @@ function Sources({ stats }: { stats: Statistics }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.source} className="border-b last:border-0">
+            <tr
+              key={row.source}
+              className="cursor-pointer border-b transition-colors last:border-0 hover:bg-muted/40"
+              onClick={() => onOpenSource(row.source)}
+              // A row is a button: the keyboard opens the same panel.
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onOpenSource(row.source);
+                }
+              }}
+            >
               <td className="py-2 pr-3">{row.source}</td>
               <td className="py-2 pr-3 text-right tabular-nums">{row.total}</td>
               <td className="py-2 pr-3 text-right tabular-nums">{row.screenings}</td>
@@ -428,7 +464,7 @@ function Sources({ stats }: { stats: Statistics }) {
   );
 }
 
-type SortKey = "total" | "screenings" | "interviews" | "technical" | "offers" | "success";
+type SortKey = "source" | "total" | "screenings" | "interviews" | "technical" | "offers" | "success";
 
 /**
  * What a source really brought. Zero offers is not a dead channel: say how far it did get.
@@ -449,6 +485,10 @@ export function StatisticsView() {
   const { data: stats, error } = useRepositoryQuery("statistics", async (repository) =>
     computeStatistics(await repository.listForStatistics(), new Date().toLocaleDateString("sv-SE")),
   );
+  // Which source is open, and the moment it was opened: the clock is read in the handler, never
+  // during render, so prerendering sees nothing time-dependent.
+  const [drawer, setDrawer] = useState<{ source: string; now: number } | null>(null);
+  const openSource = (value: string) => setDrawer({ source: value, now: Date.now() });
 
   if (error) {
     return (
@@ -519,8 +559,14 @@ export function StatisticsView() {
         </Section>
       </div>
       <Section title="Sources">
-        <Sources stats={stats} />
+        <Sources stats={stats} onOpenSource={openSource} />
       </Section>
+      <SourceDrawer
+        source={drawer?.source ?? null}
+        entries={stats.entries}
+        now={drawer?.now ?? 0}
+        onClose={() => setDrawer(null)}
+      />
     </div>
   );
 }

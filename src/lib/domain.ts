@@ -285,6 +285,11 @@ export type StatisticsEntry = {
   statusChangedAt?: IsoDateTime;
   /** Why the application was refused or withdrawn, if the reason was written down. */
   reasons?: { status: ApplicationStatus; reason: string }[];
+  /** Salary and events, so a source can list its applications without a second request. */
+  salaryMin?: number | null;
+  salaryMax?: number | null;
+  currency?: string | null;
+  events?: { scheduledAt: string | null; state: StageState }[];
   state: "active" | "archived" | "deleted";
 };
 

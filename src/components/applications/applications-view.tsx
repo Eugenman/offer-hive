@@ -246,14 +246,16 @@ export function ApplicationsView() {
     content = <ApplicationsTimeline applications={data.items} now={data.now} />;
   } else {
     content = (
-      <KanbanBoard
-        applications={data.items}
-        onChangeStatus={changeStatus}
-        onRevertStatus={revertStatus}
-        onDelete={deleteOne}
-        onArchiveColumn={(ids) => requestArchive(ids)}
-        onRepeat={(app) => void scheduleRepeat(app)}
-      />
+      <div className="flex h-[calc(100vh-9rem)] flex-col">
+        <KanbanBoard
+          applications={data.items}
+          onChangeStatus={changeStatus}
+          onRevertStatus={revertStatus}
+          onDelete={deleteOne}
+          onArchiveColumn={(ids) => requestArchive(ids)}
+          onRepeat={(app) => void scheduleRepeat(app)}
+        />
+      </div>
     );
   }
 

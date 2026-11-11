@@ -266,6 +266,10 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
     );
   }
 
+  function stagesOf(applicationId: string) {
+    return stages.values().filter((stage) => stage.applicationId === applicationId);
+  }
+
   /** The application's log in insertion order. */
   function changesOf(applicationId: string) {
     return statusChanges.values().filter((change) => change.applicationId === applicationId);
@@ -310,6 +314,10 @@ export function createApplicationsRepository({ storage, seed }: Options = {}): A
       status: app.status,
       reached: [...reached],
       statusChangedAt: app.statusChangedAt,
+      salaryMin: app.salaryMin,
+      salaryMax: app.salaryMax,
+      currency: app.currency,
+      events: stagesOf(app.id).map((stage) => ({ scheduledAt: stage.scheduledAt, state: stage.state })),
       reasons: changesOf(app.id)
         .filter(
           (change) => change.reason && (change.toStatus === "rejected" || change.toStatus === "withdrawn"),

@@ -255,6 +255,7 @@ function Column({
   zoneState,
   onArchive,
   dragging,
+  pinned = false,
 }: {
   columnKey: string;
   title: string;
@@ -264,6 +265,8 @@ function Column({
   zoneState: (status: ApplicationStatus) => ZoneState;
   onArchive: (ids: string[]) => void;
   dragging: boolean;
+  /** The first column stays in view while the rest of the board scrolls sideways. */
+  pinned?: boolean;
 }) {
   const prefs = useZonePrefs();
   const inColumn = applications.filter((app) => zones.includes(app.status));
@@ -288,7 +291,11 @@ function Column({
   return (
     <section
       aria-label={`${title}: ${total}`}
-      className="flex w-64 shrink-0 flex-col gap-2 rounded-xl bg-muted/60 p-2"
+      className={cn(
+        "flex w-64 shrink-0 flex-col gap-2 rounded-xl bg-muted/60 p-2",
+        // Pinned: an opaque background, or the columns scrolling under it would show through.
+        pinned && "sticky left-0 z-20 bg-muted shadow-[0_0_0_1px_var(--border)]",
+      )}
     >
       {/* Pinned to the top of the board: the column keeps its name and count in view. */}
       {/* Flush with the top of the column and rounded on every side, so the column keeps its shape
@@ -478,12 +485,14 @@ export function KanbanBoard({
       </span>
       {/* The board scrolls itself, so the columns can pin their headers. The inner row is at least
           the height of the board and grows with the tallest column, keeping every column equal. */}
-      <div ref={boardRef} tabIndex={-1} className="h-[calc(100vh-11rem)] overflow-auto outline-none">
+      {/* The board fills the space the page gives it: no magic height, the page itself never scrolls. */}
+      <div ref={boardRef} tabIndex={-1} className="min-h-0 flex-1 overflow-auto outline-none">
         <div className="flex min-h-full items-stretch gap-3 px-6 pt-1 pb-6">
           {COLUMNS.map((column) => (
             <Column
               key={column.title}
               columnKey={column.key}
+              pinned={column.key === COLUMNS[0]?.key}
               title={column.title}
               zones={column.zones}
               applications={applications}

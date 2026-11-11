@@ -102,6 +102,8 @@ export type Statistics = {
   weeks: WeekBucket[];
   /** Applications with a date applied outside the shown weeks. The chart does not hide them. */
   olderThanWindow: number;
+  /** Every application the numbers were computed from: the source drawer lists them. */
+  entries: StatisticsEntry[];
 };
 
 const share = (part: number, total: number) => (total === 0 ? 0 : part / total);
@@ -259,5 +261,6 @@ export function computeStatistics(applications: StatisticsEntry[], today: string
     conversions,
     weeks,
     olderThanWindow,
+    entries: applications,
   };
 }

@@ -4,7 +4,7 @@ import { useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { debounce, parseAsString, useQueryState } from "nuqs";
-import { Archive, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, Eye, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -19,7 +19,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BOARD_COLUMNS, type ApplicationStatus } from "@/lib/domain";
+import { SortableHead, StickyHead, TableScroll, type TableSort } from "@/components/table/sortable-head";
+import { BOARD_COLUMNS, STATUS_LABELS, type ApplicationStatus } from "@/lib/domain";
 import { formatDate } from "@/lib/format";
 import { countApplications, plural } from "@/lib/plural";
 import { useRepository, useRepositoryQuery } from "@/lib/repository/provider";
@@ -56,6 +57,22 @@ function daysLeft(erasedAt: string, now: number) {
   return { text, tone };
 }
 
+type ArchiveSortField = "company" | "status" | "archived" | "erased";
+
+/** Same field for every row, so the list is ordered the way the header says. */
+const sortValue = (app: DeletedApplication, field: ArchiveSortField) => {
+  switch (field) {
+    case "company":
+      return app.company.toLocaleLowerCase("ru");
+    case "status":
+      return app.status;
+    case "archived":
+      return app.deletedAt;
+    case "erased":
+      return app.erasedAt;
+  }
+};
+
 /** What "Delete forever" is about to erase: the checked rows, or one row from its own button. */
 type PendingErase = { ids: string[]; label: string } | null;
 
@@ -65,6 +82,8 @@ export function ArchiveView() {
   const repository = useRepository();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pendingErase, setPendingErase] = useState<PendingErase>(null);
+  // Same idea as the main table: a sorted header sorts the list, the newest archive first by default.
+  const [sort, setSort] = useState<TableSort<ArchiveSortField>>({ field: "archived", direction: "desc" });
   const { data, error } = useRepositoryQuery("archive", async (repo) => ({
     items: await repo.listDeleted(),
     now: Date.now(),
@@ -85,6 +104,13 @@ export function ArchiveView() {
   const items = (data?.items ?? []).filter(
     (app) => !needle || normalize(app.company).includes(needle) || normalize(app.position).includes(needle),
   );
+
+  const sorted = [...items].sort((a, b) => {
+    if (!sort) return 0;
+    const left = sortValue(a, sort.field);
+    const right = sortValue(b, sort.field);
+    return (sort.direction === "asc" ? 1 : -1) * left.localeCompare(right);
+  });
   // Rows restored or erased elsewhere drop out of the selection.
   const selectedIds = items.filter((app) => selected.has(app.id)).map((app) => app.id);
   const allChecked =
@@ -164,8 +190,9 @@ export function ArchiveView() {
   const selectionLabel = selectedIds.length ? `: ${selectedIds.length}` : "";
 
   return (
-    <div className="py-4">
-      <div className="flex flex-wrap items-center gap-2 px-6 pb-4">
+    <div className="flex h-[calc(100vh-9rem)] flex-col">
+      {/* Same toolbar rhythm as Applications: padding above and below, a border under it. */}
+      <div className="flex flex-wrap items-center gap-2 border-b bg-background px-6 py-4">
         <SearchInput
           value={search}
           onChange={(next) =>
@@ -195,110 +222,144 @@ export function ArchiveView() {
           <Trash2 aria-hidden />
         </Button>
       </div>
-      <Table ref={trackHorizontalScroll} className="min-w-[896px] table-fixed">
-        <colgroup>
-          <col className="w-14" />
-          <col className="w-52 desktop:w-80" />
-          <col className="w-36" />
-          <col className="w-40" />
-          <col className="w-32" />
-          <col className="w-44" />
-        </colgroup>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="pinned-cell left-0 pl-6">
-              <Checkbox
-                checked={allChecked}
-                onCheckedChange={toggleAll}
-                aria-label="Select all archived applications"
-              />
-            </TableHead>
-            <TableHead className="pinned-cell-edge pinned-cell left-14">Company and position</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Archived</TableHead>
-            <TableHead>Erased in</TableHead>
-            <TableHead className="pr-6">
-              <span className="sr-only">Actions</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((app: DeletedApplication) => (
-            <TableRow
-              key={app.id}
-              data-state={selected.has(app.id) ? "selected" : undefined}
-              // Double click opens the application, as in the main table; not on its controls.
-              onDoubleClick={(event) => {
-                if ((event.target as Element).closest("a, button, [role=checkbox]")) return;
-                window.getSelection()?.removeAllRanges();
-                router.push(`/archive/${app.id}`);
-              }}
-              className="cursor-default"
-            >
-              <TableCell className="pinned-cell left-0 pl-6">
-                <Checkbox
-                  checked={selected.has(app.id)}
-                  onCheckedChange={() => toggleOne(app.id)}
-                  aria-label={`Select ${app.company}`}
-                />
-              </TableCell>
-              <TableCell className="pinned-cell-edge pinned-cell left-14">
-                <Link
-                  href={`/archive/${app.id}`}
-                  className="group flex min-w-0 items-center gap-3 rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-                >
-                  <CompanyAvatar name={app.company} />
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium group-hover:underline">{app.company}</span>
-                    <span className="block truncate text-muted-foreground">{app.position}</span>
-                  </span>
-                </Link>
-              </TableCell>
-              <TableCell>
-                {/* The exact sub-status, with its board column next to it: "Interview · In process". */}
-                <span className="flex items-center gap-2">
-                  <StatusBadge status={app.status} />
-                  <span className="text-xs text-muted-foreground">{columnTitleOf(app.status)}</span>
-                </span>
-              </TableCell>
-              <TableCell>{formatDate(app.deletedAt.slice(0, 10))}</TableCell>
-              <TableCell className={daysLeft(app.erasedAt, data.now).tone}>
-                {daysLeft(app.erasedAt, data.now).text}
-              </TableCell>
-              <TableCell className="pr-6">
-                <span className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void restore([app.id])}
-                    aria-label={`Restore ${app.company}`}
-                  >
-                    <RotateCcw aria-hidden />
-                    Restore
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setPendingErase({ ids: [app.id], label: app.company })}
-                    aria-label={`Delete ${app.company} forever`}
-                    title="Delete forever"
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 aria-hidden />
-                  </Button>
-                </span>
-              </TableCell>
-            </TableRow>
-          ))}
-          {items.length === 0 ? (
+      {/* Same shell as Applications: the rows scroll, the header and the toolbar stay put. */}
+      <TableScroll className="h-auto flex-1">
+        {/* The last column has no width: it takes the leftover space, so the table fills the card
+            while every other column keeps the exact width from the colgroup. With a fixed last
+            column the extra would be spread over all of them. */}
+        <Table ref={trackHorizontalScroll} className="w-full min-w-[1100px] table-fixed">
+          <colgroup>
+            {/* Same widths as the matching columns on Applications: checkbox, company, status,
+                then the archive's own two, and the actions column takes the rest. */}
+            <col className="w-14" />
+            <col className="w-52 desktop:w-64" />
+            <col className="w-36" />
+            <col className="w-36" />
+            <col className="w-44" />
+            <col />
+          </colgroup>
+          <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
-                Nothing found. Try another search.
-              </TableCell>
+              <TableHead className="pinned-cell sticky top-0 left-0 z-[2] bg-background pl-6">
+                <Checkbox
+                  checked={allChecked}
+                  onCheckedChange={toggleAll}
+                  aria-label="Select all archived applications"
+                />
+              </TableHead>
+              <SortableHead
+                field="company"
+                sort={sort}
+                onSort={setSort}
+                className="pinned-cell-edge pinned-cell left-14"
+              >
+                Company and position
+              </SortableHead>
+              <SortableHead field="status" sort={sort} onSort={setSort}>
+                Status
+              </SortableHead>
+              <SortableHead field="archived" sort={sort} onSort={setSort}>
+                Archived
+              </SortableHead>
+              <SortableHead field="erased" sort={sort} onSort={setSort}>
+                Erased in
+              </SortableHead>
+              <StickyHead className="pinned-cell right-0 pr-6">
+                <span className="sr-only">Actions</span>
+              </StickyHead>
             </TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {sorted.map((app: DeletedApplication) => (
+              <TableRow
+                key={app.id}
+                data-state={selected.has(app.id) ? "selected" : undefined}
+                // Double click opens the application, as in the main table; not on its controls.
+                onDoubleClick={(event) => {
+                  if ((event.target as Element).closest("a, button, [role=checkbox]")) return;
+                  window.getSelection()?.removeAllRanges();
+                  router.push(`/archive/${app.id}`);
+                }}
+                className="cursor-default"
+              >
+                <TableCell className="pinned-cell left-0 pl-6">
+                  <Checkbox
+                    checked={selected.has(app.id)}
+                    onCheckedChange={() => toggleOne(app.id)}
+                    aria-label={`Select ${app.company}`}
+                  />
+                </TableCell>
+                <TableCell className="pinned-cell-edge pinned-cell left-14">
+                  <Link
+                    href={`/archive/${app.id}`}
+                    className="group flex min-w-0 items-center gap-3 rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  >
+                    <CompanyAvatar name={app.company} />
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium group-hover:underline">{app.company}</span>
+                      <span className="block truncate text-muted-foreground">{app.position}</span>
+                    </span>
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  {/* The exact sub-status, with its board column next to it: "Interview · In process".
+                      When the column is named like the status ("Wishlist"), the second label says
+                      nothing and is dropped. */}
+                  {/* Stacked, not side by side: the column is as narrow as on Applications, and a
+                      wide badge would squeeze the column name into a stray letter. */}
+                  <span className="flex min-w-0 flex-col items-start gap-0.5">
+                    <StatusBadge status={app.status} />
+                    {columnTitleOf(app.status) === STATUS_LABELS[app.status] ? null : (
+                      <span className="truncate text-[11px] text-muted-foreground">
+                        {columnTitleOf(app.status)}
+                      </span>
+                    )}
+                  </span>
+                </TableCell>
+                <TableCell>{formatDate(app.deletedAt.slice(0, 10))}</TableCell>
+                <TableCell className={daysLeft(app.erasedAt, data.now).tone}>
+                  {daysLeft(app.erasedAt, data.now).text}
+                </TableCell>
+                <TableCell className="pinned-cell right-0 bg-background pr-6">
+                  <span className="flex items-center justify-end gap-1">
+                    <Button asChild variant="ghost" size="icon-sm" aria-label={`Open ${app.company}`}>
+                      <Link href={`/archive/${app.id}`} title="Open">
+                        <Eye aria-hidden />
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void restore([app.id])}
+                      aria-label={`Restore ${app.company}`}
+                    >
+                      <RotateCcw aria-hidden />
+                      Restore
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setPendingErase({ ids: [app.id], label: app.company })}
+                      aria-label={`Delete ${app.company} forever`}
+                      title="Delete forever"
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 aria-hidden />
+                    </Button>
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+            {items.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                  Nothing found. Try another search.
+                </TableCell>
+              </TableRow>
+            ) : null}
+          </TableBody>
+        </Table>
+      </TableScroll>
 
       <AlertDialog open={pendingErase !== null} onOpenChange={(open) => !open && setPendingErase(null)}>
         <AlertDialogContent>

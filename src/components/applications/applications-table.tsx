@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, ArrowUpDown, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { nextEvent } from "@/lib/next-event";
 import { waitingDays } from "@/lib/waiting";
 import { STATE_BORDER_CLASSES } from "@/lib/stage-state";
 import { shortStageTitle, stageTitle } from "@/lib/stage-title";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableHead } from "@/components/table/sortable-head";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { STAGE_STATE_LABELS, type ApplicationStatus, type ApplicationSummary } from "@/lib/domain";
@@ -25,12 +26,6 @@ const EMPTY = <span className="text-muted-foreground/60">—</span>;
 export type TableSort = { field: SortField; direction: SortDirection } | null;
 
 // Click cycles: ascending → descending → back to default order.
-function nextSort(current: TableSort, field: SortField): TableSort {
-  if (current?.field !== field) return { field, direction: "asc" };
-  if (current.direction === "asc") return { field, direction: "desc" };
-  return null;
-}
-
 /**
  * The event that comes next, marked with a dashed outline: it is the same event the card and the
  * application page show, only brought up to the row. Past and cancelled events do not count.
@@ -72,41 +67,6 @@ function NextEvent({ app }: { app: ApplicationSummary }) {
         <p className="text-background/70">{STAGE_STATE_LABELS[event.state]}</p>
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-function SortableHead({
-  field,
-  sort,
-  onSort,
-  children,
-  className,
-}: {
-  field: SortField;
-  sort: TableSort;
-  onSort: (sort: TableSort) => void;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const active = sort?.field === field ? sort.direction : null;
-  const Icon = active === "asc" ? ArrowUp : active === "desc" ? ArrowDown : ArrowUpDown;
-  return (
-    <TableHead
-      aria-sort={active === "asc" ? "ascending" : active === "desc" ? "descending" : "none"}
-      className={cn("sticky top-0 z-[2] bg-background", className)}
-    >
-      <button
-        type="button"
-        onClick={() => onSort(nextSort(sort, field))}
-        className={cn(
-          "-ml-2 inline-flex h-8 items-center gap-1.5 rounded-md px-2 hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-          active && "text-foreground",
-        )}
-      >
-        {children}
-        <Icon className={cn("size-3.5", !active && "opacity-40")} aria-hidden />
-      </button>
-    </TableHead>
   );
 }
 

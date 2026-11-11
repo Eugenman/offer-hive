@@ -33,6 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { TableScroll } from "@/components/table/sortable-head";
 import { TableFooter } from "./table-footer";
 import { useApplicationActions } from "./use-application-actions";
 import { type ViewMode, useApplicationsUrlState } from "./use-applications-url-state";
@@ -220,9 +221,7 @@ export function ApplicationsView() {
     // Only the rows scroll: the toolbar above and the pager below stay put.
     content = (
       <div className="flex h-[calc(100vh-9rem)] flex-col">
-        {/* The table component brings its own overflow wrapper; inside this scroller it would be a
-            second one, and the sticky header would bind to it instead. */}
-        <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+        <TableScroll className="h-auto flex-1">
           <ApplicationsTable
             applications={data.page.items}
             sort={sort}
@@ -232,7 +231,7 @@ export function ApplicationsView() {
             onChangeStatus={changeStatus}
             onRevertStatus={revertStatus}
           />
-        </div>
+        </TableScroll>
         <TableFooter
           page={data.page.page}
           pageSize={url.state.size}

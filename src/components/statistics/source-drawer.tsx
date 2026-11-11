@@ -113,9 +113,15 @@ export function SourceDrawer({
         aria-hidden={!open}
         tabIndex={-1}
         className={cn(
-          "fixed top-0 right-0 z-50 flex h-dvh w-full max-w-[26rem] flex-col bg-background shadow-[-12px_0_40px_rgb(0_0_0_/_0.12)] outline-none",
-          "transition-transform duration-200 ease-out",
-          open ? "translate-x-0" : "pointer-events-none translate-x-full",
+          "fixed top-0 right-0 z-50 flex h-dvh w-full max-w-[26rem] flex-col bg-background outline-none",
+          // The shadow belongs to an open panel only: a parked one would still paint its shadow
+          // into the right edge of the screen.
+          // `all`, because the panel moves with `translate` and its shadow is toggled too: naming
+          // properties by hand missed one of them twice.
+          "transition-all duration-200 ease-out",
+          open
+            ? "translate-x-0 shadow-[-12px_0_40px_rgb(0_0_0_/_0.12)]"
+            : "pointer-events-none translate-x-full shadow-none",
         )}
       >
         <header className="flex flex-none items-center gap-2 border-b px-4 py-3.5">

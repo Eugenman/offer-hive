@@ -27,10 +27,11 @@ import {
   type StageType,
 } from "@/lib/domain";
 import { DateTimeInput, isDateTime } from "@/components/date-picker";
-import { formatDateTime, isFutureDay, toDateTimeLocal } from "@/lib/format";
+import { formatDateTime, toDateTimeLocal } from "@/lib/format";
 import { useRepository } from "@/lib/repository/provider";
 import { stageTitle } from "@/lib/stage-title";
 import { STATE_BADGE_CLASSES } from "@/lib/stage-state";
+import { isFinishedState, isFutureInstant } from "@/lib/stage-rules";
 import { DetailCard } from "./detail-card";
 import { AddNoteInline, NoteItem } from "./note-item";
 import { RepeatEventDialog } from "./repeat-event-dialog";
@@ -140,19 +141,12 @@ function StageCard({ stage, notes, min }: { stage: Stage; notes: Note[]; min?: s
           />
           <StageDate stage={stage} min={min} />
         </div>
-        {readOnly || isFutureDay(stage.scheduledAt) ? (
-          // A future event keeps its state until its day comes: marking it done or failed early
-          // would be a guess. Time of day is ignored on purpose.
+        {readOnly ? (
           <span
             className={cn(
               "inline-flex h-6 items-center rounded-md px-2 text-xs font-medium",
               STATE_BADGE_CLASSES[stage.state],
             )}
-            title={
-              isFutureDay(stage.scheduledAt)
-                ? `The state can change on ${formatDateTime(stage.scheduledAt)}`
-                : undefined
-            }
           >
             {STAGE_STATE_LABELS[stage.state]}
           </span>
@@ -179,15 +173,29 @@ function StageCard({ stage, notes, min }: { stage: Stage; notes: Note[]; min?: s
                   void repository.updateStage(stage.id, { state: value as StageState })
                 }
               >
-                {STAGE_STATES.map((state) => (
-                  <DropdownMenuRadioItem key={state} value={state}>
-                    <span
-                      className={cn("rounded px-1.5 py-0.5 text-xs font-medium", STATE_BADGE_CLASSES[state])}
+                {STAGE_STATES.map((state) => {
+                  // An event that has not started cannot have an outcome yet: only a plan or a
+                  // cancellation make sense.
+                  const locked = isFutureInstant(stage.scheduledAt) && isFinishedState(state);
+                  return (
+                    <DropdownMenuRadioItem
+                      key={state}
+                      value={state}
+                      disabled={locked}
+                      title={locked ? "A future event cannot have an outcome yet" : undefined}
+                      className={cn(locked && "cursor-not-allowed data-[disabled]:opacity-40")}
                     >
-                      {STAGE_STATE_LABELS[state]}
-                    </span>
-                  </DropdownMenuRadioItem>
-                ))}
+                      <span
+                        className={cn(
+                          "rounded px-1.5 py-0.5 text-xs font-medium",
+                          STATE_BADGE_CLASSES[state],
+                        )}
+                      >
+                        {STAGE_STATE_LABELS[state]}
+                      </span>
+                    </DropdownMenuRadioItem>
+                  );
+                })}
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>

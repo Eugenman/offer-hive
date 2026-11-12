@@ -18,16 +18,12 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { type ApplicationDetails, STATUS_LABELS, nextStatuses, reopenTargets } from "@/lib/domain";
 import { useRepository } from "@/lib/repository/provider";
 import { StatusBadge } from "../status-badge";
+import { StatusMenuGroups } from "../status-menu-groups";
 import { useApplicationActions } from "../use-application-actions";
 import { InlineField } from "./inline-field";
 import { StatusHistory } from "./status-log";
@@ -187,14 +183,10 @@ export function ApplicationHeader({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-auto min-w-0">
-                  {choices.map((status) => (
-                    <DropdownMenuItem
-                      key={status}
-                      onSelect={() => void actions.changeStatus([app.id], status)}
-                    >
-                      <StatusBadge status={status} />
-                    </DropdownMenuItem>
-                  ))}
+                  <StatusMenuGroups
+                    statuses={choices}
+                    onSelect={(status) => void actions.changeStatus([app.id], status)}
+                  />
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : app.previousStatus ? (

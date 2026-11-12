@@ -206,7 +206,7 @@ export function ArchiveView() {
     // Full height of the page slot: the toolbar stays, only the rows scroll.
     <div className="flex h-full min-h-0 flex-col">
       {/* Same toolbar rhythm as Applications: padding above and below, a border under it. */}
-      <div className="flex flex-none flex-wrap items-center gap-2 border-b bg-background px-6 py-4">
+      <div className="flex flex-none flex-wrap items-center gap-2 border-b bg-background px-6 py-4 max-[480px]:sticky max-[480px]:top-16 max-[480px]:z-20">
         <SearchInput
           value={search}
           onChange={(next) => {

@@ -5,9 +5,13 @@ export function stageLabel(stage: Pick<Stage, "title" | "type">) {
   return stage.title ?? STAGE_TYPE_LABELS[stage.type];
 }
 
-/** "Interview #2", or the user's own title with its number: "Техническое интервью #1". */
+/**
+ * "Interview #2", or the user's own title with its number: "Техническое интервью #1".
+ * A title that already ends with a number ("Interview #1") is not numbered twice.
+ */
 export function stageTitle(stage: Pick<Stage, "title" | "type" | "seq">) {
-  return `${stageLabel(stage)} #${stage.seq}`;
+  const base = stageLabel(stage).replace(/\s*#\d+\s*$/, "");
+  return `${base} #${stage.seq}`;
 }
 
 /** "Technical #2": the kind and the number, without the user's own title — for tight places. */

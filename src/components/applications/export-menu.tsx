@@ -17,6 +17,10 @@ type ExportMenuProps = {
   variant?: "outline" | "ghost";
   size?: "default" | "sm";
   side?: "top" | "bottom";
+  /** Icon and caret only: the label stays for screen readers but takes no room. */
+  iconOnly?: boolean;
+  /** Extra classes for the trigger button, e.g. to stretch it inside a grid cell. */
+  className?: string;
 };
 
 /** "Export" button that asks for the format: Excel or CSV. */
@@ -27,13 +31,15 @@ export function ExportMenu({
   variant = "outline",
   size = "default",
   side = "bottom",
+  iconOnly = false,
+  className,
 }: ExportMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={disabled}>
-        <Button variant={variant} size={size} disabled={disabled}>
+        <Button variant={variant} size={size} disabled={disabled} className={className}>
           <Download aria-hidden />
-          {label}
+          <span className={iconOnly ? "sr-only" : undefined}>{label}</span>
           <ChevronDown aria-hidden />
         </Button>
       </DropdownMenuTrigger>

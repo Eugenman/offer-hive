@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { type ApplicationStatus, STATUS_LABELS, nextStatuses } from "@/lib/domain";
 import { StatusBadge } from "./status-badge";
+import { StatusMenuGroups } from "./status-menu-groups";
 
 type StatusMenuProps = {
   company: string;
@@ -51,18 +52,11 @@ export function StatusMenu({
         alignOffset={-10}
         className="w-auto min-w-[calc(var(--radix-dropdown-menu-trigger-width)+1.25rem)]"
       >
-        {[status, ...choices].map((value) => (
-          <DropdownMenuItem
-            key={value}
-            role="menuitemradio"
-            aria-checked={value === status}
-            onSelect={() => {
-              if (value !== status) onChangeStatus(value);
-            }}
-          >
-            <StatusBadge status={value} checked={value === status} />
-          </DropdownMenuItem>
-        ))}
+        <StatusMenuGroups
+          statuses={[status, ...choices]}
+          current={status}
+          onSelect={(value) => onChangeStatus(value)}
+        />
         {previousStatus ? (
           <>
             <DropdownMenuSeparator />

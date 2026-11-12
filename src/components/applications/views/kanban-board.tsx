@@ -15,7 +15,8 @@ import {
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useDraggable,
   useDroppable,
   useSensor,
@@ -31,6 +32,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { resolveDrop } from "@/lib/board-drop";
+import { useIsPhone } from "@/lib/use-is-phone";
+import { StatusSheet } from "./status-sheet";
 import { cn } from "@/lib/utils";
 import {
   type ApplicationStatus,
@@ -38,7 +42,7 @@ import {
   BOARD_COLUMNS,
   STATUS_LABELS,
   TERMINAL_STATUSES,
-  isReturn,
+  nextStatuses,
   stageForStatus,
   statusTargets,
 } from "@/lib/domain";
@@ -86,6 +90,8 @@ type CardHandlers = {
   onDeselect: () => void;
   /** Scheduling another dated event; absent when the status cannot carry one. */
   onRepeat?: () => void;
+  /** Phones: opens the status sheet from the card itself. Absent on desktop, where dragging works. */
+  onOpenStatus?: () => void;
 };
 
 function DraggableCard({
@@ -98,6 +104,7 @@ function DraggableCard({
   onRequestDelete,
   onDeselect,
   onRepeat,
+  onOpenStatus,
 }: { app: ApplicationSummary; highlightNext?: boolean } & CardHandlers) {
   const { setNodeRef, listeners, isDragging } = useDraggable({ id: app.id, data: { status: app.status } });
   // Mouse-only drag (agreed): pointer listeners, no keyboard drag. Without a mouse the status is changed
@@ -105,7 +112,7 @@ function DraggableCard({
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
+      {...(onOpenStatus ? {} : listeners)}
       data-id={app.id}
       data-kanban-card=""
       // A group, not a button: it contains the eye link, and nested interactive roles are an a11y error.
@@ -132,12 +139,23 @@ function DraggableCard({
         }
       }}
       className={cn(
-        "cursor-grab touch-none rounded-lg outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        // `touch-pan-x touch-pan-y`: a swipe scrolls the board; the hold that starts a drag is
+        // handled by the touch sensor's delay.
+        // Never shrink: a compressed flex item is shorter than its content, and the cards under it
+        // paint over the part that stuck out.
+        "shrink-0 cursor-grab touch-pan-x touch-pan-y rounded-lg outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50",
         selected && "ring-2 ring-primary/70",
         isDragging && "opacity-40",
+        // A phone pages through cards: each card is a snap point of its column.
+        "max-[480px]:cursor-default max-[480px]:snap-center",
       )}
     >
-      <ApplicationCard app={app} onRepeat={onRepeat} highlightNext={highlightNext} />
+      <ApplicationCard
+        app={app}
+        onRepeat={onRepeat}
+        onOpenStatus={onOpenStatus}
+        highlightNext={highlightNext}
+      />
     </div>
   );
 }
@@ -196,7 +214,7 @@ function Zone({
         "flex flex-col gap-2 rounded-lg border border-dashed border-transparent p-1 transition-[opacity,border-color,background-color]",
         // A lone zone takes the whole column; a paired one is at least as tall as a card with
         // three events, so there is always room to drop above or below the cards.
-        paired ? "min-h-60" : "flex-1",
+        paired ? "min-h-60 shrink-0" : "flex-1 shrink-0",
         collapsed && "min-h-0",
         divider && state !== "accepts" && "border-t-border",
         state === "accepts" && (isOver ? "border-primary/60 bg-primary/5" : "border-foreground/30"),
@@ -297,15 +315,23 @@ function Column({
       className={cn(
         // Opaque and identical for every column: the pinned one only sticks, and no column looks
         // like a different shade. A translucent fill would blend with whatever sits behind it.
-        "flex w-64 shrink-0 flex-col gap-2 rounded-xl bg-muted p-2",
+        // A phone drops the top padding: the column header sits right under the toolbar, as the
+        // table header does. The desktop board keeps the air around the floating columns.
+        "flex w-64 shrink-0 flex-col gap-2 rounded-xl bg-muted p-2 max-[480px]:pt-0",
         // The pinned column keeps a hairline edge: it is what tells the eye the board scrolls under it.
         pinned && "sticky left-0 z-20 ring-1 ring-border",
+        // A max-[480px]: one column per screen, its cards scroll and snap vertically inside it.
+        // Vertical snapping is "proximity", not "mandatory": with cards taller than the screen a
+        // mandatory snap kept jumping between them and the cards could smear over each other
+        // while the column scrolled.
+        "max-[480px]:h-full max-[480px]:w-screen max-[480px]:snap-y max-[480px]:snap-proximity max-[480px]:snap-start max-[480px]:overflow-y-auto max-[480px]:rounded-none",
+        pinned && "max-[480px]:static max-[480px]:ring-0",
       )}
     >
       {/* Pinned to the top of the board: the column keeps its name and count in view. */}
       {/* Flush with the top of the column and rounded on every side, so the column keeps its shape
           while the board scrolls under it. */}
-      <header className="sticky top-0 z-10 -mx-2 -mt-2 flex items-center gap-2 rounded-xl bg-muted px-3 pt-2.5 pb-2.5">
+      <header className="sticky top-0 z-10 -mx-2 flex items-center gap-2 rounded-xl bg-muted px-3 pt-2.5 pb-2.5">
         {/* The column has its own colour, not the colour of its first status: the badge is built
             here so the palette never depends on overriding another component. */}
         <span
@@ -406,8 +432,22 @@ export function KanbanBoard({
   const hintId = useId();
   const boardRef = useRef<HTMLDivElement>(null);
   // A small distance threshold keeps clicks and double-clicks working.
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  // A mouse can grab a card with a small movement; a finger must hold it first. Otherwise a swipe
+  // across the board (to scroll it sideways) would pick a card up instead of scrolling.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+  );
+  const isPhone = useIsPhone();
+  // The board keeps native scrolling on purpose: `snap-x mandatory` gives the paging between
+  // columns for free, with the compositor's momentum. The axis lock is for single scrollers that
+  // move both ways (the table, the timeline) — here the two axes live in different containers,
+  // and taking them over by hand made the swipe feel rubbery and losing its snap.
   const [activeId, setActiveId] = useState<string | null>(null);
+  // Phones change the status from a sheet, not by dragging: a drag of a card is invisible to a finger.
+  const [statusSheet, setStatusSheet] = useState<ApplicationSummary | null>(null);
+  const [statusSheetOpen, setStatusSheetOpen] = useState(false);
+  const sheetCloseTimer = useRef<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // A step back that the user has to confirm: no silent rewinds in the history.
   const [pendingReturn, setPendingReturn] = useState<{
@@ -440,17 +480,38 @@ export function KanbanBoard({
     onDragCancel: () => "Move cancelled",
   };
 
+  function openStatusSheet(app: ApplicationSummary) {
+    if (sheetCloseTimer.current !== null) {
+      window.clearTimeout(sheetCloseTimer.current);
+      sheetCloseTimer.current = null;
+    }
+    setStatusSheet(app);
+    setStatusSheetOpen(true);
+  }
+
+  /** Closes the panel but keeps its content for the length of the slide-down. */
+  function closeStatusSheet() {
+    setStatusSheetOpen(false);
+    if (sheetCloseTimer.current !== null) window.clearTimeout(sheetCloseTimer.current);
+    sheetCloseTimer.current = window.setTimeout(() => {
+      setStatusSheet(null);
+      sheetCloseTimer.current = null;
+    }, 300);
+  }
+
   function handleDragEnd({ active: item, over }: DragEndEvent) {
     setActiveId(null);
     if (!over) return;
-    const status = over.id as ApplicationStatus;
     const app = byId.get(String(item.id));
-    if (!app || app.status === status) return;
+    if (!app) return;
+    // The drop may land on a card or a column header: only a real status means anything.
+    const drop = resolveDrop(app, over.id);
+    if (drop.kind === "none") return;
     // Dropping back on the previous column undoes the last change instead of logging a new one.
-    if (status === app.previousStatus) onRevertStatus(app);
+    if (drop.kind === "revert") onRevertStatus(app);
     // A step back is a real change (another round after an offer): ask before writing it down.
-    else if (isReturn(app.status, status)) setPendingReturn({ app, status });
-    else onChangeStatus(app.id, status);
+    else if (drop.kind === "return") setPendingReturn({ app, status: drop.status });
+    else onChangeStatus(app.id, drop.status);
   }
 
   const zoneState = (status: ApplicationStatus): ZoneState => {
@@ -475,10 +536,15 @@ export function KanbanBoard({
         ? () => onRepeat(app)
         : undefined,
     onDeselect: () => setSelectedId(null),
+    onOpenStatus: isPhone ? () => openStatusSheet(app) : undefined,
   });
 
   return (
     <DndContext
+      // The sensor list stays the same on every render: dnd-kit keeps it in an effect dependency
+      // array, and swapping it for an empty list made React complain about a changing size.
+      // A phone simply never gets pointer listeners on the cards (see DraggableCard), so no drag
+      // can start there.
       sensors={sensors}
       accessibility={{ announcements }}
       onDragStart={({ active: item }) => setActiveId(String(item.id))}
@@ -491,8 +557,14 @@ export function KanbanBoard({
       {/* The board scrolls itself, so the columns can pin their headers. The inner row is at least
           the height of the board and grows with the tallest column, keeping every column equal. */}
       {/* The board fills the space the page gives it: no magic height, the page itself never scrolls. */}
-      <div ref={boardRef} tabIndex={-1} className="min-h-0 flex-1 overflow-auto outline-none">
-        <div className="flex min-h-full items-stretch gap-3 px-6 pt-1 pb-6">
+      <div
+        ref={boardRef}
+        tabIndex={-1}
+        // A phone shows one column at a time: the board snaps column by column, and a column
+        // scrolls its own cards vertically.
+        className="min-h-0 flex-1 overflow-auto outline-none max-[480px]:snap-x max-[480px]:snap-mandatory max-[480px]:overflow-y-hidden"
+      >
+        <div className="flex min-h-full items-stretch gap-3 px-6 pt-1 pb-6 max-[480px]:h-full max-[480px]:gap-0 max-[480px]:px-0 max-[480px]:pt-0 max-[480px]:pb-0">
           {COLUMNS.map((column) => (
             <Column
               key={column.title}
@@ -540,8 +612,36 @@ export function KanbanBoard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* A phone never drags a card: the sheet is how a status changes there. */}
+      <StatusSheet
+        app={statusSheet}
+        open={statusSheetOpen}
+        statuses={statusSheet ? nextStatuses(statusSheet.status) : []}
+        onPick={(status) => {
+          const app = statusSheet;
+          closeStatusSheet();
+          if (!app) return;
+          onChangeStatus(app.id, status);
+          // The board follows the card: show the column it moved to.
+          const index = COLUMNS.findIndex((column) => column.zones.includes(status));
+          if (index >= 0) {
+            requestAnimationFrame(() => {
+              boardRef.current?.scrollTo({
+                left: index * window.innerWidth,
+                behavior: "smooth",
+              });
+            });
+          }
+        }}
+        onClose={closeStatusSheet}
+      />
       <DragOverlay dropAnimation={null}>
-        {active ? <ApplicationCard app={active} className="w-60 rotate-1 cursor-grabbing shadow-lg" /> : null}
+        {active ? (
+          <ApplicationCard
+            app={active}
+            className="w-60 rotate-1 cursor-grabbing shadow-lg ring-2 ring-primary"
+          />
+        ) : null}
       </DragOverlay>
     </DndContext>
   );

@@ -1,9 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { TableHead } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useAxisLockScroll } from "@/lib/use-axis-lock";
+import { useIsPhone } from "@/lib/use-is-phone";
 
 /** One table header that sorts a list; the field is whatever the page sorts by. */
 export type TableSort<Field extends string> = { field: Field; direction: "asc" | "desc" } | null;
@@ -62,11 +64,18 @@ export function StickyHead({ children, className }: { children: ReactNode; class
  * `flex-1 min-h-0` child. No viewport math here — that was what let the rows overflow the card.
  */
 export function TableScroll({ children, className }: { children: ReactNode; className?: string }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  // A phone locks each swipe to one axis: the rows go down, the columns go sideways, never both.
+  useAxisLockScroll(scrollerRef, useIsPhone());
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
       {/* The table component brings its own overflow wrapper; inside this scroller it would be a
           second one, and the sticky header would bind to it instead. */}
-      <div className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible">
+      <div
+        ref={scrollerRef}
+        data-table-scroller=""
+        className="min-h-0 flex-1 overflow-auto [&_[data-slot=table-container]]:overflow-visible"
+      >
         {children}
       </div>
     </div>

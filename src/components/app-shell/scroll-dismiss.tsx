@@ -66,17 +66,40 @@ export function ScrollDismiss() {
       start = null;
     };
 
+    // A wheel or a trackpad scroll is a scroll too, and it does not fire `pointermove`.
+    const onWheel = () => {
+      const popup = document.querySelector(
+        '[data-slot="dropdown-menu-content"], [data-slot="popover-content"], [data-slot="select-content"], [data-slot="tooltip-content"]',
+      );
+      if (popup) dismiss();
+    };
+
+    // Any scroll closes what is open — a hint left hanging over the rows it no longer points at is
+    // worse than no hint. Scrolling inside the popup itself is allowed.
+    const onScroll = (event: Event) => {
+      const popup = document.querySelector(
+        '[data-slot="dropdown-menu-content"], [data-slot="popover-content"], [data-slot="select-content"], [data-slot="tooltip-content"]',
+      );
+      if (!popup) return;
+      if (event.target instanceof Node && popup.contains(event.target)) return;
+      dismiss();
+    };
+
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("pointermove", onPointerMove, true);
     document.addEventListener("pointerup", onPointerUpCheck, true);
     document.addEventListener("pointercancel", onPointerUp, true);
     document.addEventListener("click", onClickCapture, true);
+    document.addEventListener("scroll", onScroll, true);
+    document.addEventListener("wheel", onWheel, { capture: true, passive: true });
     return () => {
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("pointermove", onPointerMove, true);
       document.removeEventListener("pointerup", onPointerUpCheck, true);
       document.removeEventListener("pointercancel", onPointerUp, true);
       document.removeEventListener("click", onClickCapture, true);
+      document.removeEventListener("scroll", onScroll, true);
+      document.removeEventListener("wheel", onWheel, { capture: true });
     };
   }, []);
 

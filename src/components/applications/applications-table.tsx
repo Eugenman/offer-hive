@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { SortableHead } from "@/components/table/sortable-head";
 import { useIsPhone } from "@/lib/use-is-phone";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { STAGE_STATE_LABELS, type ApplicationStatus, type ApplicationSummary } from "@/lib/domain";
 import { formatDate, formatDateTime, formatSalary, toDateTimeLocal } from "@/lib/format";
@@ -33,6 +34,7 @@ export type TableSort = { field: SortField; direction: SortDirection } | null;
  * application page show, only brought up to the row. Past and cancelled events do not count.
  */
 function NextEvent({ app }: { app: ApplicationSummary }) {
+  const isPhone = useIsPhone();
   const event = nextEvent(app.events);
   if (!event) {
     // Nothing scheduled for a week or more: the silence itself is the signal.
@@ -47,15 +49,46 @@ function NextEvent({ app }: { app: ApplicationSummary }) {
       </span>
     );
   }
+  const chip = cn(
+    "inline-flex max-w-full cursor-default items-center gap-1.5 rounded-lg border-2 border-dashed px-2 py-1 text-xs whitespace-nowrap",
+    STATE_BORDER_CLASSES[event.state],
+  );
+  // The tooltip sits on a dark bubble, the popover on a light card: the muted line differs.
+  const details = (muted: string) => (
+    <>
+      <p className="font-medium">{stageTitle(event)}</p>
+      <p className={muted}>{formatDateTime(event.scheduledAt)}</p>
+      <p className={muted}>{STAGE_STATE_LABELS[event.state]}</p>
+    </>
+  );
+
+  // A phone has no hover: the details open on a tap, and any scroll closes them.
+  if (isPhone) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Next event: ${stageTitle(event)}, ${formatDateTime(event.scheduledAt)}`}
+            className={cn(chip, "text-left")}
+          >
+            <span className="tabular-nums">
+              {formatDate(toDateTimeLocal(event.scheduledAt).slice(0, 10))?.replace(/, \d{4}/, "")}
+            </span>
+            <span className="truncate text-muted-foreground">· {shortStageTitle(event)}</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto gap-1 px-3 py-2">
+          {details("text-muted-foreground")}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span
-          className={cn(
-            "inline-flex max-w-full cursor-default items-center gap-1.5 rounded-lg border-2 border-dashed px-2 py-1 text-xs whitespace-nowrap",
-            STATE_BORDER_CLASSES[event.state],
-          )}
-        >
+        <span className={chip}>
           <span className="tabular-nums">
             {formatDate(toDateTimeLocal(event.scheduledAt).slice(0, 10))?.replace(/, \d{4}/, "")}
           </span>
@@ -63,11 +96,7 @@ function NextEvent({ app }: { app: ApplicationSummary }) {
         </span>
       </TooltipTrigger>
       {/* More about the event without opening the application. */}
-      <TooltipContent className="gap-1 px-3 py-2">
-        <p className="font-medium">{stageTitle(event)}</p>
-        <p className="text-background/70">{formatDateTime(event.scheduledAt)}</p>
-        <p className="text-background/70">{STAGE_STATE_LABELS[event.state]}</p>
-      </TooltipContent>
+      <TooltipContent className="gap-1 px-3 py-2">{details("text-background/70")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -113,7 +142,7 @@ export function ApplicationsTable({
   // A table column has no width transition, so the collapse is animated frame by frame.
   // Seeded from the address bar, not from the prop: the prop arrives a render later (the URL is
   // read on the client), and that gap was the flash on reload. `?names=folded` is known at once.
-  const [nameWidth, setNameWidth] = useState<number | null>(() => (namesFolded || readsFolded() ? 56 : null));
+  const [nameWidth, setNameWidth] = useState<number | null>(() => (namesFolded || readsFolded() ? 48 : null));
   const widthFrame = useRef(0);
   // Only a real change of the prop animates: the first run (mount, or a re-render while the URL
   // settles) would otherwise animate the column and flash the wide state after a reload.
@@ -141,9 +170,9 @@ export function ApplicationsTable({
     const changed = lastFolded.current !== namesFolded;
     lastFolded.current = namesFolded;
     if (!changed) return;
-    const start = headerCellRef.current?.getBoundingClientRect().width ?? (namesFolded ? 208 : 56);
+    const start = headerCellRef.current?.getBoundingClientRect().width ?? (namesFolded ? 208 : 48);
     const full = window.matchMedia("(min-width: 1024px)").matches ? 256 : 208;
-    const end = namesFolded ? 56 : full;
+    const end = namesFolded ? 48 : full;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (Math.abs(start - end) < 1 || reduce) {
       // Same width or reduced motion: land on the target on the next frame, not mid-render.
@@ -253,7 +282,8 @@ export function ApplicationsTable({
         "table-fixed",
         withActions
           ? "min-w-[1622px] desktop:min-w-[max(100%,calc(100%_+_1870px_-_100vw))]"
-          : "min-w-[1502px]",
+          : // Phones: the widths below add up to this, so no column has to absorb the rest.
+            "min-w-[1056px]",
       )}
     >
       <colgroup>
@@ -267,7 +297,7 @@ export function ApplicationsTable({
         <col className="w-48" />
         <col className="w-36" />
         <col className="w-44" />
-        <col />
+        <col className="max-[480px]:w-12" />
         {withActions ? <col className="w-16" /> : null}
       </colgroup>
       <TableHeader>
@@ -289,6 +319,8 @@ export function ApplicationsTable({
               // `z-[3]`: the other headers scroll under this cell, they must not paint over it.
               "pinned-cell-edge pinned-cell z-[3] border-r border-border select-none",
               withSelection ? "left-14" : "left-0 pl-6 max-[480px]:pl-3",
+              // Folded, the header shows only the sort arrows: centre them in the narrow column.
+              folded && "pr-3 [&_button]:ml-0 [&_button]:w-full [&_button]:justify-center",
             )}
           >
             {folded ? <span className="sr-only">Company and position</span> : "Company and position"}
@@ -353,6 +385,9 @@ export function ApplicationsTable({
               className={cn(
                 "pinned-cell-edge pinned-cell border-r border-border select-none",
                 withSelection ? "left-14" : "left-0 pl-6 max-[480px]:pl-3",
+                // Folded: the same vertical padding as the open cell (the row must not grow),
+                // with equal 12 px gaps on the sides of the avatar.
+                folded && "px-3 py-2",
               )}
             >
               {folded ? (
